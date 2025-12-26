@@ -8,7 +8,10 @@ import { getWeek, format } from "date-fns"
 import { fr } from "date-fns/locale"
 import { TierStatsCards } from "@/components/drivers/tier-stats-cards"
 import { DriversListTable } from "@/components/drivers/drivers-list-table"
-import { Users } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Users, Download } from "lucide-react"
+import { downloadCSV, formatDriversForCSV } from "@/lib/utils/csv"
+import { toast } from "sonner"
 
 export default function DriversPage() {
   const { selectedStation, selectedDate, granularity } = useDashboardStore()
@@ -143,11 +146,37 @@ export default function DriversPage() {
     <main className="min-h-[calc(100vh-4rem)]">
       <div className="p-6">
         {/* Page Title */}
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-foreground">Drivers</h1>
-          <p className="text-sm text-muted-foreground capitalize">
-            {periodLabel} • {tierStats.total} drivers • {tierStats.active} actifs
-          </p>
+        <div className="mb-6 flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">Drivers</h1>
+            <p className="text-sm text-muted-foreground capitalize">
+              {periodLabel} • {tierStats.total} drivers • {tierStats.active} actifs
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              const csvData = formatDriversForCSV(
+                drivers.map(d => ({
+                  name: d.name,
+                  amazonId: d.amazonId,
+                  dwcPercent: d.dwcPercent,
+                  iadcPercent: d.iadcPercent,
+                  tier: d.tier,
+                  daysActive: d.daysActive,
+                })),
+                selectedStation.code,
+                week,
+                year
+              )
+              downloadCSV(csvData, `drivers-${selectedStation.code}-S${week}-${year}`)
+              toast.success("Export CSV téléchargé")
+            }}
+          >
+            <Download className="h-4 w-4 mr-2" />
+            Export CSV
+          </Button>
         </div>
 
         {/* Tier Stats Cards */}

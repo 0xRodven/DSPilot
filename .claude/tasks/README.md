@@ -9,8 +9,8 @@ Ce dossier contient les tâches structurées pour le développement de DSPilot.
 |---|------|-------------|--------|
 | 01 | `01-driver-detail-convex.md` | Connecter page driver detail à Convex | ✅ Terminé |
 | 02 | `02-stations-dynamic.md` | Rendre les stations dynamiques | ✅ Terminé |
-| 03 | `03-settings-station.md` | Implémenter settings station | À faire |
-| 04 | `04-delete-import.md` | Ajouter suppression d'import | À faire |
+| 03 | `03-settings-station.md` | Implémenter settings station | ✅ Terminé |
+| 04 | `04-delete-import.md` | Ajouter suppression d'import | ✅ Terminé |
 
 ### Phase 2: Polish UX
 | # | Task | Description | Status |
@@ -23,14 +23,14 @@ Ce dossier contient les tâches structurées pour le développement de DSPilot.
 ### Phase 3: Features Additionnelles
 | # | Task | Description | Status |
 |---|------|-------------|--------|
-| 09 | `09-export-csv.md` | Export CSV des données | À faire |
+| 09 | `09-export-csv.md` | Export CSV des données | ✅ Terminé |
 | 10 | `10-date-range-picker.md` | Sélecteur de période amélioré | À faire |
 | 11 | `11-driver-comparison.md` | Comparaison de drivers | À faire |
 
 ### Phase 4: Déploiement
 | # | Task | Description | Status |
 |---|------|-------------|--------|
-| 12 | `12-vercel-deploy.md` | Déploiement Vercel | À faire |
+| 12 | `12-vercel-deploy.md` | Déploiement Vercel | ✅ Terminé |
 | 13 | `13-monitoring.md` | Monitoring et Analytics | À faire |
 
 ---

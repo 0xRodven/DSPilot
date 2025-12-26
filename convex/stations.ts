@@ -93,17 +93,47 @@ export const getStationByCode = query({
 });
 
 /**
- * Met à jour une station
+ * Met à jour une station (avec vérification d'ownership)
  */
 export const updateStation = mutation({
   args: {
     stationId: v.id("stations"),
     name: v.optional(v.string()),
+    code: v.optional(v.string()),
     region: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    // Verify authentication
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new Error("Not authenticated");
+    }
+
+    // Get station and verify ownership
+    const station = await ctx.db.get(args.stationId);
+    if (!station) {
+      throw new Error("Station not found");
+    }
+    if (station.ownerId !== identity.subject) {
+      throw new Error("Not authorized to update this station");
+    }
+
+    // If code is changing, verify uniqueness
+    if (args.code && args.code !== station.code) {
+      const newCode = args.code;
+      const existing = await ctx.db
+        .query("stations")
+        .withIndex("by_code", (q) => q.eq("code", newCode))
+        .first();
+      if (existing) {
+        throw new Error("Ce code de station existe déjà");
+      }
+    }
+
+    // Build updates object
     const updates: Record<string, string> = {};
     if (args.name) updates.name = args.name;
+    if (args.code) updates.code = args.code;
     if (args.region) updates.region = args.region;
 
     if (Object.keys(updates).length > 0) {
