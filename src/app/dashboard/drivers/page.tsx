@@ -143,7 +143,7 @@ export default function DriversPage() {
   }
 
   return (
-    <main className="min-h-[calc(100vh-3.5rem)] md:min-h-[calc(100vh-4rem)]">
+    <main className="min-h-[calc(100vh-3.5rem)] md:min-h-[calc(100vh-4rem)] animate-in fade-in duration-300">
       <div className="p-4 md:p-6">
         {/* Page Title */}
         <div className="mb-4 md:mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">

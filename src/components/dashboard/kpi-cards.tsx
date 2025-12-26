@@ -62,7 +62,7 @@ export function KPICards() {
   return (
     <div className="grid grid-cols-2 gap-3 md:gap-4 lg:grid-cols-4">
       {/* DWC Card */}
-      <Card className="border-border bg-card">
+      <Card className="border-border bg-card transition-all duration-200 hover:shadow-lg hover:shadow-primary/5 hover:border-primary/20">
         <CardContent className="p-4 md:p-6">
           <div className="flex items-center justify-between">
             <span className="text-xs md:text-sm font-medium text-muted-foreground">DWC</span>
@@ -96,7 +96,7 @@ export function KPICards() {
       </Card>
 
       {/* IADC Card */}
-      <Card className="border-border bg-card">
+      <Card className="border-border bg-card transition-all duration-200 hover:shadow-lg hover:shadow-primary/5 hover:border-primary/20">
         <CardContent className="p-4 md:p-6">
           <div className="flex items-center justify-between">
             <span className="text-xs md:text-sm font-medium text-muted-foreground">IADC</span>
@@ -130,7 +130,7 @@ export function KPICards() {
       </Card>
 
       {/* Drivers Card */}
-      <Card className="border-border bg-card">
+      <Card className="border-border bg-card transition-all duration-200 hover:shadow-lg hover:shadow-primary/5 hover:border-primary/20">
         <CardContent className="p-4 md:p-6">
           <div className="flex items-center justify-between">
             <span className="text-xs md:text-sm font-medium text-muted-foreground">Drivers</span>
@@ -148,7 +148,7 @@ export function KPICards() {
       </Card>
 
       {/* Alerts Card */}
-      <Card className="border-border bg-card">
+      <Card className="border-border bg-card transition-all duration-200 hover:shadow-lg hover:shadow-primary/5 hover:border-primary/20">
         <CardContent className="p-4 md:p-6">
           <div className="flex items-center justify-between">
             <span className="text-xs md:text-sm font-medium text-muted-foreground">Alertes</span>
