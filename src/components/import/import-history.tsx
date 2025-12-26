@@ -31,7 +31,8 @@ import {
 import { cn } from "@/lib/utils"
 import { getImportStatusColor, getImportStatusLabel } from "@/lib/utils/status"
 import { useDashboardStore } from "@/lib/store"
-import { useToast } from "@/hooks/use-toast"
+import { withToast } from "@/lib/utils/mutation"
+import { toast } from "sonner"
 
 // Type for Convex import records
 interface ConvexImport {
@@ -73,7 +74,6 @@ export function ImportHistory({ imports, stationCode }: ImportHistoryProps) {
   // Hooks
   const router = useRouter()
   const { setSelectedDate } = useDashboardStore()
-  const { toast } = useToast()
   const deleteImport = useMutation(api.imports.deleteImport)
 
   // Filter out pending/processing for display, only show completed
@@ -142,10 +142,7 @@ export function ImportHistory({ imports, stationCode }: ImportHistoryProps) {
       filename: file.name,
     }))
 
-    toast({
-      title: "Ré-import",
-      description: `Fichier sélectionné: ${file.name}. Allez à la page d'import pour continuer.`,
-    })
+    toast.info(`Fichier sélectionné: ${file.name}. Allez à la page d'import pour continuer.`)
 
     router.push("/dashboard/import")
 
@@ -202,16 +199,9 @@ export function ImportHistory({ imports, stationCode }: ImportHistoryProps) {
       document.body.removeChild(link)
       URL.revokeObjectURL(url)
 
-      toast({
-        title: "Téléchargement",
-        description: `Fichier exporté: import_S${imp.week}_${imp.year}.csv`,
-      })
-    } catch (error) {
-      toast({
-        title: "Erreur",
-        description: "Impossible de télécharger le fichier",
-        variant: "destructive",
-      })
+      toast.success(`Fichier exporté: import_S${imp.week}_${imp.year}.csv`)
+    } catch {
+      toast.error("Impossible de télécharger le fichier")
     }
   }
 
@@ -226,27 +216,22 @@ export function ImportHistory({ imports, stationCode }: ImportHistoryProps) {
     if (!importToDelete) return
 
     setIsDeleting(true)
-    try {
-      const result = await deleteImport({
+    const result = await withToast(
+      deleteImport({
         importId: importToDelete._id as Id<"imports">,
-      })
+      }),
+      {
+        loading: "Suppression en cours...",
+        success: "Import supprimé avec succès",
+        error: "Impossible de supprimer l'import",
+      }
+    )
 
-      toast({
-        title: "Import supprimé",
-        description: `Supprimé: ${result.deletedDailyStats} daily stats, ${result.deletedWeeklyStats} weekly stats`,
-      })
-
+    if (result) {
       setDeleteDialogOpen(false)
       setImportToDelete(null)
-    } catch (error) {
-      toast({
-        title: "Erreur",
-        description: "Impossible de supprimer l'import",
-        variant: "destructive",
-      })
-    } finally {
-      setIsDeleting(false)
     }
+    setIsDeleting(false)
   }
 
   return (

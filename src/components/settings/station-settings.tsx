@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Lock, Loader2, Save, Building2, Calendar } from "lucide-react"
 import { useDashboardStore } from "@/lib/store"
-import { toast } from "sonner"
+import { withToast } from "@/lib/utils/mutation"
 
 export function StationSettings() {
   const { selectedStation, setSelectedStation } = useDashboardStore()
@@ -43,29 +43,28 @@ export function StationSettings() {
     if (!station) return
 
     setIsSaving(true)
-    try {
-      const updated = await updateStation({
+    const updated = await withToast(
+      updateStation({
         stationId: station._id as Id<"stations">,
         name: name !== station.name ? name : undefined,
         code: code !== station.code ? code : undefined,
-      })
-
-      if (updated) {
-        // Update global store if code changed
-        setSelectedStation({
-          id: updated._id,
-          name: updated.name,
-          code: updated.code,
-        })
+      }),
+      {
+        loading: "Enregistrement...",
+        success: "Station mise à jour",
+        error: (err) => err.message || "Erreur lors de la mise à jour",
       }
+    )
 
-      toast.success("Station mise à jour")
+    if (updated) {
+      setSelectedStation({
+        id: updated._id,
+        name: updated.name,
+        code: updated.code,
+      })
       setIsEditing(false)
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Erreur lors de la mise à jour")
-    } finally {
-      setIsSaving(false)
     }
+    setIsSaving(false)
   }
 
   const handleCancel = () => {

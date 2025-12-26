@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge"
 import { Search, MessageSquare, AlertTriangle, BookOpen, Ban, Lightbulb } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { getTierBgColor, type CoachingActionType, type CoachingSuggestion } from "@/lib/mock-data"
+import { withToast } from "@/lib/utils/mutation"
 import type { Id } from "../../../convex/_generated/dataModel"
 
 interface NewActionModalProps {
@@ -91,14 +92,15 @@ export function NewActionModal({ open, onOpenChange, prefillSuggestion, stationI
     if (!selectedDriver || !reason) return
 
     setIsSubmitting(true)
-    try {
-      // Calculate follow up date
-      const followUpDate = new Date()
-      if (followUp === "1w") followUpDate.setDate(followUpDate.getDate() + 7)
-      else if (followUp === "2w") followUpDate.setDate(followUpDate.getDate() + 14)
-      else if (followUp === "1m") followUpDate.setMonth(followUpDate.getMonth() + 1)
 
-      await createAction({
+    // Calculate follow up date
+    const followUpDate = new Date()
+    if (followUp === "1w") followUpDate.setDate(followUpDate.getDate() + 7)
+    else if (followUp === "2w") followUpDate.setDate(followUpDate.getDate() + 14)
+    else if (followUp === "1m") followUpDate.setMonth(followUpDate.getMonth() + 1)
+
+    const result = await withToast(
+      createAction({
         stationId,
         driverId: selectedDriver,
         actionType: selectedType,
@@ -109,8 +111,15 @@ export function NewActionModal({ open, onOpenChange, prefillSuggestion, stationI
         dwcAtAction: selectedDriverInfo?.dwcPercent || 0,
         followUpDate: followUpDate.toISOString(),
         createdBy: "current-user", // TODO: Get from auth
-      })
+      }),
+      {
+        loading: "Création de l'action...",
+        success: "Action de coaching créée",
+        error: "Erreur lors de la création de l'action",
+      }
+    )
 
+    if (result) {
       // Reset and close
       setSelectedDriver(null)
       setSelectedDriverInfo(null)
@@ -119,11 +128,8 @@ export function NewActionModal({ open, onOpenChange, prefillSuggestion, stationI
       setTargetSubcategory("")
       setNotes("")
       onOpenChange(false)
-    } catch (error) {
-      console.error("Failed to create coaching action:", error)
-    } finally {
-      setIsSubmitting(false)
     }
+    setIsSubmitting(false)
   }
 
   return (
