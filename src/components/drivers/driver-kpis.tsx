@@ -1,7 +1,8 @@
 "use client"
 
 import { Card, CardContent } from "@/components/ui/card"
-import { type DriverDetail, getTierColor, getTierBgColor } from "@/lib/mock-data"
+import type { DriverDetail } from "@/lib/types"
+import { getTierColor, getTierBgColor } from "@/lib/utils/tier"
 import { TrendingUp, TrendingDown } from "lucide-react"
 import { cn } from "@/lib/utils"
 

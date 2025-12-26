@@ -14,7 +14,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Bell, ChevronLeft, ChevronRight, Calendar, User, LogOut, Settings, Moon, Sun, Loader2 } from "lucide-react"
+import { Bell, ChevronLeft, ChevronRight, Calendar, User, LogOut, Settings, Moon, Sun } from "lucide-react"
 import { format, startOfWeek, endOfWeek, getWeek } from "date-fns"
 import { fr } from "date-fns/locale"
 import { useTheme } from "next-themes"
@@ -166,12 +166,9 @@ export function Header() {
             <span className="sr-only">Changer de thème</span>
           </Button>
 
-          {/* Notifications */}
+          {/* Notifications - hidden until implemented */}
           <Button variant="ghost" size="icon" className="relative h-8 w-8 md:h-9 md:w-9">
             <Bell className="h-4 w-4 md:h-5 md:w-5" />
-            <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-medium text-white">
-              3
-            </span>
           </Button>
 
           {/* User menu */}
@@ -179,9 +176,8 @@ export function Header() {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="flex items-center gap-2 pl-1 pr-2 md:pl-2 md:pr-3 h-8 md:h-9">
                 <div className="flex h-7 w-7 md:h-8 md:w-8 items-center justify-center rounded-full bg-primary/20 text-xs md:text-sm font-medium text-primary">
-                  JD
+                  <User className="h-4 w-4" />
                 </div>
-                <span className="text-sm font-medium hidden md:inline">Jean Doe</span>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56 bg-popover text-popover-foreground">

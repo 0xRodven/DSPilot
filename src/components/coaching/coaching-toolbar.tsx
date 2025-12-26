@@ -5,7 +5,15 @@ import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Search, Plus } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { getCoachingStats } from "@/lib/mock-data"
+
+interface CoachingStats {
+  pending: { count: number; overdueCount: number }
+  improved: { count: number; avgImprovement: number }
+  noEffect: { count: number }
+  escalated: { count: number }
+  total: number
+  thisMonth: number
+}
 
 interface CoachingToolbarProps {
   searchQuery: string
@@ -17,6 +25,7 @@ interface CoachingToolbarProps {
   statusFilter: string | null
   onStatusFilterChange: (status: string | null) => void
   onNewAction: () => void
+  stats: CoachingStats
 }
 
 const statusTabs = [
@@ -37,8 +46,8 @@ export function CoachingToolbar({
   statusFilter,
   onStatusFilterChange,
   onNewAction,
+  stats,
 }: CoachingToolbarProps) {
-  const stats = getCoachingStats()
 
   const getCount = (status: string | null) => {
     if (status === null) return stats.total

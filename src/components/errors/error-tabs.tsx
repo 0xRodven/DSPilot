@@ -3,7 +3,7 @@
 import { cn } from "@/lib/utils"
 import { formatNumber } from "@/lib/calculations"
 import { Package, Truck, AlertTriangle } from "lucide-react"
-import type { ErrorCategory, ErrorCategoryData } from "@/lib/mock-data"
+import type { ErrorCategory, ErrorCategoryData } from "@/lib/types"
 
 interface ErrorTabsProps {
   categories: ErrorCategoryData[]

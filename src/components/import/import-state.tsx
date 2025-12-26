@@ -25,7 +25,8 @@ import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { cn } from "@/lib/utils"
-import { type ParsedImportData, getTierBgColor } from "@/lib/mock-data"
+import type { ParsedImportData } from "@/lib/types"
+import { getTierBgColor } from "@/lib/utils/tier"
 
 export type ImportStep = "uploading" | "parsing" | "preview" | "success" | "error"
 

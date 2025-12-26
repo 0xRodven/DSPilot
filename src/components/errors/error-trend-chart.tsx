@@ -7,7 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { cn } from "@/lib/utils"
 import { AlertCircle, TrendingUp } from "lucide-react"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
-import type { ErrorTrendData } from "@/lib/mock-data"
+import type { ErrorTrendData } from "@/lib/types"
 
 interface ErrorTrendChartProps {
   data: ErrorTrendData[]

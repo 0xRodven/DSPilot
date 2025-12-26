@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-import type { DriverDetail } from "@/lib/mock-data"
+import type { DriverDetail } from "@/lib/types"
 import { ChevronDown, ChevronUp } from "lucide-react"
 import { cn } from "@/lib/utils"
 

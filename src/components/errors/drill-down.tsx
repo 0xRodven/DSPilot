@@ -5,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { cn } from "@/lib/utils"
 import { formatNumber } from "@/lib/calculations"
 import { TrendingUp, TrendingDown, Minus } from "lucide-react"
-import type { ErrorSubcategory } from "@/lib/mock-data"
+import type { ErrorSubcategory } from "@/lib/types"
 
 interface DrillDownProps {
   subcategories: ErrorSubcategory[]

@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { AlertTriangle, TrendingDown, RotateCcw, UserMinus, Plus, ChevronRight, Target } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { type CoachingSuggestion, getTierBgColor } from "@/lib/mock-data"
+import type { CoachingSuggestion } from "@/lib/types"
+import { getTierBgColor } from "@/lib/utils/tier"
 
 interface CoachingSuggestionsProps {
   suggestions: CoachingSuggestion[]

@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 import { formatNumber } from "@/lib/calculations"
 import { TrendingUp, TrendingDown } from "lucide-react"
-import type { ErrorCategoryData } from "@/lib/mock-data"
+import type { ErrorCategoryData } from "@/lib/types"
 
 interface ErrorKPIsProps {
   category: ErrorCategoryData

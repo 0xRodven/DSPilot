@@ -19,7 +19,8 @@ import {
 } from "lucide-react"
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } from "recharts"
 import { cn } from "@/lib/utils"
-import { type CoachingActionFull, getActionTypeLabel } from "@/lib/mock-data"
+import type { CoachingActionFull } from "@/lib/types"
+import { getActionTypeLabel } from "@/lib/utils/status"
 
 interface EvaluateActionModalProps {
   open: boolean

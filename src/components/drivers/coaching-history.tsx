@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import type { DriverDetail } from "@/lib/mock-data"
+import type { DriverDetail } from "@/lib/types"
 import { Calendar, MessageSquare, BookOpen, RefreshCw, CheckCircle2, TrendingUp, Plus } from "lucide-react"
 import { cn } from "@/lib/utils"
 

@@ -7,9 +7,9 @@ import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
-import { getTierBgColor } from "@/lib/mock-data"
+import { getTierBgColor } from "@/lib/utils/tier"
 import { ArrowRight, GraduationCap, User } from "lucide-react"
-import type { DriverWithErrors } from "@/lib/mock-data"
+import type { DriverWithErrors } from "@/lib/types"
 
 interface TopDriversErrorsProps {
   drivers: DriverWithErrors[]

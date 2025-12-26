@@ -20,14 +20,14 @@ import {
   Clock,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import type { CoachingActionFull } from "@/lib/types"
+import { getTierBgColor } from "@/lib/utils/tier"
 import {
-  type CoachingActionFull,
-  getTierBgColor,
   getCoachingStatusColor,
   getCoachingStatusLabel,
   getActionTypeColor,
   getActionTypeLabel,
-} from "@/lib/mock-data"
+} from "@/lib/utils/status"
 import Link from "next/link"
 
 interface ActionCardProps {

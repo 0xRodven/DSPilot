@@ -138,6 +138,7 @@ export default function CoachingPage() {
             statusFilter={statusFilter}
             onStatusFilterChange={setStatusFilter}
             onNewAction={handleNewAction}
+            stats={stats}
           />
         </div>
 

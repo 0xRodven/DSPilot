@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import type { DriverDetail } from "@/lib/mock-data"
+import type { DriverDetail } from "@/lib/types"
 import { ChevronDown, ChevronRight, ArrowRight } from "lucide-react"
 
 interface ErrorBreakdownProps {

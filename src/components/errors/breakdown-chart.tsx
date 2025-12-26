@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils"
 import { formatNumber } from "@/lib/calculations"
 import { LayoutGrid, BarChart3, PieChart } from "lucide-react"
 import { PieChart as RechartsPie, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts"
-import type { ErrorCategoryData } from "@/lib/mock-data"
+import type { ErrorCategoryData } from "@/lib/types"
 
 type ChartType = "treemap" | "bars" | "donut"
 

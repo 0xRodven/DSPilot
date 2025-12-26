@@ -2,7 +2,8 @@
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { type DriverDetail, getTierColor } from "@/lib/mock-data"
+import type { DriverDetail } from "@/lib/types"
+import { getTierColor } from "@/lib/utils/tier"
 import { User, Calendar, Package, Zap, GraduationCap, FileDown, Mail } from "lucide-react"
 import { cn } from "@/lib/utils"
 

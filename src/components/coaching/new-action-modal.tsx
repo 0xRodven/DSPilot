@@ -12,7 +12,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge"
 import { Search, MessageSquare, AlertTriangle, BookOpen, Ban, Lightbulb } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { getTierBgColor, type CoachingActionType, type CoachingSuggestion } from "@/lib/mock-data"
+import type { CoachingSuggestion } from "@/lib/types"
+import { getTierBgColor } from "@/lib/utils/tier"
+import type { CoachingActionType } from "@/lib/utils/status"
 import { withToast } from "@/lib/utils/mutation"
 import type { Id } from "../../../convex/_generated/dataModel"
 
