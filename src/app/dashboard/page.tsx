@@ -25,13 +25,13 @@ export default function DashboardPage() {
   }
 
   return (
-    <main className="min-h-[calc(100vh-4rem)]">
-      <div className="p-6">
+    <main className="min-h-[calc(100vh-3.5rem)] md:min-h-[calc(100vh-4rem)]">
+      <div className="p-4 md:p-6">
         {/* Page title */}
-        <div className="mb-6 flex items-center justify-between">
+        <div className="mb-4 md:mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
-            <p className="text-sm capitalize text-muted-foreground">{getSubtitle()}</p>
+            <h1 className="text-xl md:text-2xl font-bold text-foreground">Dashboard</h1>
+            <p className="text-xs md:text-sm capitalize text-muted-foreground">{getSubtitle()}</p>
           </div>
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <Clock className="h-3.5 w-3.5" />
@@ -43,19 +43,19 @@ export default function DashboardPage() {
         <KPICards />
 
         {/* Performance Chart */}
-        <div className="mt-6">
+        <div className="mt-4 md:mt-6">
           <PerformanceChart />
         </div>
 
         {/* Three column section */}
-        <div className="mt-6 grid gap-6 lg:grid-cols-3">
+        <div className="mt-4 md:mt-6 grid gap-4 md:gap-6 md:grid-cols-2 lg:grid-cols-3">
           <TierDistribution />
           <TopDrivers />
           <TopErrors />
         </div>
 
         {/* Drivers Table */}
-        <div className="mt-6">
+        <div className="mt-4 md:mt-6">
           <DriversTable />
         </div>
       </div>

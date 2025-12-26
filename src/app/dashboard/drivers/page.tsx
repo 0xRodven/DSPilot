@@ -143,19 +143,20 @@ export default function DriversPage() {
   }
 
   return (
-    <main className="min-h-[calc(100vh-4rem)]">
-      <div className="p-6">
+    <main className="min-h-[calc(100vh-3.5rem)] md:min-h-[calc(100vh-4rem)]">
+      <div className="p-4 md:p-6">
         {/* Page Title */}
-        <div className="mb-6 flex items-center justify-between">
+        <div className="mb-4 md:mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Drivers</h1>
-            <p className="text-sm text-muted-foreground capitalize">
+            <h1 className="text-xl md:text-2xl font-bold text-foreground">Drivers</h1>
+            <p className="text-xs md:text-sm text-muted-foreground capitalize">
               {periodLabel} • {tierStats.total} drivers • {tierStats.active} actifs
             </p>
           </div>
           <Button
             variant="outline"
             size="sm"
+            className="w-fit"
             onClick={() => {
               const csvData = formatDriversForCSV(
                 drivers.map(d => ({
@@ -175,12 +176,13 @@ export default function DriversPage() {
             }}
           >
             <Download className="h-4 w-4 mr-2" />
-            Export CSV
+            <span className="hidden sm:inline">Export CSV</span>
+            <span className="sm:hidden">Export</span>
           </Button>
         </div>
 
         {/* Tier Stats Cards */}
-        <div className="mb-6">
+        <div className="mb-4 md:mb-6">
           <TierStatsCards
             stats={tierStats}
             selectedTier={selectedTier}
