@@ -6,17 +6,31 @@ import type { DriverDetail } from "@/lib/types"
 import { getTierColor } from "@/lib/utils/tier"
 import { User, Calendar, Package, Zap, GraduationCap, FileDown, Mail } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { toast } from "sonner"
 
 interface DriverHeaderProps {
   driver: DriverDetail
+  onPlanCoaching?: () => void
 }
 
-export function DriverHeader({ driver }: DriverHeaderProps) {
+export function DriverHeader({ driver, onPlanCoaching }: DriverHeaderProps) {
   const tierLabels = {
     fantastic: "Fantastic",
     great: "Great",
     fair: "Fair",
     poor: "Poor",
+  }
+
+  const handleExportPDF = () => {
+    toast.info("Export PDF", {
+      description: "Fonctionnalité en cours de développement",
+    })
+  }
+
+  const handleSendReport = () => {
+    toast.info("Envoi du rapport", {
+      description: "Fonctionnalité en cours de développement",
+    })
   }
 
   return (
@@ -76,15 +90,15 @@ export function DriverHeader({ driver }: DriverHeaderProps) {
 
         {/* Action Buttons */}
         <div className="mt-6 flex flex-wrap gap-3">
-          <Button variant="outline" className="bg-transparent">
+          <Button variant="outline" className="bg-transparent" onClick={onPlanCoaching}>
             <GraduationCap className="mr-2 h-4 w-4" />
             Planifier Coaching
           </Button>
-          <Button variant="outline" className="bg-transparent">
+          <Button variant="outline" className="bg-transparent" onClick={handleExportPDF}>
             <FileDown className="mr-2 h-4 w-4" />
             Exporter PDF
           </Button>
-          <Button variant="outline" className="bg-transparent">
+          <Button variant="outline" className="bg-transparent" onClick={handleSendReport}>
             <Mail className="mr-2 h-4 w-4" />
             Envoyer rapport au driver
           </Button>

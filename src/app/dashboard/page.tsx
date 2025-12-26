@@ -1,7 +1,5 @@
 "use client"
 
-import { useQuery } from "convex/react"
-import { api } from "../../../convex/_generated/api"
 import { useDashboardStore } from "@/lib/store"
 import { KPICards } from "@/components/dashboard/kpi-cards"
 import { PerformanceChart } from "@/components/dashboard/performance-chart"
@@ -13,36 +11,16 @@ import { format, getWeek, startOfWeek, endOfWeek } from "date-fns"
 import { fr } from "date-fns/locale"
 
 export default function DashboardPage() {
-  const { selectedStation, selectedDate, granularity } = useDashboardStore()
-  const week = getWeek(selectedDate, { weekStartsOn: 1 })
-  const year = selectedDate.getFullYear()
-  const dateStr = format(selectedDate, "yyyy-MM-dd")
-
-  // Get station from Convex
-  const station = useQuery(api.stations.getStationByCode, { code: selectedStation.code })
-
-  // Get KPIs - choose query based on granularity
-  const kpisWeekly = useQuery(
-    api.stats.getDashboardKPIs,
-    station && granularity === "week" ? { stationId: station._id, year, week } : "skip"
-  )
-  const kpisDaily = useQuery(
-    api.stats.getDashboardKPIsDaily,
-    station && granularity === "day" ? { stationId: station._id, date: dateStr } : "skip"
-  )
-  const kpis = granularity === "week" ? kpisWeekly : kpisDaily
+  const { selectedDate, granularity } = useDashboardStore()
 
   const getSubtitle = () => {
-    const driverCount = kpis?.totalDrivers ?? 0
-    const activeCount = kpis?.activeDrivers ?? 0
-
     if (granularity === "week") {
       const weekNum = getWeek(selectedDate, { locale: fr })
       const start = startOfWeek(selectedDate, { weekStartsOn: 1 })
       const end = endOfWeek(selectedDate, { weekStartsOn: 1 })
-      return `Semaine ${weekNum} • ${format(start, "d", { locale: fr })}-${format(end, "d MMMM yyyy", { locale: fr })} • ${driverCount} drivers`
+      return `Semaine ${weekNum} • ${format(start, "d", { locale: fr })}-${format(end, "d MMMM yyyy", { locale: fr })}`
     }
-    return `${format(selectedDate, "EEEE d MMMM yyyy", { locale: fr })} • ${activeCount} drivers actifs`
+    return format(selectedDate, "EEEE d MMMM yyyy", { locale: fr })
   }
 
   return (

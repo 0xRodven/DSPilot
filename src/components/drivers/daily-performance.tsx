@@ -11,9 +11,13 @@ import { cn } from "@/lib/utils"
 
 interface DailyPerformanceProps {
   driver: DriverDetail
+  week: number
 }
 
-export function DailyPerformance({ driver }: DailyPerformanceProps) {
+// Days of the week in order (Monday first)
+const weekDays = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"]
+
+export function DailyPerformance({ driver, week }: DailyPerformanceProps) {
   const [isOpen, setIsOpen] = useState(true)
 
   const statusLabels = {
@@ -23,6 +27,24 @@ export function DailyPerformance({ driver }: DailyPerformanceProps) {
     moyen: "Moyen",
     "non-travaille": "Non travaillé",
   }
+
+  // Build full week with all 7 days
+  const fullWeekPerformance = weekDays.map((dayName) => {
+    const existingDay = driver.dailyPerformance.find((d) => d.day === dayName)
+    if (existingDay) {
+      return existingDay
+    }
+    // Return empty day for days without data
+    return {
+      day: dayName,
+      date: "",
+      dwcPercent: null,
+      iadcPercent: null,
+      deliveries: null,
+      errors: null,
+      status: "non-travaille" as const,
+    }
+  })
 
   const statusColors = {
     excellent: "text-emerald-400",
@@ -47,7 +69,7 @@ export function DailyPerformance({ driver }: DailyPerformanceProps) {
           <CardHeader className="cursor-pointer flex flex-row items-center justify-between pb-2 hover:bg-muted/20 transition-colors">
             <div>
               <CardTitle className="text-lg font-semibold text-card-foreground">Performance par jour</CardTitle>
-              <p className="text-sm text-muted-foreground">Semaine 50</p>
+              <p className="text-sm text-muted-foreground">Semaine {week}</p>
             </div>
             <Button variant="ghost" size="sm">
               {isOpen ? (
@@ -77,12 +99,12 @@ export function DailyPerformance({ driver }: DailyPerformanceProps) {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {driver.dailyPerformance.map((day) => (
+                  {fullWeekPerformance.map((day) => (
                     <TableRow key={day.day} className="border-border">
                       <TableCell>
                         <div>
                           <div className="font-medium text-card-foreground">{day.day}</div>
-                          <div className="text-xs text-muted-foreground">{day.date}</div>
+                          {day.date && <div className="text-xs text-muted-foreground">{day.date}</div>}
                         </div>
                       </TableCell>
                       <TableCell className="text-right font-medium text-card-foreground">

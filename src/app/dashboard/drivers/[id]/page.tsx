@@ -1,8 +1,7 @@
 "use client"
 
-import { use } from "react"
+import { use, useState } from "react"
 import Link from "next/link"
-import { notFound } from "next/navigation"
 import { useQuery } from "convex/react"
 import { api } from "../../../../../convex/_generated/api"
 import type { Id } from "../../../../../convex/_generated/dataModel"
@@ -12,12 +11,13 @@ import { DriverPerformanceChart } from "@/components/drivers/driver-performance-
 import { ErrorBreakdown } from "@/components/drivers/error-breakdown"
 import { CoachingHistory } from "@/components/drivers/coaching-history"
 import { DailyPerformance } from "@/components/drivers/daily-performance"
+import { NewActionModal } from "@/components/coaching/new-action-modal"
 import { useDashboardStore } from "@/lib/store"
 import { getWeek } from "date-fns"
-import { ChevronLeft, Loader2 } from "lucide-react"
+import { ChevronLeft } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
-import type { DriverDetail } from "@/lib/types"
+import type { DriverDetail, CoachingSuggestion } from "@/lib/types"
 
 interface DriverDetailPageProps {
   params: Promise<{ id: string }>
@@ -168,11 +168,15 @@ function NoDataState({ driverName }: { driverName: string }) {
 
 export default function DriverDetailPage({ params }: DriverDetailPageProps) {
   const { id } = use(params)
-  const { selectedDate, granularity } = useDashboardStore()
+  const { selectedStation, selectedDate, granularity } = useDashboardStore()
+  const [coachingModalOpen, setCoachingModalOpen] = useState(false)
 
   // Calculate current week/year
   const year = selectedDate.getFullYear()
   const week = getWeek(selectedDate, { weekStartsOn: 1 })
+
+  // Get station from Convex
+  const station = useQuery(api.stations.getStationByCode, { code: selectedStation.code })
 
   // Get driver detail from Convex
   const driverDetail = useQuery(api.drivers.getDriverDetail, {
@@ -198,7 +202,7 @@ export default function DriverDetailPage({ params }: DriverDetailPageProps) {
   const comparisonLabel = getComparisonLabel()
 
   // Loading state
-  if (driverDetail === undefined || coachingHistory === undefined) {
+  if (driverDetail === undefined || coachingHistory === undefined || station === undefined) {
     return <LoadingSkeleton />
   }
 
@@ -236,7 +240,7 @@ export default function DriverDetailPage({ params }: DriverDetailPageProps) {
 
         {/* Driver Header */}
         <div className="mb-6">
-          <DriverHeader driver={driver} />
+          <DriverHeader driver={driver} onPlanCoaching={() => setCoachingModalOpen(true)} />
         </div>
 
         {/* KPIs */}
@@ -252,12 +256,33 @@ export default function DriverDetailPage({ params }: DriverDetailPageProps) {
         {/* Two Columns: Error Breakdown + Coaching History */}
         <div className="mb-6 grid gap-6 lg:grid-cols-2">
           <ErrorBreakdown driver={driver} />
-          <CoachingHistory driver={driver} />
+          <CoachingHistory driver={driver} onPlanCoaching={() => setCoachingModalOpen(true)} />
         </div>
 
         {/* Daily Performance */}
-        <DailyPerformance driver={driver} />
+        <DailyPerformance driver={driver} week={week} />
       </div>
+
+      {/* Coaching Modal */}
+      {station && (
+        <NewActionModal
+          open={coachingModalOpen}
+          onOpenChange={setCoachingModalOpen}
+          stationId={station._id}
+          prefillSuggestion={{
+            id: `suggestion-${driver.id}`,
+            driverId: driver.id,
+            driverName: driver.name,
+            driverTier: driver.tier,
+            driverDwc: driver.dwcPercent,
+            priority: driver.tier === "poor" ? "high" : "new_poor",
+            reason: `Performance ${driver.tier}: ${driver.dwcPercent}% DWC`,
+            mainError: "DWC",
+            mainErrorCount: driver.errors,
+            hasActiveAction: false,
+          }}
+        />
+      )}
     </main>
   )
 }

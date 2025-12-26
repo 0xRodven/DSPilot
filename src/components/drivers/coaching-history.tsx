@@ -8,9 +8,10 @@ import { cn } from "@/lib/utils"
 
 interface CoachingHistoryProps {
   driver: DriverDetail
+  onPlanCoaching?: () => void
 }
 
-export function CoachingHistory({ driver }: CoachingHistoryProps) {
+export function CoachingHistory({ driver, onPlanCoaching }: CoachingHistoryProps) {
   const typeIcons = {
     discussion: MessageSquare,
     formation: BookOpen,
@@ -76,7 +77,7 @@ export function CoachingHistory({ driver }: CoachingHistoryProps) {
           )
         })}
 
-        <Button variant="outline" className="w-full mt-2 bg-transparent">
+        <Button variant="outline" className="w-full mt-2 bg-transparent" onClick={onPlanCoaching}>
           <Plus className="mr-2 h-4 w-4" />
           Planifier un coaching
         </Button>
