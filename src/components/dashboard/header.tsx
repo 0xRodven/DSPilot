@@ -1,6 +1,9 @@
 "use client"
 
-import { useDashboardStore, getStations } from "@/lib/store"
+import { useEffect } from "react"
+import { useQuery } from "convex/react"
+import { api } from "../../../convex/_generated/api"
+import { useDashboardStore } from "@/lib/store"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
@@ -11,12 +14,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Bell, ChevronLeft, ChevronRight, Calendar, User, LogOut, Settings, Moon, Sun } from "lucide-react"
+import { Bell, ChevronLeft, ChevronRight, Calendar, User, LogOut, Settings, Moon, Sun, Loader2 } from "lucide-react"
 import { format, startOfWeek, endOfWeek, getWeek } from "date-fns"
 import { fr } from "date-fns/locale"
 import { useTheme } from "next-themes"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { Separator } from "@/components/ui/separator"
+import { Skeleton } from "@/components/ui/skeleton"
 
 export function Header() {
   const { selectedStation, setSelectedStation, granularity, setGranularity, selectedDate, navigatePeriod } =
@@ -24,7 +28,21 @@ export function Header() {
 
   const { theme, setTheme } = useTheme()
 
-  const stations = getStations()
+  // Load stations from Convex
+  const stations = useQuery(api.stations.listUserStations)
+  const isLoadingStations = stations === undefined
+
+  // Auto-select first station when loaded and no station is selected
+  useEffect(() => {
+    if (stations && stations.length > 0 && !selectedStation.id) {
+      const first = stations[0]
+      setSelectedStation({
+        id: first._id,
+        name: first.name,
+        code: first.code,
+      })
+    }
+  }, [stations, selectedStation.id, setSelectedStation])
 
   const formatPeriod = () => {
     if (granularity === "week") {
@@ -52,27 +70,51 @@ export function Header() {
       <div className="flex flex-1 items-center justify-between">
         <div className="flex items-center gap-4">
           {/* Station selector */}
-          <Select
-            value={selectedStation.id}
-            onValueChange={(value) => {
-              const station = stations.find((s) => s.id === value)
-              if (station) setSelectedStation(station)
-            }}
-          >
-            <SelectTrigger className="w-[180px] border-border bg-card text-card-foreground">
-              <SelectValue>
-                <span className="font-medium">{selectedStation.code}</span>
-                <span className="ml-2 text-muted-foreground">- {selectedStation.name}</span>
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent className="bg-popover text-popover-foreground">
-              {stations.map((station) => (
-                <SelectItem key={station.id} value={station.id}>
-                  <span className="font-medium">{station.code}</span> - {station.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          {isLoadingStations ? (
+            <Skeleton className="h-10 w-[180px]" />
+          ) : stations && stations.length > 0 ? (
+            <Select
+              value={selectedStation.id}
+              onValueChange={(value) => {
+                const station = stations.find((s) => s._id === value)
+                if (station) {
+                  setSelectedStation({
+                    id: station._id,
+                    name: station.name,
+                    code: station.code,
+                  })
+                }
+              }}
+            >
+              <SelectTrigger className="w-[180px] border-border bg-card text-card-foreground">
+                <SelectValue>
+                  {selectedStation.code ? (
+                    <>
+                      <span className="font-medium">{selectedStation.code}</span>
+                      <span className="ml-2 text-muted-foreground">- {selectedStation.name}</span>
+                    </>
+                  ) : (
+                    <span className="text-muted-foreground">Sélectionner...</span>
+                  )}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent className="bg-popover text-popover-foreground">
+                {stations.map((station) => (
+                  <SelectItem key={station._id} value={station._id}>
+                    <span className="font-medium">{station.code}</span> - {station.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : (
+            <Button
+              variant="outline"
+              className="w-[180px] border-dashed"
+              onClick={() => window.location.href = "/dashboard/import"}
+            >
+              Importer une station
+            </Button>
+          )}
 
           {/* Period navigation */}
           <div className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-1.5">

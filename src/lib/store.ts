@@ -29,11 +29,8 @@ interface DashboardState {
   navigatePeriod: (direction: "prev" | "next") => void
 }
 
-const stations: Station[] = [
-  { id: "1", name: "FR-PSUA-DIF1", code: "FR-PSUA-DIF1" },
-  { id: "2", name: "Lyon Est", code: "DLY2" },
-  { id: "3", name: "Marseille Sud", code: "DMS3" },
-]
+// Default empty station (will be replaced when stations load)
+const defaultStation: Station = { id: "", name: "", code: "" }
 
 export const useDashboardStore = create<DashboardState>()(
   persist(
@@ -44,7 +41,7 @@ export const useDashboardStore = create<DashboardState>()(
       setSidebarCollapsed: (collapsed) => set({ sidebarCollapsed: collapsed }),
 
       // Global filters
-      selectedStation: stations[0],
+      selectedStation: defaultStation,
       setSelectedStation: (station) => set({ selectedStation: station }),
 
       granularity: "week",
@@ -77,5 +74,3 @@ export const useDashboardStore = create<DashboardState>()(
     },
   ),
 )
-
-export const getStations = () => stations

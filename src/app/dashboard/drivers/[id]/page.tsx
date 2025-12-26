@@ -3,30 +3,192 @@
 import { use } from "react"
 import Link from "next/link"
 import { notFound } from "next/navigation"
+import { useQuery } from "convex/react"
+import { api } from "../../../../../convex/_generated/api"
+import type { Id } from "../../../../../convex/_generated/dataModel"
 import { DriverHeader } from "@/components/drivers/driver-header"
 import { DriverKpis } from "@/components/drivers/driver-kpis"
 import { DriverPerformanceChart } from "@/components/drivers/driver-performance-chart"
 import { ErrorBreakdown } from "@/components/drivers/error-breakdown"
 import { CoachingHistory } from "@/components/drivers/coaching-history"
 import { DailyPerformance } from "@/components/drivers/daily-performance"
-import { getDriverById } from "@/lib/mock-data"
 import { useDashboardStore } from "@/lib/store"
 import { getWeek } from "date-fns"
-import { ChevronLeft } from "lucide-react"
+import { ChevronLeft, Loader2 } from "lucide-react"
+import { Skeleton } from "@/components/ui/skeleton"
+import { Card, CardContent, CardHeader } from "@/components/ui/card"
+import type { DriverDetail } from "@/lib/types"
 
 interface DriverDetailPageProps {
   params: Promise<{ id: string }>
 }
 
+function LoadingSkeleton() {
+  return (
+    <main className="min-h-[calc(100vh-4rem)]">
+      <div className="p-6">
+        {/* Breadcrumb skeleton */}
+        <div className="mb-6">
+          <Skeleton className="h-5 w-32" />
+        </div>
+
+        {/* Header skeleton */}
+        <div className="mb-6">
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center gap-4">
+                <Skeleton className="h-16 w-16 rounded-full" />
+                <div className="space-y-2">
+                  <Skeleton className="h-6 w-48" />
+                  <Skeleton className="h-4 w-32" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* KPIs skeleton */}
+        <div className="mb-6 grid grid-cols-2 md:grid-cols-4 gap-4">
+          {[1, 2, 3, 4].map((i) => (
+            <Card key={i}>
+              <CardContent className="p-4">
+                <Skeleton className="h-4 w-20 mb-2" />
+                <Skeleton className="h-8 w-16" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {/* Chart skeleton */}
+        <div className="mb-6">
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-5 w-40" />
+            </CardHeader>
+            <CardContent>
+              <Skeleton className="h-[300px] w-full" />
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Two columns skeleton */}
+        <div className="mb-6 grid gap-6 lg:grid-cols-2">
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-5 w-32" />
+            </CardHeader>
+            <CardContent>
+              <Skeleton className="h-[200px] w-full" />
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-5 w-32" />
+            </CardHeader>
+            <CardContent>
+              <Skeleton className="h-[200px] w-full" />
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </main>
+  )
+}
+
+function NotFoundState() {
+  return (
+    <main className="min-h-[calc(100vh-4rem)]">
+      <div className="p-6">
+        <div className="mb-6">
+          <Link
+            href="/dashboard/drivers"
+            className="inline-flex items-center text-sm text-muted-foreground hover:text-card-foreground transition-colors"
+          >
+            <ChevronLeft className="mr-1 h-4 w-4" />
+            Drivers
+          </Link>
+        </div>
+
+        <Card className="max-w-md mx-auto mt-12">
+          <CardContent className="p-6 text-center">
+            <div className="text-4xl mb-4">🔍</div>
+            <h2 className="text-xl font-semibold mb-2">Driver non trouvé</h2>
+            <p className="text-muted-foreground mb-4">
+              Ce driver n&apos;existe pas ou vous n&apos;avez pas accès à ses données.
+            </p>
+            <Link
+              href="/dashboard/drivers"
+              className="text-primary hover:underline"
+            >
+              Retour à la liste des drivers
+            </Link>
+          </CardContent>
+        </Card>
+      </div>
+    </main>
+  )
+}
+
+function NoDataState({ driverName }: { driverName: string }) {
+  return (
+    <main className="min-h-[calc(100vh-4rem)]">
+      <div className="p-6">
+        <div className="mb-6">
+          <Link
+            href="/dashboard/drivers"
+            className="inline-flex items-center text-sm text-muted-foreground hover:text-card-foreground transition-colors"
+          >
+            <ChevronLeft className="mr-1 h-4 w-4" />
+            Drivers
+          </Link>
+          <span className="mx-2 text-muted-foreground">/</span>
+          <span className="text-sm text-card-foreground">{driverName}</span>
+        </div>
+
+        <Card className="max-w-md mx-auto mt-12">
+          <CardContent className="p-6 text-center">
+            <div className="text-4xl mb-4">📊</div>
+            <h2 className="text-xl font-semibold mb-2">Pas de données</h2>
+            <p className="text-muted-foreground mb-4">
+              Aucune donnée de performance n&apos;est disponible pour cette semaine.
+              Essayez de sélectionner une autre période.
+            </p>
+            <Link
+              href="/dashboard/drivers"
+              className="text-primary hover:underline"
+            >
+              Retour à la liste des drivers
+            </Link>
+          </CardContent>
+        </Card>
+      </div>
+    </main>
+  )
+}
+
 export default function DriverDetailPage({ params }: DriverDetailPageProps) {
   const { id } = use(params)
-  const driver = getDriverById(id)
   const { selectedDate, granularity } = useDashboardStore()
+
+  // Calculate current week/year
+  const year = selectedDate.getFullYear()
+  const week = getWeek(selectedDate, { weekStartsOn: 1 })
+
+  // Get driver detail from Convex
+  const driverDetail = useQuery(api.drivers.getDriverDetail, {
+    driverId: id as Id<"drivers">,
+    year,
+    week,
+  })
+
+  // Get coaching history
+  const coachingHistory = useQuery(api.coaching.getDriverCoachingHistory, {
+    driverId: id as Id<"drivers">,
+  })
 
   // Calculate comparison label based on granularity
   const getComparisonLabel = () => {
     if (granularity === "week") {
-      const week = getWeek(selectedDate, { weekStartsOn: 1 })
       const prevWeek = week === 1 ? 52 : week - 1
       return `vs S${prevWeek}`
     } else {
@@ -35,8 +197,25 @@ export default function DriverDetailPage({ params }: DriverDetailPageProps) {
   }
   const comparisonLabel = getComparisonLabel()
 
-  if (!driver) {
-    notFound()
+  // Loading state
+  if (driverDetail === undefined || coachingHistory === undefined) {
+    return <LoadingSkeleton />
+  }
+
+  // Not found state
+  if (driverDetail === null) {
+    return <NotFoundState />
+  }
+
+  // Combine driver detail with coaching history
+  const driver: DriverDetail = {
+    ...driverDetail,
+    coachingHistory: coachingHistory || [],
+  }
+
+  // No data for this week (driver exists but no stats)
+  if (driver.deliveries === 0 && driver.dailyPerformance.length === 0) {
+    return <NoDataState driverName={driver.name} />
   }
 
   return (

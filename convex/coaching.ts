@@ -332,6 +332,67 @@ export const getCoachingSuggestions = query({
   },
 });
 
+/**
+ * Récupère l'historique de coaching d'un driver (pour la page detail)
+ */
+export const getDriverCoachingHistory = query({
+  args: {
+    driverId: v.id("drivers"),
+  },
+  handler: async (ctx, args) => {
+    const actions = await ctx.db
+      .query("coachingActions")
+      .withIndex("by_driver", (q) => q.eq("driverId", args.driverId))
+      .order("desc")
+      .take(20);
+
+    // Format for the CoachingAction type used in DriverDetail
+    return actions.map((action) => {
+      // Calculate week from createdAt
+      const date = new Date(action.createdAt);
+      const weekNum = getWeekNumber(date);
+      const year = date.getFullYear();
+
+      // Map status to result
+      let result: "ameliore" | "complete" | "en-cours";
+      if (action.status === "improved") result = "ameliore";
+      else if (action.status === "pending") result = "en-cours";
+      else result = "complete";
+
+      // Map actionType to type
+      let type: "discussion" | "formation" | "suivi";
+      if (action.actionType === "training") type = "formation";
+      else if (action.actionType === "discussion") type = "discussion";
+      else type = "suivi";
+
+      // Calculate impact if we have before/after
+      let impactPercent: number | undefined;
+      if (action.dwcAfterAction !== undefined) {
+        impactPercent = Math.round((action.dwcAfterAction - action.dwcAtAction) * 10) / 10;
+      }
+
+      return {
+        id: action._id,
+        week: `S${weekNum}`,
+        date: date.toISOString().split("T")[0],
+        type,
+        subject: action.reason,
+        result,
+        impactPercent,
+      };
+    });
+  },
+});
+
+// Helper to get ISO week number
+function getWeekNumber(date: Date): number {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  return Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+}
+
 // ============================================
 // COACHING MUTATIONS
 // ============================================

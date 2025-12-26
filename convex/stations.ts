@@ -35,7 +35,7 @@ export const getOrCreateStation = mutation({
 });
 
 /**
- * Liste les stations d'un utilisateur
+ * Liste les stations d'un utilisateur (avec ownerId explicite)
  */
 export const listStations = query({
   args: {
@@ -45,6 +45,22 @@ export const listStations = query({
     return await ctx.db
       .query("stations")
       .withIndex("by_owner", (q) => q.eq("ownerId", args.ownerId))
+      .collect();
+  },
+});
+
+/**
+ * Liste les stations de l'utilisateur connecté (via auth)
+ */
+export const listUserStations = query({
+  args: {},
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) return [];
+
+    return await ctx.db
+      .query("stations")
+      .withIndex("by_owner", (q) => q.eq("ownerId", identity.subject))
       .collect();
   },
 });

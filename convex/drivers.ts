@@ -177,3 +177,220 @@ export const countDrivers = query({
     };
   },
 });
+
+/**
+ * Récupère les détails complets d'un driver (pour la page detail)
+ */
+export const getDriverDetail = query({
+  args: {
+    driverId: v.id("drivers"),
+    year: v.number(),
+    week: v.number(),
+  },
+  handler: async (ctx, args) => {
+    // 1. Get driver info
+    const driver = await ctx.db.get(args.driverId);
+    if (!driver) return null;
+
+    // 2. Get current week stats
+    const currentWeekStats = await ctx.db
+      .query("driverWeeklyStats")
+      .withIndex("by_driver_week", (q) =>
+        q.eq("driverId", args.driverId).eq("year", args.year).eq("week", args.week)
+      )
+      .first();
+
+    // 3. Get previous week stats for trend
+    const prevWeek = args.week === 1 ? 52 : args.week - 1;
+    const prevYear = args.week === 1 ? args.year - 1 : args.year;
+    const prevWeekStats = await ctx.db
+      .query("driverWeeklyStats")
+      .withIndex("by_driver_week", (q) =>
+        q.eq("driverId", args.driverId).eq("year", prevYear).eq("week", prevWeek)
+      )
+      .first();
+
+    // 4. Get weekly history (last 12 weeks)
+    const weeklyHistory = await ctx.db
+      .query("driverWeeklyStats")
+      .withIndex("by_driver", (q) => q.eq("driverId", args.driverId))
+      .order("desc")
+      .take(12);
+
+    // 5. Get daily stats for current week
+    const dailyStats = await ctx.db
+      .query("driverDailyStats")
+      .withIndex("by_driver_week", (q) =>
+        q.eq("driverId", args.driverId).eq("year", args.year).eq("week", args.week)
+      )
+      .collect();
+
+    // 6. Get all drivers in station for ranking
+    const allStationDriverStats = await ctx.db
+      .query("driverWeeklyStats")
+      .withIndex("by_station_week", (q) =>
+        q.eq("stationId", driver.stationId).eq("year", args.year).eq("week", args.week)
+      )
+      .collect();
+
+    // Calculate DWC% for current week
+    let dwcPercent = 0;
+    let iadcPercent = 0;
+    let totalDeliveries = 0;
+    let totalErrors = 0;
+
+    if (currentWeekStats) {
+      const dwcTotal = currentWeekStats.dwcCompliant + currentWeekStats.dwcMisses + currentWeekStats.failedAttempts;
+      dwcPercent = dwcTotal > 0 ? Math.round((currentWeekStats.dwcCompliant / dwcTotal) * 1000) / 10 : 0;
+
+      const iadcTotal = currentWeekStats.iadcCompliant + currentWeekStats.iadcNonCompliant;
+      iadcPercent = iadcTotal > 0 ? Math.round((currentWeekStats.iadcCompliant / iadcTotal) * 1000) / 10 : 0;
+
+      totalDeliveries = dwcTotal;
+      totalErrors = currentWeekStats.dwcMisses + currentWeekStats.failedAttempts;
+    }
+
+    // Calculate trend
+    let trend = 0;
+    if (prevWeekStats) {
+      const prevDwcTotal = prevWeekStats.dwcCompliant + prevWeekStats.dwcMisses + prevWeekStats.failedAttempts;
+      const prevDwcPercent = prevDwcTotal > 0 ? (prevWeekStats.dwcCompliant / prevDwcTotal) * 100 : 0;
+      trend = Math.round((dwcPercent - prevDwcPercent) * 10) / 10;
+    }
+
+    // Determine tier
+    let tier: "fantastic" | "great" | "fair" | "poor";
+    if (dwcPercent >= 98.5) tier = "fantastic";
+    else if (dwcPercent >= 96) tier = "great";
+    else if (dwcPercent >= 90) tier = "fair";
+    else tier = "poor";
+
+    // Calculate rank among station drivers
+    const driversWithDwc = allStationDriverStats.map((stat) => {
+      const total = stat.dwcCompliant + stat.dwcMisses + stat.failedAttempts;
+      return {
+        driverId: stat.driverId,
+        dwcPercent: total > 0 ? (stat.dwcCompliant / total) * 100 : 0,
+      };
+    });
+    driversWithDwc.sort((a, b) => b.dwcPercent - a.dwcPercent);
+    const rank = driversWithDwc.findIndex((d) => d.driverId === args.driverId) + 1;
+
+    // Format daily performance
+    const dayNames = ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"];
+    const dailyPerformance = dailyStats.map((stat) => {
+      const date = new Date(stat.date);
+      const dayIndex = date.getDay();
+      const dwcTotal = stat.dwcCompliant + stat.dwcMisses + stat.failedAttempts;
+      const dailyDwcPercent = dwcTotal > 0 ? Math.round((stat.dwcCompliant / dwcTotal) * 1000) / 10 : null;
+      const iadcTotal = stat.iadcCompliant + stat.iadcNonCompliant;
+      const dailyIadcPercent = iadcTotal > 0 ? Math.round((stat.iadcCompliant / iadcTotal) * 1000) / 10 : null;
+
+      let status: "excellent" | "tres-bon" | "bon" | "moyen" | "non-travaille" = "non-travaille";
+      if (dailyDwcPercent !== null) {
+        if (dailyDwcPercent >= 98.5) status = "excellent";
+        else if (dailyDwcPercent >= 96) status = "tres-bon";
+        else if (dailyDwcPercent >= 90) status = "bon";
+        else status = "moyen";
+      }
+
+      return {
+        day: dayNames[dayIndex],
+        date: stat.date,
+        dwcPercent: dailyDwcPercent,
+        iadcPercent: dailyIadcPercent,
+        deliveries: dwcTotal > 0 ? dwcTotal : null,
+        errors: dwcTotal > 0 ? stat.dwcMisses + stat.failedAttempts : null,
+        status,
+      };
+    });
+
+    // Sort by date
+    dailyPerformance.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+    // Format error breakdown
+    const dwcBreakdown = currentWeekStats?.dwcBreakdown || {
+      contactMiss: 0,
+      photoDefect: 0,
+      noPhoto: 0,
+      otpMiss: 0,
+      other: 0,
+    };
+    const iadcBreakdown = currentWeekStats?.iadcBreakdown || {
+      mailbox: 0,
+      unattended: 0,
+      safePlace: 0,
+      other: 0,
+    };
+
+    const errorBreakdown = {
+      dwcMisses: {
+        total: dwcBreakdown.contactMiss + dwcBreakdown.photoDefect + dwcBreakdown.noPhoto + dwcBreakdown.otpMiss + dwcBreakdown.other,
+        categories: [
+          { name: "Contact Miss", count: dwcBreakdown.contactMiss, subcategories: [] },
+          { name: "Photo Defect", count: dwcBreakdown.photoDefect, subcategories: [] },
+          { name: "No Photo", count: dwcBreakdown.noPhoto, subcategories: [] },
+          { name: "OTP Miss", count: dwcBreakdown.otpMiss, subcategories: [] },
+          { name: "Other", count: dwcBreakdown.other, subcategories: [] },
+        ].filter((c) => c.count > 0),
+      },
+      iadcNonCompliant: {
+        total: iadcBreakdown.mailbox + iadcBreakdown.unattended + iadcBreakdown.safePlace + iadcBreakdown.other,
+        categories: [
+          { name: "Mailbox", count: iadcBreakdown.mailbox },
+          { name: "Unattended", count: iadcBreakdown.unattended },
+          { name: "Safe Place", count: iadcBreakdown.safePlace },
+          { name: "Other", count: iadcBreakdown.other },
+        ].filter((c) => c.count > 0),
+      },
+    };
+
+    // Format weekly history
+    const formattedWeeklyHistory = weeklyHistory.map((stat) => {
+      const dwcTotal = stat.dwcCompliant + stat.dwcMisses + stat.failedAttempts;
+      const dwc = dwcTotal > 0 ? Math.round((stat.dwcCompliant / dwcTotal) * 1000) / 10 : 0;
+      const iadcTotal = stat.iadcCompliant + stat.iadcNonCompliant;
+      const iadc = iadcTotal > 0 ? Math.round((stat.iadcCompliant / iadcTotal) * 1000) / 10 : 0;
+
+      return {
+        week: `S${stat.week}`,
+        weekNumber: stat.week,
+        dwc,
+        iadc,
+      };
+    }).reverse(); // Chronological order
+
+    // Calculate streak (consecutive weeks >= 96%)
+    let streak = 0;
+    for (const week of weeklyHistory) {
+      const total = week.dwcCompliant + week.dwcMisses + week.failedAttempts;
+      const pct = total > 0 ? (week.dwcCompliant / total) * 100 : 0;
+      if (pct >= 96) {
+        streak++;
+      } else {
+        break;
+      }
+    }
+
+    return {
+      id: driver._id,
+      name: driver.name,
+      amazonId: driver.amazonId,
+      dwcPercent,
+      iadcPercent,
+      daysActive: currentWeekStats?.daysWorked || 0,
+      tier,
+      trend,
+      deliveries: totalDeliveries,
+      errors: totalErrors,
+      activeSince: driver.firstSeenWeek || "Inconnu",
+      streak,
+      rank,
+      totalDrivers: allStationDriverStats.length,
+      dailyPerformance,
+      errorBreakdown,
+      coachingHistory: [], // Will be filled by separate query
+      weeklyHistory: formattedWeeklyHistory,
+    };
+  },
+});
