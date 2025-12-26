@@ -15,10 +15,10 @@ Ce dossier contient les tâches structurées pour le développement de DSPilot.
 ### Phase 2: Polish UX
 | # | Task | Description | Status |
 |---|------|-------------|--------|
-| 05 | `05-loading-skeletons.md` | Améliorer les loading states | À faire |
-| 06 | `06-responsive-mobile.md` | Optimiser responsive mobile | À faire |
-| 07 | `07-error-handling.md` | Gestion des erreurs globale | À faire |
-| 08 | `08-animations.md` | Ajouter animations subtiles | À faire |
+| 05 | `05-loading-skeletons.md` | Améliorer les loading states | ✅ Terminé |
+| 06 | `06-responsive-mobile.md` | Optimiser responsive mobile | ✅ Terminé |
+| 07 | `07-error-handling.md` | Gestion des erreurs globale | ✅ Terminé |
+| 08 | `08-animations.md` | Ajouter animations subtiles | ✅ Terminé |
 
 ### Phase 3: Features Additionnelles
 | # | Task | Description | Status |
