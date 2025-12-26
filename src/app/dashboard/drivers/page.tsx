@@ -197,6 +197,7 @@ export default function DriversPage() {
           stats={tierStats}
           selectedTier={selectedTier}
           onTierChange={setSelectedTier}
+          granularity={granularity}
         />
       </div>
     </main>

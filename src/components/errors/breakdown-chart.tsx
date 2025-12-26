@@ -2,10 +2,12 @@
 
 import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Tooltip as ShadcnTooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { formatNumber } from "@/lib/calculations"
-import { LayoutGrid, BarChart3, PieChart } from "lucide-react"
+import { getErrorDescription, hasErrorDescription } from "@/lib/utils/error-descriptions"
+import { LayoutGrid, BarChart3, PieChart, HelpCircle } from "lucide-react"
 import { PieChart as RechartsPie, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts"
 import type { ErrorCategoryData } from "@/lib/types"
 
@@ -34,14 +36,25 @@ export function BreakdownChart({ category, onSubcategoryClick }: BreakdownChartP
   const colors = COLORS[category.id]
 
   return (
-    <Card className="border-border bg-card">
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <div>
-          <CardTitle className="text-base font-medium">
-            Répartition des erreurs {category.id === "dwc" ? "DWC" : category.id === "iadc" ? "IADC" : "False Scans"}
-          </CardTitle>
-          <p className="text-sm text-muted-foreground">{formatNumber(category.total)} erreurs • Semaine 50</p>
-        </div>
+    <TooltipProvider delayDuration={300}>
+      <Card className="border-border bg-card">
+        <CardHeader className="flex flex-row items-center justify-between pb-2">
+          <div>
+            <CardTitle className="text-base font-medium flex items-center gap-2">
+              Répartition des erreurs {category.id === "dwc" ? "DWC" : category.id === "iadc" ? "IADC" : "False Scans"}
+              <ShadcnTooltip>
+                <TooltipTrigger asChild>
+                  <HelpCircle className="h-4 w-4 text-muted-foreground/60 cursor-help" />
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-xs">
+                  <p className="text-xs">
+                    {getErrorDescription(category.id === "dwc" ? "DWC" : category.id === "iadc" ? "IADC" : "False Scans")}
+                  </p>
+                </TooltipContent>
+              </ShadcnTooltip>
+            </CardTitle>
+            <p className="text-sm text-muted-foreground">{formatNumber(category.total)} erreurs • Semaine 50</p>
+          </div>
         <div className="flex gap-1 rounded-lg border border-border p-1">
           <Button
             variant="ghost"
@@ -103,7 +116,19 @@ export function BreakdownChart({ category, onSubcategoryClick }: BreakdownChartP
             {data.map((item, index) => (
               <button key={item.name} onClick={() => onSubcategoryClick(item.name)} className="w-full text-left">
                 <div className="mb-1 flex items-center justify-between">
-                  <span className="text-sm font-medium">{item.name}</span>
+                  <span className="text-sm font-medium flex items-center gap-1.5">
+                    {item.name}
+                    {hasErrorDescription(item.name) && (
+                      <ShadcnTooltip>
+                        <TooltipTrigger asChild onClick={(e) => e.stopPropagation()}>
+                          <HelpCircle className="h-3.5 w-3.5 text-muted-foreground/60 cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="max-w-xs">
+                          <p className="text-xs">{getErrorDescription(item.name)}</p>
+                        </TooltipContent>
+                      </ShadcnTooltip>
+                    )}
+                  </span>
                   <span className="text-sm text-muted-foreground">{formatNumber(item.value)}</span>
                 </div>
                 <div className="h-6 w-full overflow-hidden rounded bg-muted">
@@ -164,7 +189,19 @@ export function BreakdownChart({ category, onSubcategoryClick }: BreakdownChartP
                   className="flex w-full items-center gap-3 rounded-lg p-2 text-left transition-colors hover:bg-muted"
                 >
                   <div className="h-3 w-3 rounded-full" style={{ backgroundColor: colors[index] }} />
-                  <span className="flex-1 text-sm">{item.name}</span>
+                  <span className="flex-1 text-sm flex items-center gap-1.5">
+                    {item.name}
+                    {hasErrorDescription(item.name) && (
+                      <ShadcnTooltip>
+                        <TooltipTrigger asChild onClick={(e) => e.stopPropagation()}>
+                          <HelpCircle className="h-3.5 w-3.5 text-muted-foreground/60 cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="max-w-xs">
+                          <p className="text-xs">{getErrorDescription(item.name)}</p>
+                        </TooltipContent>
+                      </ShadcnTooltip>
+                    )}
+                  </span>
                   <span className="text-sm font-medium">{formatNumber(item.value)}</span>
                   <span className="text-sm text-muted-foreground">{item.percentage}%</span>
                 </button>
@@ -174,5 +211,6 @@ export function BreakdownChart({ category, onSubcategoryClick }: BreakdownChartP
         )}
       </CardContent>
     </Card>
+    </TooltipProvider>
   )
 }

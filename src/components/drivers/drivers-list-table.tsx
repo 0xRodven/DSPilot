@@ -65,12 +65,13 @@ interface DriversListTableProps {
   stats: TierStats
   selectedTier: string
   onTierChange: (tier: string) => void
+  granularity?: "week" | "day"
 }
 
-export function DriversListTable({ drivers, stats, selectedTier, onTierChange }: DriversListTableProps) {
+export function DriversListTable({ drivers, stats, selectedTier, onTierChange, granularity = "week" }: DriversListTableProps) {
   const router = useRouter()
   const [search, setSearch] = useState("")
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("active")
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all")
   const [sortField, setSortField] = useState<SortField>("dwcPercent")
   const [sortOrder, setSortOrder] = useState<SortOrder>("desc")
   const [page, setPage] = useState(1)
@@ -86,12 +87,15 @@ export function DriversListTable({ drivers, stats, selectedTier, onTierChange }:
       )
     }
 
-    // Status filter
-    if (statusFilter === "active") {
-      result = result.filter((d) => d.daysActive >= 5)
-    } else if (statusFilter === "inactive") {
-      result = result.filter((d) => d.daysActive < 5)
+    // Status filter (only applies to week granularity)
+    if (granularity === "week") {
+      if (statusFilter === "active") {
+        result = result.filter((d) => d.daysActive >= 5)
+      } else if (statusFilter === "inactive") {
+        result = result.filter((d) => d.daysActive < 5)
+      }
     }
+    // For day granularity, status filter is not applicable
 
     // Tier filter
     if (selectedTier !== "all") {
@@ -126,7 +130,7 @@ export function DriversListTable({ drivers, stats, selectedTier, onTierChange }:
     })
 
     return result
-  }, [drivers, search, statusFilter, selectedTier, sortField, sortOrder])
+  }, [drivers, search, statusFilter, selectedTier, sortField, sortOrder, granularity])
 
   const totalPages = Math.ceil(filteredDrivers.length / ITEMS_PER_PAGE)
   const paginatedDrivers = filteredDrivers.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE)
@@ -184,22 +188,24 @@ export function DriversListTable({ drivers, stats, selectedTier, onTierChange }:
             </div>
 
             <div className="flex flex-wrap items-center gap-3">
-              <Select
-                value={statusFilter}
-                onValueChange={(value: StatusFilter) => {
-                  setStatusFilter(value)
-                  setPage(1)
-                }}
-              >
-                <SelectTrigger className="w-[120px]">
-                  <SelectValue placeholder="Statut" />
-                </SelectTrigger>
-                <SelectContent className="bg-popover text-popover-foreground">
-                  <SelectItem value="all">Tous</SelectItem>
-                  <SelectItem value="active">Actifs</SelectItem>
-                  <SelectItem value="inactive">Inactifs</SelectItem>
-                </SelectContent>
-              </Select>
+              {granularity === "week" && (
+                <Select
+                  value={statusFilter}
+                  onValueChange={(value: StatusFilter) => {
+                    setStatusFilter(value)
+                    setPage(1)
+                  }}
+                >
+                  <SelectTrigger className="w-[120px]">
+                    <SelectValue placeholder="Statut" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover text-popover-foreground">
+                    <SelectItem value="all">Tous</SelectItem>
+                    <SelectItem value="active">Actifs</SelectItem>
+                    <SelectItem value="inactive">Inactifs</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
 
               <Select
                 value={`${sortField}-${sortOrder}`}
@@ -315,15 +321,17 @@ export function DriversListTable({ drivers, stats, selectedTier, onTierChange }:
                     <SortIcon field="iadcPercent" />
                   </div>
                 </TableHead>
-                <TableHead
-                  className="cursor-pointer text-center text-muted-foreground hover:text-foreground"
-                  onClick={() => handleSort("daysActive")}
-                >
-                  <div className="flex items-center justify-center">
-                    Jours
-                    <SortIcon field="daysActive" />
-                  </div>
-                </TableHead>
+                {granularity === "week" && (
+                  <TableHead
+                    className="cursor-pointer text-center text-muted-foreground hover:text-foreground"
+                    onClick={() => handleSort("daysActive")}
+                  >
+                    <div className="flex items-center justify-center">
+                      Jours
+                      <SortIcon field="daysActive" />
+                    </div>
+                  </TableHead>
+                )}
                 <TableHead
                   className="cursor-pointer text-center text-muted-foreground hover:text-foreground"
                   onClick={() => handleSort("errors")}
@@ -386,7 +394,9 @@ export function DriversListTable({ drivers, stats, selectedTier, onTierChange }:
                       </span>
                     </TableCell>
                     <TableCell className="text-right font-medium text-card-foreground">{driver.iadcPercent}%</TableCell>
-                    <TableCell className="text-center text-card-foreground">{driver.daysActive}/7</TableCell>
+                    {granularity === "week" && (
+                      <TableCell className="text-center text-card-foreground">{driver.daysActive}/7</TableCell>
+                    )}
                     <TableCell className="text-center text-card-foreground">{errorCount}</TableCell>
                     <TableCell className="text-center">
                       <span

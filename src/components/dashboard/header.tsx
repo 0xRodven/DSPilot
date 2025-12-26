@@ -14,7 +14,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Bell, ChevronLeft, ChevronRight, Calendar, User, LogOut, Settings, Moon, Sun } from "lucide-react"
+import { Bell, ChevronLeft, ChevronRight, User, LogOut, Settings, Moon, Sun } from "lucide-react"
+import { DatePresetPicker } from "./date-preset-picker"
 import { format, startOfWeek, endOfWeek, getWeek } from "date-fns"
 import { fr } from "date-fns/locale"
 import { useTheme } from "next-themes"
@@ -23,7 +24,7 @@ import { Separator } from "@/components/ui/separator"
 import { Skeleton } from "@/components/ui/skeleton"
 
 export function Header() {
-  const { selectedStation, setSelectedStation, granularity, setGranularity, selectedDate, navigatePeriod } =
+  const { selectedStation, setSelectedStation, granularity, setGranularity, selectedDate, setSelectedDate, navigatePeriod } =
     useDashboardStore()
 
   const { theme, setTheme } = useTheme()
@@ -134,9 +135,11 @@ export function Header() {
             </Button>
 
             <div className="ml-1 md:ml-2 border-l border-border pl-1 md:pl-2 hidden sm:block">
-              <Button variant="ghost" size="icon" className="h-7 w-7">
-                <Calendar className="h-4 w-4" />
-              </Button>
+              <DatePresetPicker
+                selectedDate={selectedDate}
+                onDateChange={setSelectedDate}
+                granularity={granularity}
+              />
             </div>
           </div>
 
