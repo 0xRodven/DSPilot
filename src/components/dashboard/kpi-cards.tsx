@@ -1,0 +1,170 @@
+"use client"
+
+import { Card, CardContent } from "@/components/ui/card"
+import { getTier, getTierBgColor } from "@/lib/utils/tier"
+import { TrendingUp, TrendingDown, Users, AlertTriangle } from "lucide-react"
+import { cn } from "@/lib/utils"
+import { useQuery } from "convex/react"
+import { api } from "../../../convex/_generated/api"
+import { useDashboardStore } from "@/lib/store"
+import { getWeek } from "date-fns"
+
+const tierLabels = {
+  fantastic: "Fantastic",
+  great: "Great",
+  fair: "Fair",
+  poor: "Poor",
+}
+
+export function KPICards() {
+  const { selectedStation, selectedDate } = useDashboardStore()
+  const week = getWeek(selectedDate, { weekStartsOn: 1 })
+  const year = selectedDate.getFullYear()
+
+  // Get station from Convex
+  const station = useQuery(api.stations.getStationByCode, { code: selectedStation.code })
+
+  // Get KPIs from Convex
+  const kpis = useQuery(
+    api.stats.getDashboardKPIs,
+    station ? { stationId: station._id, year, week } : "skip"
+  )
+
+  // Loading state
+  if (!station || kpis === undefined) {
+    return (
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        {[...Array(4)].map((_, i) => (
+          <Card key={i} className="border-border bg-card animate-pulse">
+            <CardContent className="p-6">
+              <div className="h-4 bg-muted rounded w-16 mb-4" />
+              <div className="h-8 bg-muted rounded w-24 mb-3" />
+              <div className="h-6 bg-muted rounded w-20" />
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    )
+  }
+
+  // No data state
+  if (!kpis) {
+    return (
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card className="border-border bg-card col-span-full">
+          <CardContent className="p-6 text-center">
+            <p className="text-muted-foreground">Aucune donnée pour la semaine {week}</p>
+            <p className="text-sm text-muted-foreground mt-1">Importez un rapport pour voir les KPIs</p>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  const dwcTier = getTier(kpis.avgDwc)
+  const iadcTier = getTier(kpis.avgIadc)
+
+  return (
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      {/* DWC Card */}
+      <Card className="border-border bg-card">
+        <CardContent className="p-6">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium text-muted-foreground">DWC</span>
+          </div>
+          <div className="mt-2 text-3xl font-bold text-card-foreground">{kpis.avgDwc}%</div>
+          <div className="mt-3">
+            <span
+              className={cn(
+                "inline-flex items-center rounded-md px-2 py-1 text-xs font-medium",
+                getTierBgColor(dwcTier),
+              )}
+            >
+              {tierLabels[dwcTier]}
+            </span>
+          </div>
+          <div className="mt-3 flex items-center gap-1 text-sm">
+            {kpis.dwcTrend >= 0 ? (
+              <>
+                <TrendingUp className="h-4 w-4 text-emerald-400" />
+                <span className="text-emerald-400">+{kpis.dwcTrend}</span>
+              </>
+            ) : (
+              <>
+                <TrendingDown className="h-4 w-4 text-red-400" />
+                <span className="text-red-400">{kpis.dwcTrend}</span>
+              </>
+            )}
+            <span className="text-muted-foreground">vs S{kpis.prevWeek}</span>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* IADC Card */}
+      <Card className="border-border bg-card">
+        <CardContent className="p-6">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium text-muted-foreground">IADC</span>
+          </div>
+          <div className="mt-2 text-3xl font-bold text-card-foreground">{kpis.avgIadc}%</div>
+          <div className="mt-3">
+            <span
+              className={cn(
+                "inline-flex items-center rounded-md px-2 py-1 text-xs font-medium",
+                getTierBgColor(iadcTier),
+              )}
+            >
+              {tierLabels[iadcTier]}
+            </span>
+          </div>
+          <div className="mt-3 flex items-center gap-1 text-sm">
+            {kpis.iadcTrend >= 0 ? (
+              <>
+                <TrendingUp className="h-4 w-4 text-emerald-400" />
+                <span className="text-emerald-400">+{kpis.iadcTrend}</span>
+              </>
+            ) : (
+              <>
+                <TrendingDown className="h-4 w-4 text-red-400" />
+                <span className="text-red-400">{kpis.iadcTrend}</span>
+              </>
+            )}
+            <span className="text-muted-foreground">vs S{kpis.prevWeek}</span>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Drivers Card */}
+      <Card className="border-border bg-card">
+        <CardContent className="p-6">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium text-muted-foreground">Drivers</span>
+            <Users className="h-4 w-4 text-muted-foreground" />
+          </div>
+          <div className="mt-2 text-3xl font-bold text-card-foreground">
+            <span>{kpis.activeDrivers}</span>
+            <span className="text-lg text-muted-foreground">/{kpis.totalDrivers}</span>
+          </div>
+          <div className="mt-3 text-sm text-muted-foreground">actifs cette semaine</div>
+        </CardContent>
+      </Card>
+
+      {/* Alerts Card */}
+      <Card className="border-border bg-card">
+        <CardContent className="p-6">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium text-muted-foreground">Alertes</span>
+            <AlertTriangle className="h-4 w-4 text-amber-400" />
+          </div>
+          <div className="mt-2 text-3xl font-bold text-card-foreground">{kpis.alerts}</div>
+          <div className="mt-3">
+            <span className="inline-flex items-center rounded-md bg-amber-500/20 px-2 py-1 text-xs font-medium text-amber-400">
+              À traiter
+            </span>
+          </div>
+          <button className="mt-3 text-sm text-primary hover:underline">Voir →</button>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}

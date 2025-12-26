@@ -1,0 +1,248 @@
+// Core types for DSPilot
+
+import type { Tier } from "./utils/tier"
+import type { CoachingStatus, CoachingActionType, ImportStatus } from "./utils/status"
+
+// Driver types
+export interface Driver {
+  id: string
+  name: string
+  amazonId: string
+  dwcPercent: number
+  iadcPercent: number
+  daysActive: number
+  tier: Tier
+  trend: number
+}
+
+export interface DriverDetail extends Driver {
+  deliveries: number
+  errors: number
+  activeSince: string
+  streak: number
+  rank: number
+  totalDrivers: number
+  dailyPerformance: DailyPerformance[]
+  errorBreakdown: ErrorBreakdown
+  coachingHistory: CoachingAction[]
+  weeklyHistory: WeeklyData[]
+}
+
+export interface DailyPerformance {
+  day: string
+  date: string
+  dwcPercent: number | null
+  iadcPercent: number | null
+  deliveries: number | null
+  errors: number | null
+  status: "excellent" | "tres-bon" | "bon" | "moyen" | "non-travaille"
+}
+
+// Error types
+export interface ErrorType {
+  id: string
+  name: string
+  category: "dwc" | "iadc"
+  count: number
+  percentage: number
+}
+
+export interface ErrorBreakdown {
+  dwcMisses: {
+    total: number
+    categories: { name: string; count: number; subcategories: { name: string; count: number }[] }[]
+  }
+  iadcNonCompliant: {
+    total: number
+    categories: { name: string; count: number }[]
+  }
+}
+
+export type ErrorCategory = "dwc" | "iadc" | "false-scans"
+
+export interface ErrorSubcategory {
+  name: string
+  count: number
+  percentage: number
+  trend: number
+  locations?: ErrorLocation[]
+}
+
+export interface ErrorLocation {
+  name: string
+  count: number
+  percentage: number
+  trend: number
+}
+
+export interface ErrorCategoryData {
+  id: ErrorCategory
+  name: string
+  total: number
+  trend: number
+  trendPercent: number
+  subcategories: ErrorSubcategory[]
+}
+
+export interface DriverWithErrors {
+  id: string
+  name: string
+  totalErrors: number
+  percentage: number
+  tier: Tier
+  dwcPercent: number
+  mainError: string
+  mainErrorCount: number
+}
+
+export interface ErrorTrendData {
+  week: string
+  weekNumber: number
+  total: number
+  contactMiss: number
+  photoDefect: number
+  noPhoto: number
+  otpMiss: number
+  failedAttempts: number
+}
+
+// Weekly data
+export interface WeeklyData {
+  week: string
+  weekNumber: number
+  dwc: number
+  iadc: number
+}
+
+// Coaching types
+export interface CoachingAction {
+  id: string
+  week: string
+  date: string
+  type: "discussion" | "formation" | "suivi"
+  subject: string
+  result: "ameliore" | "complete" | "en-cours"
+  impactPercent?: number
+}
+
+export interface CoachingActionFull {
+  id: string
+  driverId: string
+  driverName: string
+  driverAmazonId: string
+  driverTier: Tier
+  driverDwc: number
+  actionType: CoachingActionType
+  status: CoachingStatus
+  reason: string
+  targetCategory?: string
+  targetSubcategory?: string
+  dwcAtAction: number
+  dwcAfterAction?: number
+  notes?: string
+  evaluationNotes?: string
+  createdAt: string
+  evaluatedAt?: string
+  followUpDate: string
+  escalationDate?: string
+  escalationNote?: string
+  waitingDays: number
+}
+
+export interface CoachingSuggestion {
+  id: string
+  driverId: string
+  driverName: string
+  driverTier: Tier
+  driverDwc: number
+  priority: "high" | "negative_trend" | "relapse" | "new_poor"
+  reason: string
+  mainError: string
+  mainErrorCount: number
+  weeksUnderThreshold?: number
+  trendPercent?: number
+  lastCoachingWeek?: string
+  hasActiveAction: boolean
+}
+
+export interface CoachingEffectiveness {
+  period: "3M" | "6M" | "1Y"
+  successRate: number
+  successCount: number
+  totalEvaluated: number
+  avgImprovement: number
+  avgDaysToEffect: number
+  byType: {
+    type: CoachingActionType
+    successRate: number
+    successCount: number
+    total: number
+    avgImprovement: number
+  }[]
+}
+
+// Import types
+export interface ImportRecord {
+  id: string
+  filename: string
+  stationId: string
+  stationCode: string
+  year: number
+  week: number
+  weekDates: string
+  status: ImportStatus
+  driversImported: number
+  dailyRecordsCount: number | null
+  weeklyRecordsCount: number
+  dwcScore: number
+  iadcScore: number
+  tierDistribution: {
+    fantastic: number
+    great: number
+    fair: number
+    poor: number
+  }
+  importedAt: string
+  importedBy: string
+  errorMessage?: string
+  warnings?: string[]
+  newDriversCount?: number
+}
+
+export interface ParsedImportData {
+  filename: string
+  stationCode: string
+  stationName: string
+  year: number
+  week: number
+  weekDates: string
+  driversCount: number
+  dailyRecordsCount: number
+  weeklyRecordsCount: number
+  trendsData: number
+  dwcScore: number
+  iadcScore: number
+  tierDistribution: {
+    fantastic: number
+    great: number
+    fair: number
+    poor: number
+  }
+  newDrivers: number
+  existingWeek: boolean
+  drivers: {
+    id: string
+    name: string
+    amazonId: string
+    dwcPercent: number
+    iadcPercent: number
+    tier: Tier
+    isNew: boolean
+  }[]
+}
+
+export interface WeekCoverage {
+  week: number
+  year: number
+  status: "complete" | "partial" | "failed" | "missing"
+}

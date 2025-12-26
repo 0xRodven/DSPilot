@@ -1,0 +1,1122 @@
+import { v } from "convex/values";
+import { mutation, query } from "./_generated/server";
+import { Id } from "./_generated/dataModel";
+
+// Validators réutilisables
+const dwcBreakdownValidator = v.object({
+  contactMiss: v.number(),
+  photoDefect: v.number(),
+  noPhoto: v.number(),
+  otpMiss: v.number(),
+  other: v.number(),
+});
+
+const iadcBreakdownValidator = v.object({
+  mailbox: v.number(),
+  unattended: v.number(),
+  safePlace: v.number(),
+  attended: v.optional(v.number()),
+  other: v.number(),
+});
+
+const dailyStatValidator = v.object({
+  driverId: v.id("drivers"),
+  stationId: v.id("stations"),
+  date: v.string(),
+  year: v.number(),
+  week: v.number(),
+  dwcCompliant: v.number(),
+  dwcMisses: v.number(),
+  failedAttempts: v.number(),
+  iadcCompliant: v.number(),
+  iadcNonCompliant: v.number(),
+  dwcBreakdown: v.optional(dwcBreakdownValidator),
+  iadcBreakdown: v.optional(iadcBreakdownValidator),
+});
+
+const weeklyStatValidator = v.object({
+  driverId: v.id("drivers"),
+  stationId: v.id("stations"),
+  year: v.number(),
+  week: v.number(),
+  dwcCompliant: v.number(),
+  dwcMisses: v.number(),
+  failedAttempts: v.number(),
+  iadcCompliant: v.number(),
+  iadcNonCompliant: v.number(),
+  daysWorked: v.number(),
+  dwcBreakdown: v.optional(dwcBreakdownValidator),
+  iadcBreakdown: v.optional(iadcBreakdownValidator),
+});
+
+/**
+ * Bulk upsert des stats daily - idempotent
+ * Clé d'unicité: (driverId, date)
+ */
+export const bulkUpsertDailyStats = mutation({
+  args: {
+    stats: v.array(dailyStatValidator),
+  },
+  handler: async (ctx, args) => {
+    const now = Date.now();
+    let inserted = 0;
+    let updated = 0;
+
+    for (const stat of args.stats) {
+      const existing = await ctx.db
+        .query("driverDailyStats")
+        .withIndex("by_driver_date", (q) =>
+          q.eq("driverId", stat.driverId).eq("date", stat.date)
+        )
+        .first();
+
+      if (existing) {
+        // Mettre à jour
+        await ctx.db.patch(existing._id, {
+          ...stat,
+        });
+        updated++;
+      } else {
+        // Insérer
+        await ctx.db.insert("driverDailyStats", {
+          ...stat,
+          createdAt: now,
+        });
+        inserted++;
+      }
+    }
+
+    return { inserted, updated, total: args.stats.length };
+  },
+});
+
+/**
+ * Bulk upsert des stats weekly - idempotent
+ * Clé d'unicité: (driverId, year, week)
+ */
+export const bulkUpsertWeeklyStats = mutation({
+  args: {
+    stats: v.array(weeklyStatValidator),
+  },
+  handler: async (ctx, args) => {
+    const now = Date.now();
+    let inserted = 0;
+    let updated = 0;
+
+    for (const stat of args.stats) {
+      const existing = await ctx.db
+        .query("driverWeeklyStats")
+        .withIndex("by_driver_week", (q) =>
+          q.eq("driverId", stat.driverId).eq("year", stat.year).eq("week", stat.week)
+        )
+        .first();
+
+      if (existing) {
+        await ctx.db.patch(existing._id, {
+          ...stat,
+          updatedAt: now,
+        });
+        updated++;
+      } else {
+        await ctx.db.insert("driverWeeklyStats", {
+          ...stat,
+          createdAt: now,
+          updatedAt: now,
+        });
+        inserted++;
+      }
+    }
+
+    return { inserted, updated, total: args.stats.length };
+  },
+});
+
+/**
+ * Calcule et upsert les stats station weekly (agrégées depuis les drivers)
+ */
+export const updateStationWeeklyStats = mutation({
+  args: {
+    stationId: v.id("stations"),
+    year: v.number(),
+    week: v.number(),
+  },
+  handler: async (ctx, args) => {
+    // Récupérer toutes les stats weekly des drivers pour cette semaine
+    const driverStats = await ctx.db
+      .query("driverWeeklyStats")
+      .withIndex("by_station_week", (q) =>
+        q.eq("stationId", args.stationId).eq("year", args.year).eq("week", args.week)
+      )
+      .collect();
+
+    if (driverStats.length === 0) {
+      return null;
+    }
+
+    // Agréger les volumes
+    let dwcCompliant = 0;
+    let dwcMisses = 0;
+    let failedAttempts = 0;
+    let iadcCompliant = 0;
+    let iadcNonCompliant = 0;
+
+    const dwcBreakdown = {
+      contactMiss: 0,
+      photoDefect: 0,
+      noPhoto: 0,
+      otpMiss: 0,
+      other: 0,
+    };
+
+    const iadcBreakdown = {
+      mailbox: 0,
+      unattended: 0,
+      safePlace: 0,
+      other: 0,
+    };
+
+    // Calculer les tiers distribution
+    const tiers = {
+      fantastic: 0,
+      great: 0,
+      fair: 0,
+      poor: 0,
+    };
+
+    for (const stat of driverStats) {
+      dwcCompliant += stat.dwcCompliant;
+      dwcMisses += stat.dwcMisses;
+      failedAttempts += stat.failedAttempts;
+      iadcCompliant += stat.iadcCompliant;
+      iadcNonCompliant += stat.iadcNonCompliant;
+
+      // Agréger breakdowns
+      if (stat.dwcBreakdown) {
+        dwcBreakdown.contactMiss += stat.dwcBreakdown.contactMiss;
+        dwcBreakdown.photoDefect += stat.dwcBreakdown.photoDefect;
+        dwcBreakdown.noPhoto += stat.dwcBreakdown.noPhoto;
+        dwcBreakdown.otpMiss += stat.dwcBreakdown.otpMiss;
+        dwcBreakdown.other += stat.dwcBreakdown.other;
+      }
+
+      if (stat.iadcBreakdown) {
+        iadcBreakdown.mailbox += stat.iadcBreakdown.mailbox;
+        iadcBreakdown.unattended += stat.iadcBreakdown.unattended;
+        iadcBreakdown.safePlace += stat.iadcBreakdown.safePlace;
+        iadcBreakdown.other += stat.iadcBreakdown.other;
+      }
+
+      // Calculer le tier du driver
+      const total = stat.dwcCompliant + stat.dwcMisses + stat.failedAttempts;
+      if (total > 0) {
+        const dwcPercent = (stat.dwcCompliant / total) * 100;
+        if (dwcPercent >= 98.5) tiers.fantastic++;
+        else if (dwcPercent >= 96) tiers.great++;
+        else if (dwcPercent >= 90) tiers.fair++;
+        else tiers.poor++;
+      }
+    }
+
+    const now = Date.now();
+
+    // Upsert station stats
+    const existing = await ctx.db
+      .query("stationWeeklyStats")
+      .withIndex("by_station_week", (q) =>
+        q.eq("stationId", args.stationId).eq("year", args.year).eq("week", args.week)
+      )
+      .first();
+
+    const stationStats = {
+      stationId: args.stationId,
+      year: args.year,
+      week: args.week,
+      dwcCompliant,
+      dwcMisses,
+      failedAttempts,
+      iadcCompliant,
+      iadcNonCompliant,
+      totalDrivers: driverStats.length,
+      activeDrivers: driverStats.length,
+      tierDistribution: tiers,
+      dwcBreakdown,
+      iadcBreakdown,
+      updatedAt: now,
+    };
+
+    if (existing) {
+      await ctx.db.patch(existing._id, stationStats);
+      return existing._id;
+    } else {
+      return await ctx.db.insert("stationWeeklyStats", {
+        ...stationStats,
+        createdAt: now,
+      });
+    }
+  },
+});
+
+/**
+ * Récupère les stats daily d'un driver
+ */
+export const getDriverDailyStats = query({
+  args: {
+    driverId: v.id("drivers"),
+    year: v.optional(v.number()),
+    week: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    if (args.year !== undefined && args.week !== undefined) {
+      return await ctx.db
+        .query("driverDailyStats")
+        .withIndex("by_driver_week", (q) =>
+          q.eq("driverId", args.driverId).eq("year", args.year!).eq("week", args.week!)
+        )
+        .collect();
+    }
+
+    return await ctx.db
+      .query("driverDailyStats")
+      .withIndex("by_driver_date", (q) => q.eq("driverId", args.driverId))
+      .order("desc")
+      .take(30); // Derniers 30 jours par défaut
+  },
+});
+
+/**
+ * Récupère les stats weekly d'un driver
+ */
+export const getDriverWeeklyStats = query({
+  args: {
+    driverId: v.id("drivers"),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("driverWeeklyStats")
+      .withIndex("by_driver", (q) => q.eq("driverId", args.driverId))
+      .order("desc")
+      .take(args.limit || 12); // Dernières 12 semaines par défaut
+  },
+});
+
+/**
+ * Récupère les stats station weekly
+ */
+export const getStationWeeklyStats = query({
+  args: {
+    stationId: v.id("stations"),
+    year: v.optional(v.number()),
+    week: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    if (args.year !== undefined && args.week !== undefined) {
+      return await ctx.db
+        .query("stationWeeklyStats")
+        .withIndex("by_station_week", (q) =>
+          q.eq("stationId", args.stationId).eq("year", args.year!).eq("week", args.week!)
+        )
+        .first();
+    }
+
+    return await ctx.db
+      .query("stationWeeklyStats")
+      .withIndex("by_station", (q) => q.eq("stationId", args.stationId))
+      .order("desc")
+      .take(12);
+  },
+});
+
+/**
+ * Récupère toutes les stats weekly des drivers d'une station pour une semaine
+ */
+export const getStationDriversWeeklyStats = query({
+  args: {
+    stationId: v.id("stations"),
+    year: v.number(),
+    week: v.number(),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("driverWeeklyStats")
+      .withIndex("by_station_week", (q) =>
+        q.eq("stationId", args.stationId).eq("year", args.year).eq("week", args.week)
+      )
+      .collect();
+  },
+});
+
+/**
+ * Récupère les KPIs du dashboard pour une station/semaine
+ */
+export const getDashboardKPIs = query({
+  args: {
+    stationId: v.id("stations"),
+    year: v.number(),
+    week: v.number(),
+  },
+  handler: async (ctx, args) => {
+    // Current week stats
+    const currentStats = await ctx.db
+      .query("stationWeeklyStats")
+      .withIndex("by_station_week", (q) =>
+        q.eq("stationId", args.stationId).eq("year", args.year).eq("week", args.week)
+      )
+      .first();
+
+    // Previous week stats for trend
+    const prevWeek = args.week === 1 ? 52 : args.week - 1;
+    const prevYear = args.week === 1 ? args.year - 1 : args.year;
+    const prevStats = await ctx.db
+      .query("stationWeeklyStats")
+      .withIndex("by_station_week", (q) =>
+        q.eq("stationId", args.stationId).eq("year", prevYear).eq("week", prevWeek)
+      )
+      .first();
+
+    if (!currentStats) {
+      return null;
+    }
+
+    // Calculate DWC %
+    const dwcTotal = currentStats.dwcCompliant + currentStats.dwcMisses + currentStats.failedAttempts;
+    const dwcPercent = dwcTotal > 0 ? (currentStats.dwcCompliant / dwcTotal) * 100 : 0;
+
+    // Calculate IADC %
+    const iadcTotal = currentStats.iadcCompliant + currentStats.iadcNonCompliant;
+    const iadcPercent = iadcTotal > 0 ? (currentStats.iadcCompliant / iadcTotal) * 100 : 0;
+
+    // Calculate trends
+    let dwcTrend = 0;
+    let iadcTrend = 0;
+
+    if (prevStats) {
+      const prevDwcTotal = prevStats.dwcCompliant + prevStats.dwcMisses + prevStats.failedAttempts;
+      const prevDwcPercent = prevDwcTotal > 0 ? (prevStats.dwcCompliant / prevDwcTotal) * 100 : 0;
+      dwcTrend = Math.round((dwcPercent - prevDwcPercent) * 10) / 10;
+
+      const prevIadcTotal = prevStats.iadcCompliant + prevStats.iadcNonCompliant;
+      const prevIadcPercent = prevIadcTotal > 0 ? (prevStats.iadcCompliant / prevIadcTotal) * 100 : 0;
+      iadcTrend = Math.round((iadcPercent - prevIadcPercent) * 10) / 10;
+    }
+
+    // Count alerts (drivers under 90% DWC)
+    const driverStats = await ctx.db
+      .query("driverWeeklyStats")
+      .withIndex("by_station_week", (q) =>
+        q.eq("stationId", args.stationId).eq("year", args.year).eq("week", args.week)
+      )
+      .collect();
+
+    let alerts = 0;
+    for (const stat of driverStats) {
+      const total = stat.dwcCompliant + stat.dwcMisses + stat.failedAttempts;
+      if (total > 0) {
+        const driverDwc = (stat.dwcCompliant / total) * 100;
+        if (driverDwc < 90) alerts++;
+      }
+    }
+
+    return {
+      avgDwc: Math.round(dwcPercent * 10) / 10,
+      avgIadc: Math.round(iadcPercent * 10) / 10,
+      dwcTrend,
+      iadcTrend,
+      activeDrivers: currentStats.activeDrivers,
+      totalDrivers: currentStats.totalDrivers,
+      alerts,
+      tierDistribution: currentStats.tierDistribution,
+      prevWeek,
+    };
+  },
+});
+
+/**
+ * Récupère les drivers avec leurs stats pour le tableau dashboard
+ */
+export const getDashboardDrivers = query({
+  args: {
+    stationId: v.id("stations"),
+    year: v.number(),
+    week: v.number(),
+  },
+  handler: async (ctx, args) => {
+    // Get all weekly stats for this week
+    const weeklyStats = await ctx.db
+      .query("driverWeeklyStats")
+      .withIndex("by_station_week", (q) =>
+        q.eq("stationId", args.stationId).eq("year", args.year).eq("week", args.week)
+      )
+      .collect();
+
+    // Get driver info for each stat
+    const driversWithStats = await Promise.all(
+      weeklyStats.map(async (stat) => {
+        const driver = await ctx.db.get(stat.driverId);
+        if (!driver) return null;
+
+        const dwcTotal = stat.dwcCompliant + stat.dwcMisses + stat.failedAttempts;
+        const dwcPercent = dwcTotal > 0 ? Math.round((stat.dwcCompliant / dwcTotal) * 1000) / 10 : 0;
+
+        const iadcTotal = stat.iadcCompliant + stat.iadcNonCompliant;
+        const iadcPercent = iadcTotal > 0 ? Math.round((stat.iadcCompliant / iadcTotal) * 1000) / 10 : 0;
+
+        // Determine tier
+        let tier: "fantastic" | "great" | "fair" | "poor";
+        if (dwcPercent >= 98.5) tier = "fantastic";
+        else if (dwcPercent >= 96) tier = "great";
+        else if (dwcPercent >= 90) tier = "fair";
+        else tier = "poor";
+
+        return {
+          id: driver._id,
+          name: driver.name,
+          amazonId: driver.amazonId,
+          dwcPercent,
+          iadcPercent,
+          daysActive: stat.daysWorked,
+          tier,
+          trend: 0, // TODO: calculate from previous weeks
+        };
+      })
+    );
+
+    return driversWithStats.filter((d) => d !== null);
+  },
+});
+
+// ============================================
+// ERROR BREAKDOWN QUERIES
+// ============================================
+
+export const getErrorBreakdown = query({
+  args: {
+    stationId: v.id("stations"),
+    year: v.number(),
+    week: v.number(),
+  },
+  handler: async (ctx, args) => {
+    // Get station weekly stats for current week
+    const currentStats = await ctx.db
+      .query("stationWeeklyStats")
+      .withIndex("by_station_week", (q) =>
+        q.eq("stationId", args.stationId).eq("year", args.year).eq("week", args.week)
+      )
+      .first();
+
+    // Get previous week stats for trend
+    const prevWeek = args.week === 1 ? 52 : args.week - 1;
+    const prevYear = args.week === 1 ? args.year - 1 : args.year;
+    const prevStats = await ctx.db
+      .query("stationWeeklyStats")
+      .withIndex("by_station_week", (q) =>
+        q.eq("stationId", args.stationId).eq("year", prevYear).eq("week", prevWeek)
+      )
+      .first();
+
+    const dwcBreakdown = currentStats?.dwcBreakdown || {
+      contactMiss: 0,
+      photoDefect: 0,
+      noPhoto: 0,
+      otpMiss: 0,
+      other: 0,
+    };
+
+    const prevDwcBreakdown = prevStats?.dwcBreakdown || {
+      contactMiss: 0,
+      photoDefect: 0,
+      noPhoto: 0,
+      otpMiss: 0,
+      other: 0,
+    };
+
+    const iadcBreakdown = currentStats?.iadcBreakdown || {
+      mailbox: 0,
+      unattended: 0,
+      safePlace: 0,
+      other: 0,
+    };
+
+    const prevIadcBreakdown = prevStats?.iadcBreakdown || {
+      mailbox: 0,
+      unattended: 0,
+      safePlace: 0,
+      other: 0,
+    };
+
+    // Calculate DWC errors total
+    const dwcTotal = dwcBreakdown.contactMiss + dwcBreakdown.photoDefect +
+      dwcBreakdown.noPhoto + dwcBreakdown.otpMiss + dwcBreakdown.other;
+    const prevDwcTotal = prevDwcBreakdown.contactMiss + prevDwcBreakdown.photoDefect +
+      prevDwcBreakdown.noPhoto + prevDwcBreakdown.otpMiss + prevDwcBreakdown.other;
+    const dwcTrend = dwcTotal - prevDwcTotal;
+    const dwcTrendPercent = prevDwcTotal > 0
+      ? Math.round(((dwcTotal - prevDwcTotal) / prevDwcTotal) * 100)
+      : 0;
+
+    // Calculate IADC errors total
+    const iadcTotal = iadcBreakdown.mailbox + iadcBreakdown.unattended +
+      iadcBreakdown.safePlace + iadcBreakdown.other;
+    const prevIadcTotal = prevIadcBreakdown.mailbox + prevIadcBreakdown.unattended +
+      prevIadcBreakdown.safePlace + prevIadcBreakdown.other;
+    const iadcTrend = iadcTotal - prevIadcTotal;
+    const iadcTrendPercent = prevIadcTotal > 0
+      ? Math.round(((iadcTotal - prevIadcTotal) / prevIadcTotal) * 100)
+      : 0;
+
+    // Failed attempts (false scans)
+    const failedAttempts = currentStats?.failedAttempts || 0;
+    const prevFailedAttempts = prevStats?.failedAttempts || 0;
+    const faTrend = failedAttempts - prevFailedAttempts;
+    const faTrendPercent = prevFailedAttempts > 0
+      ? Math.round(((failedAttempts - prevFailedAttempts) / prevFailedAttempts) * 100)
+      : 0;
+
+    // Helper to calculate percentage
+    const pct = (val: number, total: number) =>
+      total > 0 ? Math.round((val / total) * 100) : 0;
+    const trendVal = (curr: number, prev: number) => curr - prev;
+
+    return [
+      {
+        id: "dwc" as const,
+        name: "Delivery with Customer (DWC)",
+        total: dwcTotal,
+        trend: dwcTrend,
+        trendPercent: dwcTrendPercent,
+        subcategories: [
+          {
+            name: "Contact Miss",
+            count: dwcBreakdown.contactMiss,
+            percentage: pct(dwcBreakdown.contactMiss, dwcTotal),
+            trend: trendVal(dwcBreakdown.contactMiss, prevDwcBreakdown.contactMiss),
+          },
+          {
+            name: "Photo Defect",
+            count: dwcBreakdown.photoDefect,
+            percentage: pct(dwcBreakdown.photoDefect, dwcTotal),
+            trend: trendVal(dwcBreakdown.photoDefect, prevDwcBreakdown.photoDefect),
+          },
+          {
+            name: "No Photo",
+            count: dwcBreakdown.noPhoto,
+            percentage: pct(dwcBreakdown.noPhoto, dwcTotal),
+            trend: trendVal(dwcBreakdown.noPhoto, prevDwcBreakdown.noPhoto),
+          },
+          {
+            name: "OTP Miss",
+            count: dwcBreakdown.otpMiss,
+            percentage: pct(dwcBreakdown.otpMiss, dwcTotal),
+            trend: trendVal(dwcBreakdown.otpMiss, prevDwcBreakdown.otpMiss),
+          },
+          {
+            name: "Other",
+            count: dwcBreakdown.other,
+            percentage: pct(dwcBreakdown.other, dwcTotal),
+            trend: trendVal(dwcBreakdown.other, prevDwcBreakdown.other),
+          },
+        ],
+      },
+      {
+        id: "iadc" as const,
+        name: "In Address Delivery Compliance",
+        total: iadcTotal,
+        trend: iadcTrend,
+        trendPercent: iadcTrendPercent,
+        subcategories: [
+          {
+            name: "Mailbox",
+            count: iadcBreakdown.mailbox,
+            percentage: pct(iadcBreakdown.mailbox, iadcTotal),
+            trend: trendVal(iadcBreakdown.mailbox, prevIadcBreakdown.mailbox),
+          },
+          {
+            name: "Unattended",
+            count: iadcBreakdown.unattended,
+            percentage: pct(iadcBreakdown.unattended, iadcTotal),
+            trend: trendVal(iadcBreakdown.unattended, prevIadcBreakdown.unattended),
+          },
+          {
+            name: "Safe Place",
+            count: iadcBreakdown.safePlace,
+            percentage: pct(iadcBreakdown.safePlace, iadcTotal),
+            trend: trendVal(iadcBreakdown.safePlace, prevIadcBreakdown.safePlace),
+          },
+          {
+            name: "Other",
+            count: iadcBreakdown.other,
+            percentage: pct(iadcBreakdown.other, iadcTotal),
+            trend: trendVal(iadcBreakdown.other, prevIadcBreakdown.other),
+          },
+        ],
+      },
+      {
+        id: "false-scans" as const,
+        name: "False Scans / Tentatives échouées",
+        total: failedAttempts,
+        trend: faTrend,
+        trendPercent: faTrendPercent,
+        subcategories: [
+          {
+            name: "Failed Attempts",
+            count: failedAttempts,
+            percentage: 100,
+            trend: faTrend,
+          },
+        ],
+      },
+    ];
+  },
+});
+
+export const getTopDriversErrors = query({
+  args: {
+    stationId: v.id("stations"),
+    year: v.number(),
+    week: v.number(),
+    limit: v.optional(v.number()),
+    errorTypeFilter: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const limit = args.limit || 10;
+    const filter = args.errorTypeFilter || "all";
+
+    // Get all weekly stats for this week
+    const weeklyStats = await ctx.db
+      .query("driverWeeklyStats")
+      .withIndex("by_station_week", (q) =>
+        q.eq("stationId", args.stationId).eq("year", args.year).eq("week", args.week)
+      )
+      .collect();
+
+    // Helper to get error count based on filter
+    const getFilteredErrorCount = (
+      dwcBreakdown: { contactMiss: number; photoDefect: number; noPhoto: number; otpMiss: number; other: number },
+      iadcBreakdown: { mailbox: number; unattended: number; safePlace: number; other: number },
+      failedAttempts: number
+    ): number => {
+      switch (filter) {
+        case "all":
+          return dwcBreakdown.contactMiss + dwcBreakdown.photoDefect +
+            dwcBreakdown.noPhoto + dwcBreakdown.otpMiss + dwcBreakdown.other + failedAttempts;
+        case "dwc":
+          return dwcBreakdown.contactMiss + dwcBreakdown.photoDefect +
+            dwcBreakdown.noPhoto + dwcBreakdown.otpMiss + dwcBreakdown.other;
+        case "iadc":
+          return iadcBreakdown.mailbox + iadcBreakdown.unattended +
+            iadcBreakdown.safePlace + iadcBreakdown.other;
+        case "contact-miss":
+          return dwcBreakdown.contactMiss;
+        case "photo-defect":
+          return dwcBreakdown.photoDefect;
+        case "no-photo":
+          return dwcBreakdown.noPhoto;
+        case "otp-miss":
+          return dwcBreakdown.otpMiss;
+        case "dwc-other":
+          return dwcBreakdown.other;
+        case "mailbox":
+          return iadcBreakdown.mailbox;
+        case "unattended":
+          return iadcBreakdown.unattended;
+        case "safe-place":
+          return iadcBreakdown.safePlace;
+        case "iadc-other":
+          return iadcBreakdown.other;
+        case "failed-attempts":
+          return failedAttempts;
+        default:
+          return dwcBreakdown.contactMiss + dwcBreakdown.photoDefect +
+            dwcBreakdown.noPhoto + dwcBreakdown.otpMiss + dwcBreakdown.other + failedAttempts;
+      }
+    };
+
+    // Calculate total errors across all drivers
+    let totalStationErrors = 0;
+
+    // Build driver error data
+    const driversWithErrors = await Promise.all(
+      weeklyStats.map(async (stat) => {
+        const driver = await ctx.db.get(stat.driverId);
+        if (!driver) return null;
+
+        const dwcBreakdown = stat.dwcBreakdown || {
+          contactMiss: 0,
+          photoDefect: 0,
+          noPhoto: 0,
+          otpMiss: 0,
+          other: 0,
+        };
+
+        const iadcBreakdown = stat.iadcBreakdown || {
+          mailbox: 0,
+          unattended: 0,
+          safePlace: 0,
+          other: 0,
+        };
+
+        const filteredErrors = getFilteredErrorCount(dwcBreakdown, iadcBreakdown, stat.failedAttempts);
+        totalStationErrors += filteredErrors;
+
+        // Find main error type (for display)
+        const errorTypes = [
+          { name: "Contact Miss", count: dwcBreakdown.contactMiss },
+          { name: "Photo Defect", count: dwcBreakdown.photoDefect },
+          { name: "No Photo", count: dwcBreakdown.noPhoto },
+          { name: "OTP Miss", count: dwcBreakdown.otpMiss },
+          { name: "Failed Attempts", count: stat.failedAttempts },
+          { name: "Mailbox", count: iadcBreakdown.mailbox },
+          { name: "Unattended", count: iadcBreakdown.unattended },
+          { name: "Safe Place", count: iadcBreakdown.safePlace },
+          { name: "Other", count: dwcBreakdown.other + iadcBreakdown.other },
+        ];
+        const mainError = errorTypes.reduce((max, curr) =>
+          curr.count > max.count ? curr : max
+        );
+
+        // Calculate DWC percent and tier
+        const dwcTotal = stat.dwcCompliant + stat.dwcMisses + stat.failedAttempts;
+        const dwcPercent = dwcTotal > 0
+          ? Math.round((stat.dwcCompliant / dwcTotal) * 1000) / 10
+          : 0;
+
+        let tier: "fantastic" | "great" | "fair" | "poor";
+        if (dwcPercent >= 98.5) tier = "fantastic";
+        else if (dwcPercent >= 96) tier = "great";
+        else if (dwcPercent >= 90) tier = "fair";
+        else tier = "poor";
+
+        return {
+          id: driver._id,
+          name: driver.name,
+          totalErrors: filteredErrors,
+          tier,
+          dwcPercent,
+          mainError: mainError.name,
+          mainErrorCount: mainError.count,
+        };
+      })
+    );
+
+    // Filter, sort by errors descending, and limit
+    const validDrivers = driversWithErrors
+      .filter((d): d is NonNullable<typeof d> => d !== null && d.totalErrors > 0)
+      .sort((a, b) => b.totalErrors - a.totalErrors)
+      .slice(0, limit);
+
+    // Calculate percentages after we know total
+    return validDrivers.map((d) => ({
+      ...d,
+      percentage: totalStationErrors > 0
+        ? Math.round((d.totalErrors / totalStationErrors) * 100)
+        : 0,
+    }));
+  },
+});
+
+/**
+ * Get weekly performance data for the evolution chart
+ */
+export const getPerformanceEvolution = query({
+  args: {
+    stationId: v.id("stations"),
+    weeksCount: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const weeksCount = args.weeksCount || 12;
+
+    // Get all station weekly stats
+    const allStats = await ctx.db
+      .query("stationWeeklyStats")
+      .withIndex("by_station", (q) => q.eq("stationId", args.stationId))
+      .collect();
+
+    // Sort by year and week descending
+    allStats.sort((a, b) => {
+      if (a.year !== b.year) return b.year - a.year;
+      return b.week - a.week;
+    });
+
+    // Take only the last N weeks and reverse for chronological order
+    const recentStats = allStats.slice(0, weeksCount).reverse();
+
+    return recentStats.map((stat) => {
+      // Calculate DWC %
+      const dwcTotal = stat.dwcCompliant + stat.dwcMisses + stat.failedAttempts;
+      const dwcPercent = dwcTotal > 0
+        ? Math.round((stat.dwcCompliant / dwcTotal) * 100 * 10) / 10
+        : 0;
+
+      // Calculate IADC %
+      const iadcTotal = stat.iadcCompliant + stat.iadcNonCompliant;
+      const iadcPercent = iadcTotal > 0
+        ? Math.round((stat.iadcCompliant / iadcTotal) * 100 * 10) / 10
+        : 0;
+
+      return {
+        week: `S${stat.week}`,
+        weekNumber: stat.week,
+        year: stat.year,
+        dwc: dwcPercent,
+        iadc: iadcPercent,
+        activeDrivers: stat.activeDrivers,
+      };
+    });
+  },
+});
+
+export const getErrorTrends = query({
+  args: {
+    stationId: v.id("stations"),
+    weeksCount: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const weeksCount = args.weeksCount || 8;
+
+    // Get all station weekly stats
+    const allStats = await ctx.db
+      .query("stationWeeklyStats")
+      .withIndex("by_station", (q) => q.eq("stationId", args.stationId))
+      .collect();
+
+    // Sort by year and week descending
+    allStats.sort((a, b) => {
+      if (a.year !== b.year) return b.year - a.year;
+      return b.week - a.week;
+    });
+
+    // Take only the last N weeks
+    const recentStats = allStats.slice(0, weeksCount).reverse();
+
+    return recentStats.map((stat) => {
+      const breakdown = stat.dwcBreakdown || {
+        contactMiss: 0,
+        photoDefect: 0,
+        noPhoto: 0,
+        otpMiss: 0,
+        other: 0,
+      };
+
+      const total = breakdown.contactMiss + breakdown.photoDefect +
+        breakdown.noPhoto + breakdown.otpMiss + breakdown.other + stat.failedAttempts;
+
+      return {
+        week: `S${stat.week}`,
+        weekNumber: stat.week,
+        total,
+        contactMiss: breakdown.contactMiss,
+        photoDefect: breakdown.photoDefect,
+        noPhoto: breakdown.noPhoto,
+        otpMiss: breakdown.otpMiss,
+        failedAttempts: stat.failedAttempts,
+      };
+    });
+  },
+});
+
+// ============================================
+// DAILY QUERIES (for day granularity mode)
+// ============================================
+
+/**
+ * Récupère les KPIs du dashboard pour une station/jour spécifique
+ */
+export const getDashboardKPIsDaily = query({
+  args: {
+    stationId: v.id("stations"),
+    date: v.string(), // Format: "2024-12-09"
+  },
+  handler: async (ctx, args) => {
+    // Get all daily stats for this date
+    const dailyStats = await ctx.db
+      .query("driverDailyStats")
+      .withIndex("by_station_date", (q) =>
+        q.eq("stationId", args.stationId).eq("date", args.date)
+      )
+      .collect();
+
+    if (dailyStats.length === 0) {
+      return null;
+    }
+
+    // Calculate previous date for trend
+    const currentDate = new Date(args.date);
+    currentDate.setDate(currentDate.getDate() - 1);
+    const prevDate = currentDate.toISOString().split("T")[0];
+
+    // Get previous day stats
+    const prevDailyStats = await ctx.db
+      .query("driverDailyStats")
+      .withIndex("by_station_date", (q) =>
+        q.eq("stationId", args.stationId).eq("date", prevDate)
+      )
+      .collect();
+
+    // Aggregate current day stats
+    let dwcCompliant = 0;
+    let dwcMisses = 0;
+    let failedAttempts = 0;
+    let iadcCompliant = 0;
+    let iadcNonCompliant = 0;
+    const tiers = { fantastic: 0, great: 0, fair: 0, poor: 0 };
+
+    for (const stat of dailyStats) {
+      dwcCompliant += stat.dwcCompliant;
+      dwcMisses += stat.dwcMisses;
+      failedAttempts += stat.failedAttempts;
+      iadcCompliant += stat.iadcCompliant;
+      iadcNonCompliant += stat.iadcNonCompliant;
+
+      // Calculate tier for this driver
+      const total = stat.dwcCompliant + stat.dwcMisses + stat.failedAttempts;
+      if (total > 0) {
+        const dwcPercent = (stat.dwcCompliant / total) * 100;
+        if (dwcPercent >= 98.5) tiers.fantastic++;
+        else if (dwcPercent >= 96) tiers.great++;
+        else if (dwcPercent >= 90) tiers.fair++;
+        else tiers.poor++;
+      }
+    }
+
+    // Calculate DWC %
+    const dwcTotal = dwcCompliant + dwcMisses + failedAttempts;
+    const dwcPercent = dwcTotal > 0 ? (dwcCompliant / dwcTotal) * 100 : 0;
+
+    // Calculate IADC %
+    const iadcTotal = iadcCompliant + iadcNonCompliant;
+    const iadcPercent = iadcTotal > 0 ? (iadcCompliant / iadcTotal) * 100 : 0;
+
+    // Calculate trends from previous day
+    let dwcTrend = 0;
+    let iadcTrend = 0;
+
+    if (prevDailyStats.length > 0) {
+      let prevDwcCompliant = 0;
+      let prevDwcMisses = 0;
+      let prevFailedAttempts = 0;
+      let prevIadcCompliant = 0;
+      let prevIadcNonCompliant = 0;
+
+      for (const stat of prevDailyStats) {
+        prevDwcCompliant += stat.dwcCompliant;
+        prevDwcMisses += stat.dwcMisses;
+        prevFailedAttempts += stat.failedAttempts;
+        prevIadcCompliant += stat.iadcCompliant;
+        prevIadcNonCompliant += stat.iadcNonCompliant;
+      }
+
+      const prevDwcTotal = prevDwcCompliant + prevDwcMisses + prevFailedAttempts;
+      const prevDwcPercent = prevDwcTotal > 0 ? (prevDwcCompliant / prevDwcTotal) * 100 : 0;
+      dwcTrend = Math.round((dwcPercent - prevDwcPercent) * 10) / 10;
+
+      const prevIadcTotal = prevIadcCompliant + prevIadcNonCompliant;
+      const prevIadcPercent = prevIadcTotal > 0 ? (prevIadcCompliant / prevIadcTotal) * 100 : 0;
+      iadcTrend = Math.round((iadcPercent - prevIadcPercent) * 10) / 10;
+    }
+
+    // Count alerts (drivers under 90% DWC)
+    let alerts = 0;
+    for (const stat of dailyStats) {
+      const total = stat.dwcCompliant + stat.dwcMisses + stat.failedAttempts;
+      if (total > 0) {
+        const driverDwc = (stat.dwcCompliant / total) * 100;
+        if (driverDwc < 90) alerts++;
+      }
+    }
+
+    return {
+      avgDwc: Math.round(dwcPercent * 10) / 10,
+      avgIadc: Math.round(iadcPercent * 10) / 10,
+      dwcTrend,
+      iadcTrend,
+      activeDrivers: dailyStats.length,
+      totalDrivers: dailyStats.length,
+      alerts,
+      tierDistribution: tiers,
+      prevDate,
+    };
+  },
+});
+
+/**
+ * Récupère les drivers avec leurs stats pour un jour spécifique
+ */
+export const getDashboardDriversDaily = query({
+  args: {
+    stationId: v.id("stations"),
+    date: v.string(), // Format: "2024-12-09"
+  },
+  handler: async (ctx, args) => {
+    // Get all daily stats for this date
+    const dailyStats = await ctx.db
+      .query("driverDailyStats")
+      .withIndex("by_station_date", (q) =>
+        q.eq("stationId", args.stationId).eq("date", args.date)
+      )
+      .collect();
+
+    // Calculate previous date for trend
+    const currentDate = new Date(args.date);
+    currentDate.setDate(currentDate.getDate() - 1);
+    const prevDate = currentDate.toISOString().split("T")[0];
+
+    // Get previous day stats for trend calculation
+    const prevDailyStats = await ctx.db
+      .query("driverDailyStats")
+      .withIndex("by_station_date", (q) =>
+        q.eq("stationId", args.stationId).eq("date", prevDate)
+      )
+      .collect();
+
+    // Create a map of previous day stats by driver
+    const prevStatsByDriver = new Map<string, typeof prevDailyStats[0]>();
+    for (const stat of prevDailyStats) {
+      prevStatsByDriver.set(stat.driverId.toString(), stat);
+    }
+
+    // Get driver info for each stat
+    const driversWithStats = await Promise.all(
+      dailyStats.map(async (stat) => {
+        const driver = await ctx.db.get(stat.driverId);
+        if (!driver) return null;
+
+        const dwcTotal = stat.dwcCompliant + stat.dwcMisses + stat.failedAttempts;
+        const dwcPercent = dwcTotal > 0 ? Math.round((stat.dwcCompliant / dwcTotal) * 1000) / 10 : 0;
+
+        const iadcTotal = stat.iadcCompliant + stat.iadcNonCompliant;
+        const iadcPercent = iadcTotal > 0 ? Math.round((stat.iadcCompliant / iadcTotal) * 1000) / 10 : 0;
+
+        // Determine tier
+        let tier: "fantastic" | "great" | "fair" | "poor";
+        if (dwcPercent >= 98.5) tier = "fantastic";
+        else if (dwcPercent >= 96) tier = "great";
+        else if (dwcPercent >= 90) tier = "fair";
+        else tier = "poor";
+
+        // Calculate trend from previous day
+        let trend = 0;
+        const prevStat = prevStatsByDriver.get(stat.driverId.toString());
+        if (prevStat) {
+          const prevDwcTotal = prevStat.dwcCompliant + prevStat.dwcMisses + prevStat.failedAttempts;
+          const prevDwcPercent = prevDwcTotal > 0
+            ? Math.round((prevStat.dwcCompliant / prevDwcTotal) * 1000) / 10
+            : 0;
+          trend = Math.round((dwcPercent - prevDwcPercent) * 10) / 10;
+        }
+
+        return {
+          id: driver._id,
+          name: driver.name,
+          amazonId: driver.amazonId,
+          dwcPercent,
+          iadcPercent,
+          daysActive: 1, // Single day
+          tier,
+          trend,
+        };
+      })
+    );
+
+    return driversWithStats.filter((d) => d !== null);
+  },
+});
