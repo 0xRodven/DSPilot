@@ -1,6 +1,7 @@
 "use client"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Skeleton } from "@/components/ui/skeleton"
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts"
 import { useQuery } from "convex/react"
 import { api } from "../../../convex/_generated/api"
@@ -33,16 +34,22 @@ export function TierDistribution() {
     return (
       <Card className="border-border bg-card">
         <CardHeader className="pb-2">
-          <CardTitle className="text-base font-semibold text-card-foreground">Distribution Tiers</CardTitle>
+          <Skeleton className="h-5 w-32" />
+          <Skeleton className="h-3 w-24 mt-1" />
         </CardHeader>
-        <CardContent>
-          <div className="animate-pulse">
-            <div className="h-[180px] w-[180px] mx-auto bg-muted rounded-full" />
-            <div className="mt-4 grid grid-cols-2 gap-2">
-              {[...Array(4)].map((_, i) => (
-                <div key={i} className="h-4 bg-muted rounded" />
-              ))}
-            </div>
+        <CardContent className="flex flex-col items-center">
+          <Skeleton className="h-[180px] w-[180px] rounded-full" />
+          <div className="mt-4 grid grid-cols-2 gap-2 w-full">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <Skeleton className="h-3 w-3 rounded-full" />
+                <Skeleton className="h-3 w-16" />
+              </div>
+            ))}
+          </div>
+          <div className="mt-4 w-full border-t border-border pt-4">
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-2 w-full mt-2 rounded-full" />
           </div>
         </CardContent>
       </Card>

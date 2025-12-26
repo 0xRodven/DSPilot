@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -110,12 +111,46 @@ export function DriversTable() {
     return (
       <Card className="border-border bg-card">
         <CardHeader className="pb-4">
-          <CardTitle className="text-lg font-semibold text-card-foreground">Tous les Drivers</CardTitle>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <Skeleton className="h-6 w-32" />
+              <Skeleton className="h-4 w-40 mt-1" />
+            </div>
+            <Skeleton className="h-9 w-24" />
+          </div>
+          <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center">
+            <Skeleton className="h-10 flex-1" />
+            <Skeleton className="h-10 w-[140px]" />
+            <Skeleton className="h-10 w-[160px]" />
+          </div>
         </CardHeader>
-        <CardContent className="p-6">
-          <div className="animate-pulse space-y-4">
-            <div className="h-10 bg-muted rounded" />
-            <div className="h-64 bg-muted rounded" />
+        <CardContent className="p-0">
+          <div className="border-t border-border">
+            {/* Header */}
+            <div className="flex items-center gap-4 px-6 py-3 border-b border-border">
+              <Skeleton className="h-4 w-8" />
+              <Skeleton className="h-4 w-32" />
+              <Skeleton className="h-4 w-24 ml-auto" />
+              <Skeleton className="h-4 w-16" />
+              <Skeleton className="h-4 w-16" />
+              <Skeleton className="h-4 w-12" />
+              <Skeleton className="h-4 w-20" />
+            </div>
+            {/* Rows */}
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="flex items-center gap-4 px-6 py-3 border-b border-border last:border-0">
+                <Skeleton className="h-4 w-8" />
+                <div className="flex items-center gap-3">
+                  <Skeleton className="h-8 w-8 rounded-full" />
+                  <Skeleton className="h-4 w-32" />
+                </div>
+                <Skeleton className="h-4 w-20 ml-auto" />
+                <Skeleton className="h-4 w-12" />
+                <Skeleton className="h-4 w-12" />
+                <Skeleton className="h-4 w-8" />
+                <Skeleton className="h-6 w-16 rounded-full" />
+              </div>
+            ))}
           </div>
         </CardContent>
       </Card>

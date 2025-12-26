@@ -1,6 +1,7 @@
 "use client"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/button"
 import { formatNumber } from "@/lib/calculations"
 import { useDashboardStore } from "@/lib/store"
@@ -31,21 +32,22 @@ export function TopErrors() {
     return (
       <Card className="border-border bg-card">
         <CardHeader className="pb-2">
-          <CardTitle className="text-base font-semibold text-card-foreground">Top 5 Erreurs</CardTitle>
-          <p className="text-xs text-muted-foreground">{periodLabel} • Chargement...</p>
+          <Skeleton className="h-5 w-28" />
+          <Skeleton className="h-3 w-32 mt-1" />
         </CardHeader>
-        <CardContent className="pt-2">
-          <div className="space-y-4">
-            {[...Array(5)].map((_, i) => (
-              <div key={i} className="animate-pulse">
-                <div className="flex items-center justify-between">
-                  <div className="h-4 bg-muted rounded w-32" />
-                  <div className="h-4 bg-muted rounded w-12" />
+        <CardContent className="pt-2 space-y-4">
+          {[...Array(5)].map((_, i) => (
+            <div key={i}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Skeleton className="h-4 w-6" />
+                  <Skeleton className="h-4 w-32" />
                 </div>
-                <div className="mt-1.5 h-2 bg-muted rounded" />
+                <Skeleton className="h-4 w-12" />
               </div>
-            ))}
-          </div>
+              <Skeleton className="mt-1.5 h-2 w-full rounded-full" />
+            </div>
+          ))}
         </CardContent>
       </Card>
     )

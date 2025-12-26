@@ -5,6 +5,7 @@ import { useQuery } from "convex/react"
 import { api } from "../../../convex/_generated/api"
 import { useDashboardStore } from "@/lib/store"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
@@ -42,7 +43,50 @@ export function PerformanceChart() {
     station ? { stationId: station._id, weeksCount } : "skip"
   )
 
+  const isLoading = !station || performanceData === undefined
   const data = performanceData || []
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <Card className="border-border bg-card">
+        <CardHeader className="pb-4">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <Skeleton className="h-5 w-40" />
+              <Skeleton className="h-3 w-48 mt-1" />
+            </div>
+            <Skeleton className="h-9 w-32" />
+          </div>
+          <div className="mt-4 flex flex-wrap items-center gap-6">
+            <div className="flex items-center gap-4">
+              <Skeleton className="h-5 w-16" />
+              <Skeleton className="h-5 w-16" />
+            </div>
+            <div className="flex items-center gap-3 border-l border-border pl-4">
+              <Skeleton className="h-4 w-20" />
+              <Skeleton className="h-4 w-12" />
+              <Skeleton className="h-4 w-12" />
+              <Skeleton className="h-4 w-12" />
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="h-[350px] flex items-end gap-3 pt-8">
+            {[...Array(8)].map((_, i) => (
+              <div key={i} className="flex-1 flex flex-col items-center gap-2">
+                <Skeleton
+                  className="w-full rounded-t"
+                  style={{ height: `${40 + (i % 3) * 20}%` }}
+                />
+                <Skeleton className="h-3 w-8" />
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
 
   return (
     <Card className="border-border bg-card">

@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { getTierColor } from "@/lib/utils/tier"
@@ -81,14 +82,23 @@ export function TopDrivers() {
     return (
       <Card className="border-border bg-card">
         <CardHeader className="pb-2">
-          <CardTitle className="text-base font-semibold text-card-foreground">Top 5 Drivers</CardTitle>
-        </CardHeader>
-        <CardContent className="pt-2">
-          <div className="animate-pulse space-y-3">
-            {[...Array(5)].map((_, i) => (
-              <div key={i} className="h-14 bg-muted rounded-lg" />
-            ))}
+          <Skeleton className="h-5 w-28" />
+          <div className="mt-2 flex items-center gap-2">
+            <Skeleton className="h-8 w-[120px]" />
+            <Skeleton className="h-8 w-24" />
           </div>
+        </CardHeader>
+        <CardContent className="pt-2 space-y-3">
+          {[...Array(5)].map((_, i) => (
+            <div key={i} className="flex items-center gap-3 rounded-lg border border-border/50 px-3 py-2">
+              <Skeleton className="h-6 w-6" />
+              <div className="flex-1 space-y-1">
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-3 w-20" />
+              </div>
+              <Skeleton className="h-5 w-12" />
+            </div>
+          ))}
         </CardContent>
       </Card>
     )

@@ -1,6 +1,7 @@
 "use client"
 
 import { Card, CardContent } from "@/components/ui/card"
+import { KPICardSkeleton } from "@/components/ui/skeletons"
 import { getTier, getTierBgColor } from "@/lib/utils/tier"
 import { TrendingUp, TrendingDown, Users, AlertTriangle } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -35,13 +36,7 @@ export function KPICards() {
     return (
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {[...Array(4)].map((_, i) => (
-          <Card key={i} className="border-border bg-card animate-pulse">
-            <CardContent className="p-6">
-              <div className="h-4 bg-muted rounded w-16 mb-4" />
-              <div className="h-8 bg-muted rounded w-24 mb-3" />
-              <div className="h-6 bg-muted rounded w-20" />
-            </CardContent>
-          </Card>
+          <KPICardSkeleton key={i} />
         ))}
       </div>
     )
