@@ -129,6 +129,52 @@ export const updateDriverName = mutation({
 });
 
 /**
+ * Mise à jour en masse des noms de drivers depuis un CSV
+ * Retourne le nombre de drivers mis à jour et non trouvés
+ */
+export const bulkUpdateDriverNames = mutation({
+  args: {
+    stationId: v.id("stations"),
+    mappings: v.array(
+      v.object({
+        amazonId: v.string(),
+        name: v.string(),
+      })
+    ),
+  },
+  handler: async (ctx, args) => {
+    let updated = 0;
+    let notFound = 0;
+    const now = Date.now();
+
+    for (const { amazonId, name } of args.mappings) {
+      // Chercher le driver par stationId + amazonId (utilise l'index existant)
+      const driver = await ctx.db
+        .query("drivers")
+        .withIndex("by_station_amazon", (q) =>
+          q.eq("stationId", args.stationId).eq("amazonId", amazonId)
+        )
+        .first();
+
+      if (driver) {
+        // Mettre à jour le nom seulement s'il est différent
+        if (driver.name !== name) {
+          await ctx.db.patch(driver._id, {
+            name,
+            updatedAt: now,
+          });
+          updated++;
+        }
+      } else {
+        notFound++;
+      }
+    }
+
+    return { updated, notFound, total: args.mappings.length };
+  },
+});
+
+/**
  * Désactive un driver
  */
 export const deactivateDriver = mutation({
@@ -391,6 +437,112 @@ export const getDriverDetail = query({
       errorBreakdown,
       coachingHistory: [], // Will be filled by separate query
       weeklyHistory: formattedWeeklyHistory,
+    };
+  },
+});
+
+/**
+ * Get daily performance data with coaching action markers
+ * Used for the daily chart with coaching overlays
+ */
+export const getDriverDailyPerformanceWithCoaching = query({
+  args: {
+    driverId: v.id("drivers"),
+    startDate: v.string(), // ISO date "2025-12-01"
+    endDate: v.string(),   // ISO date "2025-12-31"
+  },
+  handler: async (ctx, args) => {
+    // 1. Get driver info
+    const driver = await ctx.db.get(args.driverId);
+    if (!driver) return null;
+
+    // 2. Get daily stats within date range
+    // Use by_driver_date index (we can query just on driverId prefix)
+    const allDailyStats = await ctx.db
+      .query("driverDailyStats")
+      .withIndex("by_driver_date", (q) => q.eq("driverId", args.driverId))
+      .collect();
+
+    // Filter to date range
+    const dailyStats = allDailyStats.filter((stat) => {
+      return stat.date >= args.startDate && stat.date <= args.endDate;
+    });
+
+    // 3. Get coaching actions for this driver
+    const coachingActions = await ctx.db
+      .query("coachingActions")
+      .withIndex("by_driver", (q) => q.eq("driverId", args.driverId))
+      .collect();
+
+    // 4. Filter coaching actions to those within date range
+    const actionsInRange = coachingActions.filter((action) => {
+      const actionDate = new Date(action.createdAt).toISOString().split("T")[0];
+      return actionDate >= args.startDate && actionDate <= args.endDate;
+    });
+
+    // 5. Build a map of date -> coaching action
+    const actionsByDate = new Map<string, typeof coachingActions[0]>();
+    for (const action of actionsInRange) {
+      const actionDate = new Date(action.createdAt).toISOString().split("T")[0];
+      // If multiple actions on same day, keep the latest one
+      const existing = actionsByDate.get(actionDate);
+      if (!existing || action.createdAt > existing.createdAt) {
+        actionsByDate.set(actionDate, action);
+      }
+    }
+
+    // 6. Build daily data with coaching markers
+    const dailyData = dailyStats.map((stat) => {
+      const dwcTotal = stat.dwcCompliant + stat.dwcMisses + stat.failedAttempts;
+      const dwcPercent = dwcTotal > 0 ? Math.round((stat.dwcCompliant / dwcTotal) * 1000) / 10 : null;
+
+      const iadcTotal = stat.iadcCompliant + stat.iadcNonCompliant;
+      const iadcPercent = iadcTotal > 0 ? Math.round((stat.iadcCompliant / iadcTotal) * 1000) / 10 : null;
+
+      const coachingAction = actionsByDate.get(stat.date);
+
+      return {
+        date: stat.date,
+        dwcPercent,
+        iadcPercent,
+        deliveries: dwcTotal,
+        errors: stat.dwcMisses + stat.failedAttempts,
+        coachingAction: coachingAction
+          ? {
+              id: coachingAction._id,
+              actionType: coachingAction.actionType,
+              status: coachingAction.status,
+              reason: coachingAction.reason,
+              dwcAtAction: coachingAction.dwcAtAction,
+              dwcAfterAction: coachingAction.dwcAfterAction,
+              followUpDate: coachingAction.followUpDate,
+              notes: coachingAction.notes,
+              createdAt: coachingAction.createdAt,
+            }
+          : null,
+      };
+    });
+
+    // Sort by date ascending
+    dailyData.sort((a, b) => a.date.localeCompare(b.date));
+
+    return {
+      dailyData,
+      coachingActions: actionsInRange.map((action) => ({
+        id: action._id,
+        actionType: action.actionType,
+        status: action.status,
+        reason: action.reason,
+        dwcAtAction: action.dwcAtAction,
+        dwcAfterAction: action.dwcAfterAction,
+        followUpDate: action.followUpDate,
+        notes: action.notes,
+        createdAt: action.createdAt,
+      })),
+      dateRange: {
+        start: args.startDate,
+        end: args.endDate,
+      },
     };
   },
 });

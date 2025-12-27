@@ -11,14 +11,17 @@ import { format, getWeek, startOfWeek, endOfWeek } from "date-fns"
 import { fr } from "date-fns/locale"
 
 export default function DashboardPage() {
-  const { selectedDate, granularity } = useDashboardStore()
+  const { selectedDate, periodMode, dateRange } = useDashboardStore()
 
   const getSubtitle = () => {
-    if (granularity === "week") {
+    if (periodMode === "week") {
       const weekNum = getWeek(selectedDate, { locale: fr })
       const start = startOfWeek(selectedDate, { weekStartsOn: 1 })
       const end = endOfWeek(selectedDate, { weekStartsOn: 1 })
       return `Semaine ${weekNum} • ${format(start, "d", { locale: fr })}-${format(end, "d MMMM yyyy", { locale: fr })}`
+    }
+    if (periodMode === "range" && dateRange) {
+      return `${format(dateRange.from, "d MMM", { locale: fr })} - ${format(dateRange.to, "d MMMM yyyy", { locale: fr })}`
     }
     return format(selectedDate, "EEEE d MMMM yyyy", { locale: fr })
   }

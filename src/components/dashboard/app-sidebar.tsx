@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { LayoutDashboard, Users, AlertTriangle, GraduationCap, Upload, Settings, Truck, ChevronUp } from "lucide-react"
+import { LayoutDashboard, Users, AlertTriangle, GraduationCap, Upload, Settings, Truck, ChevronUp, ChevronRight, Calendar, ClipboardList, MessageSquare } from "lucide-react"
 import {
   Sidebar,
   SidebarContent,
@@ -13,8 +13,16 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubItem,
+  SidebarMenuSubButton,
   SidebarRail,
 } from "@/components/ui/sidebar"
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -28,8 +36,13 @@ const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
   { icon: Users, label: "Drivers", href: "/dashboard/drivers" },
   { icon: AlertTriangle, label: "Erreurs", href: "/dashboard/errors" },
-  { icon: GraduationCap, label: "Coaching", href: "/dashboard/coaching" },
   { icon: Upload, label: "Import", href: "/dashboard/import" },
+]
+
+const coachingSubItems = [
+  { icon: ClipboardList, label: "Planification", href: "/dashboard/coaching" },
+  { icon: Calendar, label: "Calendrier", href: "/dashboard/coaching/calendar" },
+  { icon: MessageSquare, label: "Récapitulatifs", href: "/dashboard/coaching/recaps" },
 ]
 
 const bottomNavItems = [{ icon: Settings, label: "Paramètres", href: "/dashboard/settings" }]
@@ -74,6 +87,39 @@ export function AppSidebar() {
                   </SidebarMenuItem>
                 )
               })}
+
+              {/* Coaching with submenu */}
+              <Collapsible asChild defaultOpen={pathname.startsWith("/dashboard/coaching")} className="group/collapsible">
+                <SidebarMenuItem>
+                  <CollapsibleTrigger asChild>
+                    <SidebarMenuButton
+                      tooltip="Coaching"
+                      isActive={pathname.startsWith("/dashboard/coaching")}
+                    >
+                      <GraduationCap className={pathname.startsWith("/dashboard/coaching") ? "text-primary" : ""} />
+                      <span>Coaching</span>
+                      <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                    </SidebarMenuButton>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <SidebarMenuSub>
+                      {coachingSubItems.map((item) => {
+                        const isActive = pathname === item.href
+                        return (
+                          <SidebarMenuSubItem key={item.href}>
+                            <SidebarMenuSubButton asChild isActive={isActive}>
+                              <Link href={item.href}>
+                                <item.icon className={`h-4 w-4 ${isActive ? "text-primary" : ""}`} />
+                                <span>{item.label}</span>
+                              </Link>
+                            </SidebarMenuSubButton>
+                          </SidebarMenuSubItem>
+                        )
+                      })}
+                    </SidebarMenuSub>
+                  </CollapsibleContent>
+                </SidebarMenuItem>
+              </Collapsible>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

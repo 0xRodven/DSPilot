@@ -1,24 +1,30 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useQuery, useMutation } from "convex/react"
+import { api } from "../../../convex/_generated/api"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Checkbox } from "@/components/ui/checkbox"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Input } from "@/components/ui/input"
 import {
   MessageSquare,
   AlertTriangle,
   BookOpen,
   Ban,
   TrendingUp,
+  TrendingDown,
   CheckCircle,
-  MinusCircle,
   XCircle,
+  ArrowRight,
+  Loader2,
 } from "lucide-react"
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } from "recharts"
 import { cn } from "@/lib/utils"
+import { toast } from "sonner"
+import { format, addDays } from "date-fns"
 import type { CoachingActionFull } from "@/lib/types"
 import { getActionTypeLabel } from "@/lib/utils/status"
 
@@ -28,202 +34,250 @@ interface EvaluateActionModalProps {
   action: CoachingActionFull | null
 }
 
-const ActionTypeIcon = ({ type }: { type: CoachingActionFull["actionType"] }) => {
-  const icons = {
-    discussion: MessageSquare,
-    warning: AlertTriangle,
-    training: BookOpen,
-    suspension: Ban,
-  }
-  const Icon = icons[type]
-  return <Icon className="h-4 w-4" />
+const actionIcons = {
+  discussion: MessageSquare,
+  warning: AlertTriangle,
+  training: BookOpen,
+  suspension: Ban,
 }
 
-// Mock evolution data
-const evolutionData = [
-  { week: "S47", dwc: 82.1 },
-  { week: "S48", dwc: 83.5 },
-  { week: "S49", dwc: 84.2 },
-  { week: "S50", dwc: 85.7 },
-]
+const actionColors = {
+  discussion: "text-blue-400",
+  warning: "text-amber-400",
+  training: "text-emerald-400",
+  suspension: "text-red-400",
+}
 
 export function EvaluateActionModal({ open, onOpenChange, action }: EvaluateActionModalProps) {
-  const [result, setResult] = useState<"improved" | "no_effect" | "escalate">("improved")
+  const [result, setResult] = useState<"improved" | "no_effect">("improved")
   const [notes, setNotes] = useState("")
-  const [planFollowUp, setPlanFollowUp] = useState(false)
+  const [nextActionType, setNextActionType] = useState<"discussion" | "warning" | "training" | "suspension">("discussion")
+  const [followUpDays, setFollowUpDays] = useState("14")
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  // Mutations
+  const evaluateAction = useMutation(api.coaching.evaluateCoachingAction)
+  const createAction = useMutation(api.coaching.createCoachingAction)
+
+  // Get pipeline suggestion for escalation
+  const pipelineSuggestion = useQuery(
+    api.coaching.getCoachingPipelineSuggestion,
+    action ? { driverId: action.driverId as any } : "skip"
+  )
+
+  // Reset form when modal opens
+  useEffect(() => {
+    if (open && action) {
+      setResult("improved")
+      setNotes("")
+      setFollowUpDays("14")
+      // Pre-fill with suggested next action
+      if (pipelineSuggestion) {
+        setNextActionType(pipelineSuggestion.suggestedAction)
+      }
+    }
+  }, [open, action, pipelineSuggestion])
+
+  // Pre-fill next action from pipeline suggestion
+  useEffect(() => {
+    if (pipelineSuggestion && result === "no_effect") {
+      setNextActionType(pipelineSuggestion.suggestedAction)
+    }
+  }, [pipelineSuggestion, result])
 
   if (!action) return null
 
-  const currentDwc = 85.7 // Mock current DWC
+  const currentDwc = action.driverDwc
   const improvement = currentDwc - action.dwcAtAction
+  const TrendIcon = improvement >= 0 ? TrendingUp : TrendingDown
+  const Icon = actionIcons[action.actionType]
 
-  const handleSubmit = () => {
-    // Handle form submission
-    onOpenChange(false)
+  const handleSubmit = async () => {
+    setIsSubmitting(true)
+    try {
+      // 1. Evaluate current action
+      await evaluateAction({
+        actionId: action.id as any,
+        result: result,
+        dwcAfterAction: currentDwc,
+        evaluationNotes: notes || undefined,
+      })
+
+      // 2. If no effect, create escalation action
+      if (result === "no_effect") {
+        const followUpDate = format(addDays(new Date(), parseInt(followUpDays)), "yyyy-MM-dd")
+
+        await createAction({
+          stationId: action.stationId as any,
+          driverId: action.driverId as any,
+          actionType: nextActionType,
+          reason: `Escalade: ${action.reason}`,
+          dwcAtAction: currentDwc,
+          followUpDate,
+          createdBy: "system",
+        })
+
+        toast.success(`Action évaluée et escalade créée (${getActionTypeLabel(nextActionType)})`)
+      } else {
+        toast.success("Action évaluée avec succès")
+      }
+
+      onOpenChange(false)
+    } catch (error) {
+      console.error("Error evaluating action:", error)
+      toast.error("Erreur lors de l'évaluation")
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto border-zinc-800 bg-zinc-900 text-white sm:max-w-2xl">
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
         <DialogHeader>
-          <DialogTitle>Évaluer l'action de coaching</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            <Icon className={cn("h-5 w-5", actionColors[action.actionType])} />
+            Évaluer l'action
+          </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-6 py-4">
           {/* Action Summary */}
-          <div className="rounded-lg border border-zinc-700 bg-zinc-800/50 p-4">
-            <div className="flex items-center gap-3">
-              <ActionTypeIcon type={action.actionType} />
+          <div className="rounded-lg border border-border bg-muted/50 p-4">
+            <div className="flex items-start justify-between">
               <div>
-                <p className="font-medium text-white">{action.driverName}</p>
-                <p className="text-sm text-zinc-400">
-                  {getActionTypeLabel(action.actionType)} du {action.createdAt}
+                <p className="font-medium text-foreground">{action.driverName}</p>
+                <p className="text-sm text-muted-foreground">
+                  {getActionTypeLabel(action.actionType)} • {action.createdAt.split("T")[0]}
                 </p>
               </div>
             </div>
-            <p className="mt-2 text-sm text-zinc-400">Raison: {action.reason}</p>
+            <p className="mt-2 text-sm text-muted-foreground">{action.reason}</p>
           </div>
 
-          {/* Automatic Evolution */}
-          <div className="rounded-lg border border-zinc-700 bg-zinc-800/50 p-4">
-            <h4 className="mb-4 text-sm font-medium text-zinc-300">Évolution automatique</h4>
-
-            {/* Before/After Comparison */}
-            <div className="flex items-center justify-between rounded-lg bg-zinc-900/50 px-6 py-4">
+          {/* DWC Evolution */}
+          <div className="rounded-lg border border-border bg-muted/50 p-4">
+            <h4 className="mb-4 text-sm font-medium text-foreground">Évolution DWC</h4>
+            <div className="flex items-center justify-around">
               <div className="text-center">
-                <p className="text-xs text-zinc-500">DWC au moment de l'action</p>
-                <p className="text-2xl font-bold text-white">{action.dwcAtAction}%</p>
+                <p className="text-xs text-muted-foreground">Début</p>
+                <p className="text-2xl font-bold text-foreground">{action.dwcAtAction}%</p>
               </div>
-              <TrendingUp className={cn("h-6 w-6", improvement > 0 ? "text-emerald-400" : "text-red-400")} />
+              <ArrowRight className="h-5 w-5 text-muted-foreground" />
               <div className="text-center">
-                <p className="text-xs text-zinc-500">DWC actuel (S50)</p>
-                <p className="text-2xl font-bold text-white">{currentDwc}%</p>
+                <p className="text-xs text-muted-foreground">Actuel</p>
+                <p className="text-2xl font-bold text-foreground">{currentDwc}%</p>
               </div>
               <div className="text-center">
-                <p className="text-xs text-zinc-500">Évolution</p>
-                <p className={cn("text-2xl font-bold", improvement > 0 ? "text-emerald-400" : "text-red-400")}>
-                  {improvement > 0 ? "+" : ""}
-                  {improvement.toFixed(1)}%
+                <p className="text-xs text-muted-foreground">Delta</p>
+                <p className={cn("text-2xl font-bold flex items-center gap-1", improvement >= 0 ? "text-emerald-500" : "text-red-500")}>
+                  <TrendIcon className="h-5 w-5" />
+                  {improvement > 0 ? "+" : ""}{improvement.toFixed(1)}%
                 </p>
               </div>
-            </div>
-
-            {/* Mini Chart */}
-            <div className="mt-4 h-32">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={evolutionData}>
-                  <XAxis dataKey="week" tick={{ fill: "#71717a", fontSize: 12 }} axisLine={false} tickLine={false} />
-                  <YAxis domain={[80, 90]} tick={{ fill: "#71717a", fontSize: 12 }} axisLine={false} tickLine={false} />
-                  <Tooltip
-                    contentStyle={{ backgroundColor: "#18181b", border: "1px solid #3f3f46", borderRadius: "8px" }}
-                    labelStyle={{ color: "#fff" }}
-                  />
-                  <ReferenceLine y={85} stroke="#f59e0b" strokeDasharray="3 3" />
-                  <Line
-                    type="monotone"
-                    dataKey="dwc"
-                    stroke="#10b981"
-                    strokeWidth={2}
-                    dot={{ fill: "#10b981", r: 4 }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
             </div>
           </div>
 
           {/* Result Selection */}
           <div className="space-y-3">
-            <Label>Résultat de l'action *</Label>
-            <RadioGroup value={result} onValueChange={(v) => setResult(v as typeof result)} className="space-y-3">
+            <Label>Résultat de l'action</Label>
+            <RadioGroup value={result} onValueChange={(v) => setResult(v as typeof result)} className="space-y-2">
               <div
                 className={cn(
-                  "flex cursor-pointer items-start gap-3 rounded-lg border p-4 transition-colors",
-                  result === "improved" ? "border-emerald-500 bg-emerald-500/10" : "border-zinc-700 bg-zinc-800/50",
+                  "flex cursor-pointer items-center gap-3 rounded-lg border p-4 transition-colors",
+                  result === "improved" ? "border-emerald-500 bg-emerald-500/10" : "border-border"
                 )}
                 onClick={() => setResult("improved")}
               >
-                <RadioGroupItem value="improved" id="improved" className="mt-0.5" />
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="h-4 w-4 text-emerald-400" />
-                    <Label htmlFor="improved" className="cursor-pointer font-medium text-white">
-                      Amélioré
-                    </Label>
-                  </div>
-                  <p className="mt-1 text-sm text-zinc-400">Le driver a progressé de manière significative</p>
+                <RadioGroupItem value="improved" id="improved" />
+                <CheckCircle className="h-5 w-5 text-emerald-500" />
+                <div>
+                  <Label htmlFor="improved" className="cursor-pointer font-medium">Amélioré</Label>
+                  <p className="text-sm text-muted-foreground">Le driver a progressé</p>
                 </div>
               </div>
 
               <div
                 className={cn(
-                  "flex cursor-pointer items-start gap-3 rounded-lg border p-4 transition-colors",
-                  result === "no_effect" ? "border-zinc-500 bg-zinc-500/10" : "border-zinc-700 bg-zinc-800/50",
+                  "flex cursor-pointer items-center gap-3 rounded-lg border p-4 transition-colors",
+                  result === "no_effect" ? "border-amber-500 bg-amber-500/10" : "border-border"
                 )}
                 onClick={() => setResult("no_effect")}
               >
-                <RadioGroupItem value="no_effect" id="no_effect" className="mt-0.5" />
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <MinusCircle className="h-4 w-4 text-zinc-400" />
-                    <Label htmlFor="no_effect" className="cursor-pointer font-medium text-white">
-                      Sans changement
-                    </Label>
-                  </div>
-                  <p className="mt-1 text-sm text-zinc-400">Pas d'amélioration notable, à surveiller</p>
-                </div>
-              </div>
-
-              <div
-                className={cn(
-                  "flex cursor-pointer items-start gap-3 rounded-lg border p-4 transition-colors",
-                  result === "escalate" ? "border-red-500 bg-red-500/10" : "border-zinc-700 bg-zinc-800/50",
-                )}
-                onClick={() => setResult("escalate")}
-              >
-                <RadioGroupItem value="escalate" id="escalate" className="mt-0.5" />
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <XCircle className="h-4 w-4 text-red-400" />
-                    <Label htmlFor="escalate" className="cursor-pointer font-medium text-white">
-                      Escalader
-                    </Label>
-                  </div>
-                  <p className="mt-1 text-sm text-zinc-400">Nécessite une intervention RH/Manager</p>
+                <RadioGroupItem value="no_effect" id="no_effect" />
+                <XCircle className="h-5 w-5 text-amber-500" />
+                <div>
+                  <Label htmlFor="no_effect" className="cursor-pointer font-medium">Sans effet</Label>
+                  <p className="text-sm text-muted-foreground">Pas d'amélioration → Escalade</p>
                 </div>
               </div>
             </RadioGroup>
           </div>
 
-          {/* Evaluation Notes */}
+          {/* Escalation Options (shown only when no_effect) */}
+          {result === "no_effect" && (
+            <div className="space-y-4 rounded-lg border border-amber-500/30 bg-amber-500/5 p-4">
+              <h4 className="font-medium text-foreground">Escalade automatique</h4>
+
+              {pipelineSuggestion && (
+                <p className="text-sm text-muted-foreground">
+                  Suggestion: {pipelineSuggestion.reason}
+                </p>
+              )}
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Prochaine action</Label>
+                  <Select value={nextActionType} onValueChange={(v) => setNextActionType(v as typeof nextActionType)}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="discussion">Discussion</SelectItem>
+                      <SelectItem value="training">Formation</SelectItem>
+                      <SelectItem value="warning">Avertissement</SelectItem>
+                      <SelectItem value="suspension">Suspension</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Suivi dans (jours)</Label>
+                  <Select value={followUpDays} onValueChange={setFollowUpDays}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="7">7 jours</SelectItem>
+                      <SelectItem value="14">14 jours</SelectItem>
+                      <SelectItem value="21">21 jours</SelectItem>
+                      <SelectItem value="30">30 jours</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Notes */}
           <div className="space-y-2">
-            <Label>Notes d'évaluation</Label>
+            <Label>Notes d'évaluation (optionnel)</Label>
             <Textarea
-              placeholder="Driver réceptif lors de la discussion. A bien compris les points d'amélioration..."
+              placeholder="Commentaires sur l'évaluation..."
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              className="min-h-24 border-zinc-700 bg-zinc-800"
+              className="min-h-20"
             />
-          </div>
-
-          {/* Plan Follow Up */}
-          <div className="flex items-center gap-2">
-            <Checkbox
-              id="followup"
-              checked={planFollowUp}
-              onCheckedChange={(checked) => setPlanFollowUp(checked as boolean)}
-            />
-            <Label htmlFor="followup" className="cursor-pointer text-zinc-300">
-              Planifier une action de suivi
-            </Label>
           </div>
         </div>
 
         <DialogFooter>
-          <Button variant="ghost" onClick={() => onOpenChange(false)} className="text-zinc-400 hover:text-white">
+          <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
             Annuler
           </Button>
-          <Button onClick={handleSubmit} className="bg-blue-600 hover:bg-blue-700">
-            Enregistrer
+          <Button onClick={handleSubmit} disabled={isSubmitting}>
+            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {result === "no_effect" ? "Évaluer et escalader" : "Enregistrer"}
           </Button>
         </DialogFooter>
       </DialogContent>

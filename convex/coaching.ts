@@ -61,6 +61,7 @@ export const listCoachingActions = query({
 
         return {
           id: action._id,
+          stationId: action.stationId,
           driverId: driver._id,
           driverName: driver.name,
           driverAmazonId: driver.amazonId,
@@ -463,5 +464,412 @@ export const evaluateCoachingAction = mutation({
       evaluatedAt: now,
       updatedAt: now,
     });
+  },
+});
+
+/**
+ * Get coaching actions for calendar view
+ * Returns actions with follow-up dates for display on a calendar
+ */
+export const getCalendarEvents = query({
+  args: {
+    stationId: v.id("stations"),
+    startDate: v.string(), // ISO date string
+    endDate: v.string(), // ISO date string
+  },
+  handler: async (ctx, args) => {
+    // Get all coaching actions for this station
+    const actions = await ctx.db
+      .query("coachingActions")
+      .withIndex("by_station", (q) => q.eq("stationId", args.stationId))
+      .collect();
+
+    // Filter to actions with follow-up dates in the range
+    const startTime = new Date(args.startDate).getTime();
+    const endTime = new Date(args.endDate).getTime();
+
+    const events = await Promise.all(
+      actions
+        .filter((action) => {
+          if (!action.followUpDate) return false;
+          const followUpTime = new Date(action.followUpDate).getTime();
+          return followUpTime >= startTime && followUpTime <= endTime;
+        })
+        .map(async (action) => {
+          const driver = await ctx.db.get(action.driverId);
+          if (!driver) return null;
+
+          // Map action type to color
+          const colorMap: Record<string, string> = {
+            discussion: "blue",
+            warning: "orange",
+            training: "purple",
+            suspension: "red",
+          };
+
+          // Map status to variant
+          const statusVariant = action.status === "pending" ? "default" : "secondary";
+
+          return {
+            id: action._id,
+            title: driver.name,
+            description: action.reason,
+            startDate: action.followUpDate,
+            endDate: action.followUpDate,
+            color: colorMap[action.actionType] || "gray",
+            variant: statusVariant,
+            // Metadata
+            driverId: action.driverId,
+            driverName: driver.name,
+            actionType: action.actionType,
+            status: action.status,
+            createdAt: new Date(action.createdAt).toISOString(),
+          };
+        })
+    );
+
+    return events.filter((e): e is NonNullable<typeof e> => e !== null);
+  },
+});
+
+/**
+ * Get follow-up dates for a month (for calendar dots)
+ */
+export const getFollowUpDatesForMonth = query({
+  args: {
+    stationId: v.id("stations"),
+    year: v.number(),
+    month: v.number(), // 1-12
+  },
+  handler: async (ctx, args) => {
+    // Get all pending coaching actions for this station
+    const actions = await ctx.db
+      .query("coachingActions")
+      .withIndex("by_station", (q) => q.eq("stationId", args.stationId))
+      .collect();
+
+    // Filter to pending actions with follow-up dates in the specified month
+    const startOfMonth = new Date(args.year, args.month - 1, 1);
+    const endOfMonth = new Date(args.year, args.month, 0);
+
+    const datesWithFollowUps: { date: string; count: number; types: string[] }[] = [];
+    const dateMap = new Map<string, { count: number; types: Set<string> }>();
+
+    for (const action of actions) {
+      if (!action.followUpDate || action.status !== "pending") continue;
+
+      const followUpDate = new Date(action.followUpDate);
+      if (followUpDate >= startOfMonth && followUpDate <= endOfMonth) {
+        const dateKey = action.followUpDate.split("T")[0];
+        const existing = dateMap.get(dateKey) || { count: 0, types: new Set<string>() };
+        existing.count++;
+        existing.types.add(action.actionType);
+        dateMap.set(dateKey, existing);
+      }
+    }
+
+    for (const [date, data] of dateMap) {
+      datesWithFollowUps.push({
+        date,
+        count: data.count,
+        types: Array.from(data.types),
+      });
+    }
+
+    return datesWithFollowUps;
+  },
+});
+
+/**
+ * Get coaching pipeline suggestion for a driver
+ * Analyzes history and suggests next action based on escalation logic
+ */
+export const getCoachingPipelineSuggestion = query({
+  args: {
+    driverId: v.id("drivers"),
+  },
+  handler: async (ctx, args) => {
+    const actions = await ctx.db
+      .query("coachingActions")
+      .withIndex("by_driver", (q) => q.eq("driverId", args.driverId))
+      .collect();
+
+    // Count by type and status
+    const discussionCount = actions.filter((a) => a.actionType === "discussion").length;
+    const warningCount = actions.filter((a) => a.actionType === "warning").length;
+    const trainingCount = actions.filter((a) => a.actionType === "training").length;
+    const suspensionCount = actions.filter((a) => a.actionType === "suspension").length;
+    const pendingActions = actions.filter((a) => a.status === "pending").length;
+
+    // Get last action (most recent)
+    const sortedActions = [...actions].sort((a, b) => b.createdAt - a.createdAt);
+    const lastAction = sortedActions[0];
+
+    // Determine pipeline stage (1-5)
+    let pipelineStage: 1 | 2 | 3 | 4 | 5 = 1;
+    if (suspensionCount > 0) pipelineStage = 5;
+    else if (warningCount > 0) pipelineStage = 4;
+    else if (trainingCount > 0) pipelineStage = 3;
+    else if (discussionCount > 1) pipelineStage = 2;
+    else if (discussionCount === 1) pipelineStage = 1;
+
+    // Apply suggestion logic
+    let suggestedAction: "discussion" | "warning" | "training" | "suspension" = "discussion";
+    let reason = "";
+
+    // If pending action exists, suggest follow-up
+    if (pendingActions > 0) {
+      suggestedAction = "discussion";
+      reason = "Action en cours - évaluer d'abord le résultat";
+    }
+    // 3 warnings reached → suggest suspension
+    else if (warningCount >= 3) {
+      suggestedAction = "suspension";
+      reason = "3 avertissements atteints - suspension recommandée";
+    }
+    // Last action had no effect → escalate
+    else if (lastAction?.status === "no_effect") {
+      if (lastAction.actionType === "discussion") {
+        suggestedAction = trainingCount === 0 ? "training" : "warning";
+        reason = trainingCount === 0
+          ? "Discussion sans effet - formation recommandée"
+          : "Discussions sans effet - avertissement recommandé";
+      } else if (lastAction.actionType === "training") {
+        suggestedAction = "warning";
+        reason = `Formation sans effet - avertissement ${warningCount + 1}/3`;
+      } else if (lastAction.actionType === "warning") {
+        suggestedAction = warningCount >= 2 ? "suspension" : "warning";
+        reason = warningCount >= 2
+          ? "Avertissements sans effet - suspension recommandée"
+          : `Avertissement sans effet - avertissement ${warningCount + 1}/3`;
+      } else {
+        suggestedAction = "discussion";
+        reason = "Nouvelle discussion recommandée";
+      }
+    }
+    // First time coaching
+    else if (discussionCount === 0) {
+      suggestedAction = "discussion";
+      reason = "Premier contact - discussion recommandée";
+    }
+    // After discussions with no training yet
+    else if (discussionCount >= 1 && trainingCount === 0) {
+      suggestedAction = "training";
+      reason = "Discussions effectuées - formation recommandée";
+    }
+    // After training with no warnings yet
+    else if (trainingCount >= 1 && warningCount < 3) {
+      suggestedAction = "warning";
+      reason = `Formation effectuée - avertissement ${warningCount + 1}/3`;
+    }
+    // Default
+    else {
+      suggestedAction = "discussion";
+      reason = "Nouvelle discussion recommandée";
+    }
+
+    return {
+      suggestedAction,
+      reason,
+      pipelineStage,
+      history: {
+        discussionCount,
+        warningCount,
+        trainingCount,
+        suspensionCount,
+        pendingActions,
+        lastAction: lastAction
+          ? {
+              type: lastAction.actionType,
+              date: new Date(lastAction.createdAt).toISOString().split("T")[0],
+              status: lastAction.status,
+            }
+          : undefined,
+      },
+      canEscalate: warningCount < 3,
+    };
+  },
+});
+
+/**
+ * Get Kanban data for coaching page
+ * Returns 3 columns: detect (need coaching), waiting (pending actions), evaluate (overdue)
+ */
+export const getKanbanData = query({
+  args: {
+    stationId: v.id("stations"),
+    year: v.number(),
+    week: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const today = new Date().toISOString().split("T")[0];
+
+    // 1. Get all weekly stats for current week
+    const weeklyStats = await ctx.db
+      .query("driverWeeklyStats")
+      .withIndex("by_station_week", (q) =>
+        q.eq("stationId", args.stationId).eq("year", args.year).eq("week", args.week)
+      )
+      .collect();
+
+    // 2. Get all pending coaching actions for this station
+    const allActions = await ctx.db
+      .query("coachingActions")
+      .withIndex("by_station", (q) => q.eq("stationId", args.stationId))
+      .collect();
+
+    const pendingActions = allActions.filter((a) => a.status === "pending");
+    const driversWithPendingAction = new Set(pendingActions.map((a) => a.driverId));
+
+    // 3. Calculate trend for each driver (last 14 days)
+    const trendCache = new Map<string, number>();
+
+    // Helper to get tier
+    const getTier = (dwcPercent: number): "fantastic" | "great" | "fair" | "poor" => {
+      if (dwcPercent >= 98.5) return "fantastic";
+      if (dwcPercent >= 96) return "great";
+      if (dwcPercent >= 90) return "fair";
+      return "poor";
+    };
+
+    // COLUMN 1: DETECT - Drivers with DWC < 96% and no pending action
+    const detectCards = await Promise.all(
+      weeklyStats
+        .filter((stat) => {
+          const total = stat.dwcCompliant + stat.dwcMisses + stat.failedAttempts;
+          const dwcPercent = total > 0 ? (stat.dwcCompliant / total) * 100 : 0;
+          return dwcPercent < 96 && !driversWithPendingAction.has(stat.driverId);
+        })
+        .map(async (stat) => {
+          const driver = await ctx.db.get(stat.driverId);
+          if (!driver) return null;
+
+          const total = stat.dwcCompliant + stat.dwcMisses + stat.failedAttempts;
+          const dwcPercent = total > 0 ? Math.round((stat.dwcCompliant / total) * 1000) / 10 : 0;
+
+          // Get previous week stats for trend
+          const prevWeek = args.week === 1 ? 52 : args.week - 1;
+          const prevYear = args.week === 1 ? args.year - 1 : args.year;
+          const prevStats = await ctx.db
+            .query("driverWeeklyStats")
+            .withIndex("by_driver_week", (q) =>
+              q.eq("driverId", stat.driverId).eq("year", prevYear).eq("week", prevWeek)
+            )
+            .first();
+
+          let trendPercent = 0;
+          if (prevStats) {
+            const prevTotal = prevStats.dwcCompliant + prevStats.dwcMisses + prevStats.failedAttempts;
+            const prevDwc = prevTotal > 0 ? (prevStats.dwcCompliant / prevTotal) * 100 : 0;
+            trendPercent = Math.round((dwcPercent - prevDwc) * 10) / 10;
+          }
+
+          return {
+            id: `detect-${driver._id}`,
+            driverId: driver._id,
+            driverName: driver.name,
+            dwcPercent,
+            tier: getTier(dwcPercent),
+            trendPercent,
+            deliveries: total,
+          };
+        })
+    );
+
+    // COLUMN 2: WAITING - Pending actions with followUpDate > today
+    const waitingCards = await Promise.all(
+      pendingActions
+        .filter((action) => {
+          if (!action.followUpDate) return false;
+          return action.followUpDate > today;
+        })
+        .map(async (action) => {
+          const driver = await ctx.db.get(action.driverId);
+          if (!driver) return null;
+
+          // Calculate days until follow-up
+          const followUpDate = new Date(action.followUpDate!);
+          const todayDate = new Date(today);
+          const daysUntilFollowUp = Math.ceil(
+            (followUpDate.getTime() - todayDate.getTime()) / (24 * 60 * 60 * 1000)
+          );
+
+          return {
+            id: action._id,
+            driverId: driver._id,
+            driverName: driver.name,
+            actionType: action.actionType,
+            dwcAtAction: action.dwcAtAction,
+            reason: action.reason,
+            followUpDate: action.followUpDate!,
+            daysUntilFollowUp,
+            createdAt: new Date(action.createdAt).toISOString(),
+          };
+        })
+    );
+
+    // COLUMN 3: EVALUATE - Pending actions with followUpDate <= today
+    const evaluateCards = await Promise.all(
+      pendingActions
+        .filter((action) => {
+          if (!action.followUpDate) return true; // No date = should evaluate
+          return action.followUpDate <= today;
+        })
+        .map(async (action) => {
+          const driver = await ctx.db.get(action.driverId);
+          if (!driver) return null;
+
+          // Get current DWC for this driver
+          const latestStats = await ctx.db
+            .query("driverWeeklyStats")
+            .withIndex("by_driver", (q) => q.eq("driverId", action.driverId))
+            .order("desc")
+            .first();
+
+          let currentDwc = action.dwcAtAction;
+          if (latestStats) {
+            const total = latestStats.dwcCompliant + latestStats.dwcMisses + latestStats.failedAttempts;
+            currentDwc = total > 0 ? Math.round((latestStats.dwcCompliant / total) * 1000) / 10 : 0;
+          }
+
+          const dwcDelta = Math.round((currentDwc - action.dwcAtAction) * 10) / 10;
+
+          // Calculate days overdue
+          let daysOverdue = 0;
+          if (action.followUpDate) {
+            const followUpDate = new Date(action.followUpDate);
+            const todayDate = new Date(today);
+            daysOverdue = Math.ceil(
+              (todayDate.getTime() - followUpDate.getTime()) / (24 * 60 * 60 * 1000)
+            );
+          }
+
+          return {
+            id: action._id,
+            driverId: driver._id,
+            driverName: driver.name,
+            actionType: action.actionType,
+            dwcAtAction: action.dwcAtAction,
+            currentDwc,
+            dwcDelta,
+            reason: action.reason,
+            followUpDate: action.followUpDate,
+            daysOverdue,
+            createdAt: new Date(action.createdAt).toISOString(),
+          };
+        })
+    );
+
+    return {
+      detect: detectCards
+        .filter((c): c is NonNullable<typeof c> => c !== null)
+        .sort((a, b) => a.dwcPercent - b.dwcPercent), // Lowest DWC first
+      waiting: waitingCards
+        .filter((c): c is NonNullable<typeof c> => c !== null)
+        .sort((a, b) => a.daysUntilFollowUp - b.daysUntilFollowUp), // Closest follow-up first
+      evaluate: evaluateCards
+        .filter((c): c is NonNullable<typeof c> => c !== null)
+        .sort((a, b) => b.daysOverdue - a.daysOverdue), // Most overdue first
+    };
   },
 });

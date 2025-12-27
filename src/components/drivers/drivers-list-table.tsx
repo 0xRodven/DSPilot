@@ -65,10 +65,10 @@ interface DriversListTableProps {
   stats: TierStats
   selectedTier: string
   onTierChange: (tier: string) => void
-  granularity?: "week" | "day"
+  periodMode?: "week" | "day"
 }
 
-export function DriversListTable({ drivers, stats, selectedTier, onTierChange, granularity = "week" }: DriversListTableProps) {
+export function DriversListTable({ drivers, stats, selectedTier, onTierChange, periodMode = "week" }: DriversListTableProps) {
   const router = useRouter()
   const [search, setSearch] = useState("")
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all")
@@ -87,15 +87,15 @@ export function DriversListTable({ drivers, stats, selectedTier, onTierChange, g
       )
     }
 
-    // Status filter (only applies to week granularity)
-    if (granularity === "week") {
+    // Status filter (only applies to week periodMode)
+    if (periodMode === "week") {
       if (statusFilter === "active") {
         result = result.filter((d) => d.daysActive >= 5)
       } else if (statusFilter === "inactive") {
         result = result.filter((d) => d.daysActive < 5)
       }
     }
-    // For day granularity, status filter is not applicable
+    // For day periodMode, status filter is not applicable
 
     // Tier filter
     if (selectedTier !== "all") {
@@ -130,7 +130,7 @@ export function DriversListTable({ drivers, stats, selectedTier, onTierChange, g
     })
 
     return result
-  }, [drivers, search, statusFilter, selectedTier, sortField, sortOrder, granularity])
+  }, [drivers, search, statusFilter, selectedTier, sortField, sortOrder, periodMode])
 
   const totalPages = Math.ceil(filteredDrivers.length / ITEMS_PER_PAGE)
   const paginatedDrivers = filteredDrivers.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE)
@@ -188,7 +188,7 @@ export function DriversListTable({ drivers, stats, selectedTier, onTierChange, g
             </div>
 
             <div className="flex flex-wrap items-center gap-3">
-              {granularity === "week" && (
+              {periodMode === "week" && (
                 <Select
                   value={statusFilter}
                   onValueChange={(value: StatusFilter) => {
@@ -321,7 +321,7 @@ export function DriversListTable({ drivers, stats, selectedTier, onTierChange, g
                     <SortIcon field="iadcPercent" />
                   </div>
                 </TableHead>
-                {granularity === "week" && (
+                {periodMode === "week" && (
                   <TableHead
                     className="cursor-pointer text-center text-muted-foreground hover:text-foreground"
                     onClick={() => handleSort("daysActive")}
@@ -394,7 +394,7 @@ export function DriversListTable({ drivers, stats, selectedTier, onTierChange, g
                       </span>
                     </TableCell>
                     <TableCell className="text-right font-medium text-card-foreground">{driver.iadcPercent}%</TableCell>
-                    {granularity === "week" && (
+                    {periodMode === "week" && (
                       <TableCell className="text-center text-card-foreground">{driver.daysActive}/7</TableCell>
                     )}
                     <TableCell className="text-center text-card-foreground">{errorCount}</TableCell>

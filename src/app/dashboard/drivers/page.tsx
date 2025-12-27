@@ -14,53 +14,60 @@ import { downloadCSV, formatDriversForCSV } from "@/lib/utils/csv"
 import { toast } from "sonner"
 
 export default function DriversPage() {
-  const { selectedStation, selectedDate, granularity } = useDashboardStore()
+  const { selectedStation, selectedDate, periodMode, dateRange } = useDashboardStore()
   const week = getWeek(selectedDate, { weekStartsOn: 1 })
   const year = selectedDate.getFullYear()
   const dateStr = format(selectedDate, "yyyy-MM-dd")
+
+  // For range mode, we'll fall back to week for now (could add range queries later)
+  const effectiveMode = periodMode === "range" ? "week" : periodMode
 
   const [selectedTier, setSelectedTier] = useState("all")
 
   // Get station from Convex
   const station = useQuery(api.stations.getStationByCode, { code: selectedStation.code })
 
-  // Get KPIs - choose query based on granularity
+  // Get KPIs - choose query based on period mode
   const kpisWeekly = useQuery(
     api.stats.getDashboardKPIs,
-    station && granularity === "week" ? { stationId: station._id, year, week } : "skip"
+    station && effectiveMode === "week" ? { stationId: station._id, year, week } : "skip"
   )
   const kpisDaily = useQuery(
     api.stats.getDashboardKPIsDaily,
-    station && granularity === "day" ? { stationId: station._id, date: dateStr } : "skip"
+    station && effectiveMode === "day" ? { stationId: station._id, date: dateStr } : "skip"
   )
-  const kpis = granularity === "week" ? kpisWeekly : kpisDaily
+  const kpis = effectiveMode === "week" ? kpisWeekly : kpisDaily
 
-  // Get drivers list - choose query based on granularity
+  // Get drivers list - choose query based on period mode
   const driversWeekly = useQuery(
     api.stats.getDashboardDrivers,
-    station && granularity === "week" ? { stationId: station._id, year, week } : "skip"
+    station && effectiveMode === "week" ? { stationId: station._id, year, week } : "skip"
   )
   const driversDaily = useQuery(
     api.stats.getDashboardDriversDaily,
-    station && granularity === "day" ? { stationId: station._id, date: dateStr } : "skip"
+    station && effectiveMode === "day" ? { stationId: station._id, date: dateStr } : "skip"
   )
-  const drivers = granularity === "week" ? driversWeekly : driversDaily
+  const drivers = effectiveMode === "week" ? driversWeekly : driversDaily
 
-  // Calculate comparison label based on granularity
+  // Calculate comparison label based on period mode
   const getComparisonLabel = () => {
-    if (granularity === "week") {
+    if (periodMode === "week") {
       const prevWeek = week === 1 ? 52 : week - 1
       return `vs S${prevWeek}`
-    } else {
+    } else if (periodMode === "day") {
       return "vs veille"
+    } else {
+      return "vs période préc."
     }
   }
   const comparisonLabel = getComparisonLabel()
 
   // Period label for display
   const getPeriodLabel = () => {
-    if (granularity === "week") {
+    if (periodMode === "week") {
       return `Semaine ${week}`
+    } else if (periodMode === "range" && dateRange) {
+      return `${format(dateRange.from, "d MMM", { locale: fr })} - ${format(dateRange.to, "d MMM", { locale: fr })}`
     } else {
       return format(selectedDate, "EEEE d MMMM", { locale: fr })
     }
@@ -197,7 +204,7 @@ export default function DriversPage() {
           stats={tierStats}
           selectedTier={selectedTier}
           onTierChange={setSelectedTier}
-          granularity={granularity}
+          periodMode={effectiveMode}
         />
       </div>
     </main>

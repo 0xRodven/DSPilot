@@ -10,7 +10,7 @@ import { api } from "../../../convex/_generated/api"
 import { getWeek } from "date-fns"
 
 export function TopErrors() {
-  const { selectedStation, selectedDate, granularity } = useDashboardStore()
+  const { selectedStation, selectedDate, periodMode } = useDashboardStore()
   const week = getWeek(selectedDate, { weekStartsOn: 1 })
   const year = selectedDate.getFullYear()
 
@@ -23,7 +23,7 @@ export function TopErrors() {
     station ? { stationId: station._id, year, week } : "skip"
   )
 
-  const periodLabel = granularity === "week"
+  const periodLabel = periodMode === "week"
     ? `Semaine ${week}`
     : selectedDate.toLocaleDateString("fr-FR", { day: "numeric", month: "short" })
 

@@ -11,10 +11,12 @@ import { parseHtmlFile, calculateDwcPercent, calculateIadcPercent, calculateFlee
 import { getTier } from "@/lib/utils/tier"
 import type { ParsedImportData } from "@/lib/types"
 import { Dropzone } from "@/components/import/dropzone"
+import { CsvDropzone } from "@/components/import/csv-dropzone"
 import { FormatGuide } from "@/components/import/format-guide"
 import { ImportState, type ImportStep } from "@/components/import/import-state"
 import { ImportHistory } from "@/components/import/import-history"
 import { CoverageStats } from "@/components/import/coverage-stats"
+import type { DriverNameMapping } from "@/lib/parser/driver-names-csv"
 
 // Convert ParsedReport to ParsedImportData format for UI
 function convertToParsedImportData(report: ParsedReport): ParsedImportData {
@@ -82,11 +84,16 @@ export default function ImportPage() {
     dailyRecords: number
     weeklyRecords: number
     newDrivers: number
+    namesUpdated?: number
   } | null>(null)
+
+  // CSV driver names mapping
+  const [driverMappings, setDriverMappings] = useState<DriverNameMapping[]>([])
 
   // Convex mutations
   const getOrCreateStation = useMutation(api.stations.getOrCreateStation)
   const bulkUpsertDrivers = useMutation(api.drivers.bulkUpsertDrivers)
+  const bulkUpdateDriverNames = useMutation(api.drivers.bulkUpdateDriverNames)
   const bulkUpsertDailyStats = useMutation(api.stats.bulkUpsertDailyStats)
   const bulkUpsertWeeklyStats = useMutation(api.stats.bulkUpsertWeeklyStats)
   const updateStationWeeklyStats = useMutation(api.stats.updateStationWeeklyStats)
@@ -177,6 +184,7 @@ export default function ImportPage() {
     setErrorMessage("")
     setErrorDetails("")
     setSuccessStats(null)
+    setDriverMappings([])
   }, [])
 
   const handleConfirm = useCallback(async () => {
@@ -237,7 +245,7 @@ export default function ImportPage() {
 
       // 3. Upsert drivers
       console.log("[Import] Step 3: Upserting", parsedReport.transporterIds.length, "drivers...")
-      setProgress(20)
+      setProgress(18)
       const weekKey = `${parsedReport.year}-${parsedReport.week}`
       const driverMap = await bulkUpsertDrivers({
         stationId,
@@ -245,6 +253,19 @@ export default function ImportPage() {
         weekKey,
       })
       console.log("[Import] Drivers upserted:", Object.keys(driverMap).length)
+
+      // 3b. Update driver names if CSV was provided
+      let namesUpdated = 0
+      if (driverMappings.length > 0) {
+        console.log("[Import] Step 3b: Updating driver names from CSV...")
+        setProgress(22)
+        const nameResult = await bulkUpdateDriverNames({
+          stationId,
+          mappings: driverMappings,
+        })
+        namesUpdated = nameResult.updated
+        console.log("[Import] Driver names updated:", nameResult)
+      }
 
       // 4. Upsert daily stats (in batches)
       console.log("[Import] Step 4: Preparing daily stats...")
@@ -284,6 +305,17 @@ export default function ImportPage() {
       // 5. Upsert weekly stats
       console.log("[Import] Step 5: Inserting weekly stats...")
       setProgress(60)
+
+      // Calculate days worked per driver from daily stats
+      const daysWorkedByDriver = new Map<string, number>()
+      for (const stat of parsedReport.dailyStats) {
+        const hasActivity = stat.dwcCompliant + stat.dwcMisses + stat.failedAttempts > 0
+        if (hasActivity) {
+          const current = daysWorkedByDriver.get(stat.transporterId) || 0
+          daysWorkedByDriver.set(stat.transporterId, current + 1)
+        }
+      }
+
       const weeklyStatsWithIds = parsedReport.weeklyStats.map((stat) => ({
         driverId: driverMap[stat.transporterId],
         stationId,
@@ -294,7 +326,7 @@ export default function ImportPage() {
         failedAttempts: stat.failedAttempts,
         iadcCompliant: stat.iadcCompliant,
         iadcNonCompliant: stat.iadcNonCompliant,
-        daysWorked: 7,
+        daysWorked: daysWorkedByDriver.get(stat.transporterId) || 0,
         dwcBreakdown: stat.dwcBreakdown,
         iadcBreakdown: stat.iadcBreakdown
           ? {
@@ -346,12 +378,14 @@ export default function ImportPage() {
         drivers: parsedReport.transporterIds.length,
         dailyRecords: dailyStatsWithIds.length,
         weeklyRecords: weeklyStatsWithIds.length,
+        namesUpdated,
       })
       setSuccessStats({
         driversImported: parsedReport.transporterIds.length,
         dailyRecords: dailyStatsWithIds.length,
         weeklyRecords: weeklyStatsWithIds.length,
         newDrivers: 0,
+        namesUpdated,
       })
       setImportStep("success")
     } catch (err) {
@@ -365,10 +399,12 @@ export default function ImportPage() {
     parsedData,
     user,
     isUserLoaded,
+    driverMappings,
     getOrCreateStation,
     createImport,
     startProcessing,
     bulkUpsertDrivers,
+    bulkUpdateDriverNames,
     bulkUpsertDailyStats,
     bulkUpsertWeeklyStats,
     updateStationWeeklyStats,
@@ -384,6 +420,7 @@ export default function ImportPage() {
     setErrorMessage("")
     setErrorDetails("")
     setSuccessStats(null)
+    setDriverMappings([])
   }, [])
 
   const handleViewDashboard = useCallback(() => {
@@ -464,24 +501,38 @@ export default function ImportPage() {
 
         {/* Zone 1: Upload + Guide */}
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-          <div className="lg:col-span-3">
+          <div className="lg:col-span-3 space-y-4">
             {!importStep ? (
-              <Dropzone onFileSelect={handleFileSelect} onUrlImport={handleUrlImport} />
+              <>
+                <Dropzone onFileSelect={handleFileSelect} onUrlImport={handleUrlImport} />
+                <CsvDropzone
+                  mappings={driverMappings}
+                  onMappingsChange={setDriverMappings}
+                />
+              </>
             ) : (
-              <ImportState
-                step={importStep}
-                progress={progress}
-                filename={filename}
-                parsingSteps={parsingSteps}
-                parsedData={parsedData || undefined}
-                errorMessage={errorMessage}
-                errorDetails={errorDetails}
-                successStats={successStats || undefined}
-                onCancel={handleCancel}
-                onConfirm={handleConfirm}
-                onReset={handleReset}
-                onViewDashboard={handleViewDashboard}
-              />
+              <>
+                <ImportState
+                  step={importStep}
+                  progress={progress}
+                  filename={filename}
+                  parsingSteps={parsingSteps}
+                  parsedData={parsedData || undefined}
+                  errorMessage={errorMessage}
+                  errorDetails={errorDetails}
+                  successStats={successStats || undefined}
+                  onCancel={handleCancel}
+                  onConfirm={handleConfirm}
+                  onReset={handleReset}
+                  onViewDashboard={handleViewDashboard}
+                />
+                {importStep === "preview" && (
+                  <CsvDropzone
+                    mappings={driverMappings}
+                    onMappingsChange={setDriverMappings}
+                  />
+                )}
+              </>
             )}
           </div>
           <div className="lg:col-span-2">

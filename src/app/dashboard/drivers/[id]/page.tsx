@@ -8,6 +8,7 @@ import type { Id } from "../../../../../convex/_generated/dataModel"
 import { DriverHeader } from "@/components/drivers/driver-header"
 import { DriverKpis } from "@/components/drivers/driver-kpis"
 import { DriverPerformanceChart } from "@/components/drivers/driver-performance-chart"
+import { DailyPerformanceChartWithCoaching } from "@/components/drivers/daily-performance-chart-with-coaching"
 import { ErrorBreakdown } from "@/components/drivers/error-breakdown"
 import { CoachingHistory } from "@/components/drivers/coaching-history"
 import { DailyPerformance } from "@/components/drivers/daily-performance"
@@ -168,7 +169,7 @@ function NoDataState({ driverName }: { driverName: string }) {
 
 export default function DriverDetailPage({ params }: DriverDetailPageProps) {
   const { id } = use(params)
-  const { selectedStation, selectedDate, granularity } = useDashboardStore()
+  const { selectedStation, selectedDate, periodMode } = useDashboardStore()
   const [coachingModalOpen, setCoachingModalOpen] = useState(false)
 
   // Calculate current week/year
@@ -190,13 +191,15 @@ export default function DriverDetailPage({ params }: DriverDetailPageProps) {
     driverId: id as Id<"drivers">,
   })
 
-  // Calculate comparison label based on granularity
+  // Calculate comparison label based on period mode
   const getComparisonLabel = () => {
-    if (granularity === "week") {
+    if (periodMode === "week") {
       const prevWeek = week === 1 ? 52 : week - 1
       return `vs S${prevWeek}`
-    } else {
+    } else if (periodMode === "day") {
       return "vs veille"
+    } else {
+      return "vs période préc."
     }
   }
   const comparisonLabel = getComparisonLabel()
@@ -248,7 +251,15 @@ export default function DriverDetailPage({ params }: DriverDetailPageProps) {
           <DriverKpis driver={driver} comparisonLabel={comparisonLabel} />
         </div>
 
-        {/* Performance Chart */}
+        {/* Daily Performance Chart with Coaching Markers */}
+        <div className="mb-6">
+          <DailyPerformanceChartWithCoaching
+            driverId={id as Id<"drivers">}
+            driverName={driver.name}
+          />
+        </div>
+
+        {/* Weekly Performance Chart */}
         <div className="mb-6">
           <DriverPerformanceChart driver={driver} />
         </div>

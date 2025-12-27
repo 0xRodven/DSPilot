@@ -190,6 +190,16 @@ export function useImport(options: UseImportOptions) {
         percent: 70,
       });
 
+      // Calculate days worked per driver from daily stats
+      const daysWorkedByDriver = new Map<string, number>();
+      for (const stat of report.dailyStats) {
+        const hasActivity = stat.dwcCompliant + stat.dwcMisses + stat.failedAttempts > 0;
+        if (hasActivity) {
+          const current = daysWorkedByDriver.get(stat.transporterId) || 0;
+          daysWorkedByDriver.set(stat.transporterId, current + 1);
+        }
+      }
+
       const weeklyStatsWithIds = report.weeklyStats.map((stat) => ({
         driverId: driverMap[stat.transporterId],
         stationId,
@@ -200,7 +210,7 @@ export function useImport(options: UseImportOptions) {
         failedAttempts: stat.failedAttempts,
         iadcCompliant: stat.iadcCompliant,
         iadcNonCompliant: stat.iadcNonCompliant,
-        daysWorked: 7, // TODO: calculer depuis les daily stats
+        daysWorked: daysWorkedByDriver.get(stat.transporterId) || 0,
         dwcBreakdown: stat.dwcBreakdown,
         iadcBreakdown: stat.iadcBreakdown
           ? {

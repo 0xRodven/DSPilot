@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { useQuery, useMutation } from "convex/react"
 import { api } from "../../../convex/_generated/api"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
@@ -10,13 +10,16 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
-import { Search, MessageSquare, AlertTriangle, BookOpen, Ban, Lightbulb } from "lucide-react"
+import { Calendar } from "@/components/ui/calendar"
+import { Search, MessageSquare, AlertTriangle, BookOpen, Ban, Lightbulb, CalendarIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { CoachingSuggestion } from "@/lib/types"
 import { getTierBgColor } from "@/lib/utils/tier"
 import type { CoachingActionType } from "@/lib/utils/status"
 import { withToast } from "@/lib/utils/mutation"
 import type { Id } from "../../../convex/_generated/dataModel"
+import { format, addWeeks, addMonths } from "date-fns"
+import { fr } from "date-fns/locale"
 
 interface NewActionModalProps {
   open: boolean
@@ -40,13 +43,6 @@ const reasonSuggestions = [
   "Nouveau passage en tier Poor",
 ]
 
-const followUpOptions = [
-  { value: "1w", label: "Dans 1 semaine" },
-  { value: "2w", label: "Dans 2 semaines" },
-  { value: "1m", label: "Dans 1 mois" },
-  { value: "custom", label: "Date personnalisée" },
-]
-
 export function NewActionModal({ open, onOpenChange, prefillSuggestion, stationId }: NewActionModalProps) {
   const [driverSearch, setDriverSearch] = useState("")
   const [selectedDriver, setSelectedDriver] = useState<Id<"drivers"> | null>(null)
@@ -56,8 +52,24 @@ export function NewActionModal({ open, onOpenChange, prefillSuggestion, stationI
   const [targetCategory, setTargetCategory] = useState("")
   const [targetSubcategory, setTargetSubcategory] = useState("")
   const [notes, setNotes] = useState("")
-  const [followUp, setFollowUp] = useState("2w")
+  const [followUpDate, setFollowUpDate] = useState<Date>(addWeeks(new Date(), 2))
+  const [showCalendar, setShowCalendar] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  // Get existing follow-up dates for the calendar
+  const currentMonth = useMemo(() => followUpDate.getMonth() + 1, [followUpDate])
+  const currentYear = useMemo(() => followUpDate.getFullYear(), [followUpDate])
+
+  const followUpDates = useQuery(
+    api.coaching.getFollowUpDatesForMonth,
+    stationId ? { stationId, year: currentYear, month: currentMonth } : "skip"
+  )
+
+  // Get dates with follow-ups for highlighting in calendar
+  const datesWithFollowUps = useMemo(() => {
+    if (!followUpDates) return []
+    return followUpDates.map((f) => new Date(f.date))
+  }, [followUpDates])
 
   // Get drivers from Convex
   const drivers = useQuery(api.stats.getDashboardDrivers, {
@@ -67,6 +79,12 @@ export function NewActionModal({ open, onOpenChange, prefillSuggestion, stationI
   })
 
   const createAction = useMutation(api.coaching.createCoachingAction)
+
+  // Get pipeline suggestion for selected driver
+  const pipelineSuggestion = useQuery(
+    api.coaching.getCoachingPipelineSuggestion,
+    selectedDriver ? { driverId: selectedDriver } : "skip"
+  )
 
   // Reset form when suggestion changes
   useEffect(() => {
@@ -94,12 +112,6 @@ export function NewActionModal({ open, onOpenChange, prefillSuggestion, stationI
     if (!selectedDriver || !reason) return
 
     setIsSubmitting(true)
-
-    // Calculate follow up date
-    const followUpDate = new Date()
-    if (followUp === "1w") followUpDate.setDate(followUpDate.getDate() + 7)
-    else if (followUp === "2w") followUpDate.setDate(followUpDate.getDate() + 14)
-    else if (followUp === "1m") followUpDate.setMonth(followUpDate.getMonth() + 1)
 
     const result = await withToast(
       createAction({
@@ -129,9 +141,27 @@ export function NewActionModal({ open, onOpenChange, prefillSuggestion, stationI
       setTargetCategory("")
       setTargetSubcategory("")
       setNotes("")
+      setFollowUpDate(addWeeks(new Date(), 2))
       onOpenChange(false)
     }
     setIsSubmitting(false)
+  }
+
+  // Handle preset selection
+  const handlePreset = (preset: "1w" | "2w" | "1m") => {
+    const now = new Date()
+    switch (preset) {
+      case "1w":
+        setFollowUpDate(addWeeks(now, 1))
+        break
+      case "2w":
+        setFollowUpDate(addWeeks(now, 2))
+        break
+      case "1m":
+        setFollowUpDate(addMonths(now, 1))
+        break
+    }
+    setShowCalendar(false)
   }
 
   return (
@@ -231,6 +261,52 @@ export function NewActionModal({ open, onOpenChange, prefillSuggestion, stationI
                 </div>
               </div>
             )}
+
+            {/* Pipeline Suggestion Banner */}
+            {selectedDriver && pipelineSuggestion && (
+              <div className={cn(
+                "rounded-lg border p-4",
+                pipelineSuggestion.history.warningCount >= 3
+                  ? "border-red-500/30 bg-red-500/10"
+                  : "border-amber-500/30 bg-amber-500/10"
+              )}>
+                <div className="flex items-start gap-3">
+                  <Lightbulb className="h-5 w-5 text-amber-400 mt-0.5 shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-white">
+                      Suggestion: {actionTypes.find(a => a.type === pipelineSuggestion.suggestedAction)?.label}
+                    </p>
+                    <p className="text-sm text-zinc-400 mt-1">
+                      {pipelineSuggestion.reason}
+                    </p>
+                    <div className="flex flex-wrap gap-3 mt-2 text-xs text-zinc-500">
+                      <span>{pipelineSuggestion.history.discussionCount} discussion{pipelineSuggestion.history.discussionCount > 1 ? "s" : ""}</span>
+                      <span>{pipelineSuggestion.history.trainingCount} formation{pipelineSuggestion.history.trainingCount > 1 ? "s" : ""}</span>
+                      <span className={cn(
+                        pipelineSuggestion.history.warningCount >= 3 && "text-red-400 font-medium"
+                      )}>
+                        {pipelineSuggestion.history.warningCount}/3 avertissement{pipelineSuggestion.history.warningCount > 1 ? "s" : ""}
+                      </span>
+                    </div>
+
+                    {pipelineSuggestion.history.warningCount >= 3 && (
+                      <div className="mt-2 flex items-center gap-2 text-red-400 text-sm">
+                        <AlertTriangle className="h-4 w-4" />
+                        <span>3 avertissements atteints - Suspension recommandée</span>
+                      </div>
+                    )}
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="border-amber-500/50 text-amber-400 hover:bg-amber-500/10 shrink-0"
+                    onClick={() => setSelectedType(pipelineSuggestion.suggestedAction)}
+                  >
+                    Appliquer
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Action Type */}
@@ -322,20 +398,91 @@ export function NewActionModal({ open, onOpenChange, prefillSuggestion, stationI
           </div>
 
           {/* Follow Up Date */}
-          <div className="space-y-2">
+          <div className="space-y-3">
             <Label>Date de suivi</Label>
-            <Select value={followUp} onValueChange={setFollowUp}>
-              <SelectTrigger className="border-zinc-700 bg-zinc-800">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="border-zinc-700 bg-zinc-900">
-                {followUpOptions.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+
+            {/* Presets */}
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className={cn(
+                  "border-zinc-700 bg-zinc-800",
+                  format(followUpDate, "yyyy-MM-dd") === format(addWeeks(new Date(), 1), "yyyy-MM-dd") && "border-blue-500 bg-blue-500/10"
+                )}
+                onClick={() => handlePreset("1w")}
+              >
+                1 semaine
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className={cn(
+                  "border-zinc-700 bg-zinc-800",
+                  format(followUpDate, "yyyy-MM-dd") === format(addWeeks(new Date(), 2), "yyyy-MM-dd") && "border-blue-500 bg-blue-500/10"
+                )}
+                onClick={() => handlePreset("2w")}
+              >
+                2 semaines
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className={cn(
+                  "border-zinc-700 bg-zinc-800",
+                  format(followUpDate, "yyyy-MM-dd") === format(addMonths(new Date(), 1), "yyyy-MM-dd") && "border-blue-500 bg-blue-500/10"
+                )}
+                onClick={() => handlePreset("1m")}
+              >
+                1 mois
+              </Button>
+            </div>
+
+            {/* Selected date display */}
+            <button
+              type="button"
+              onClick={() => setShowCalendar(!showCalendar)}
+              className="flex w-full items-center justify-between rounded-lg border border-zinc-700 bg-zinc-800 p-3 text-left transition-colors hover:bg-zinc-700"
+            >
+              <div className="flex items-center gap-2">
+                <CalendarIcon className="h-4 w-4 text-zinc-400" />
+                <span>{format(followUpDate, "EEEE d MMMM yyyy", { locale: fr })}</span>
+              </div>
+              <span className="text-sm text-zinc-400">Modifier</span>
+            </button>
+
+            {/* Mini Calendar */}
+            {showCalendar && (
+              <div className="rounded-lg border border-zinc-700 bg-zinc-800 p-2">
+                <Calendar
+                  mode="single"
+                  selected={followUpDate}
+                  onSelect={(date) => {
+                    if (date) {
+                      setFollowUpDate(date)
+                      setShowCalendar(false)
+                    }
+                  }}
+                  disabled={(date) => date < new Date()}
+                  modifiers={{
+                    hasFollowUp: datesWithFollowUps,
+                  }}
+                  modifiersClassNames={{
+                    hasFollowUp: "relative after:absolute after:bottom-1 after:left-1/2 after:-translate-x-1/2 after:h-1 after:w-1 after:rounded-full after:bg-orange-400",
+                  }}
+                  className="rounded-md"
+                />
+                {datesWithFollowUps.length > 0 && (
+                  <div className="mt-2 flex items-center gap-2 border-t border-zinc-700 pt-2 text-xs text-zinc-400">
+                    <div className="h-2 w-2 rounded-full bg-orange-400" />
+                    <span>Autres suivis planifiés</span>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
 

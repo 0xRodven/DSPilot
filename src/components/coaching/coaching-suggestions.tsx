@@ -11,6 +11,7 @@ import { getTierBgColor } from "@/lib/utils/tier"
 interface CoachingSuggestionsProps {
   suggestions: CoachingSuggestion[]
   onPlanCoaching: (suggestion: CoachingSuggestion) => void
+  className?: string
 }
 
 const priorityConfig = {
@@ -102,7 +103,7 @@ function SuggestionCard({
   )
 }
 
-export function CoachingSuggestions({ suggestions, onPlanCoaching }: CoachingSuggestionsProps) {
+export function CoachingSuggestions({ suggestions, onPlanCoaching, className }: CoachingSuggestionsProps) {
   const groupedSuggestions = {
     high: suggestions.filter((s) => s.priority === "high" || s.priority === "new_poor"),
     negative_trend: suggestions.filter((s) => s.priority === "negative_trend"),
@@ -110,15 +111,15 @@ export function CoachingSuggestions({ suggestions, onPlanCoaching }: CoachingSug
   }
 
   return (
-    <Card className="border-zinc-800 bg-zinc-900/50">
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-lg font-semibold text-white">
+    <Card className={cn("border-border bg-card flex flex-col overflow-hidden", className)}>
+      <CardHeader className="pb-3 flex-shrink-0">
+        <CardTitle className="flex items-center gap-2 text-lg font-semibold text-card-foreground">
           <Target className="h-5 w-5 text-blue-400" />
           Suggestions de coaching
         </CardTitle>
-        <p className="text-sm text-zinc-500">Drivers à risque détectés automatiquement</p>
+        <p className="text-sm text-muted-foreground">Drivers à risque détectés automatiquement</p>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-4 flex-1 overflow-y-auto">
         {/* High Priority */}
         {groupedSuggestions.high.length > 0 && (
           <div>

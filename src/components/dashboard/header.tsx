@@ -14,18 +14,15 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Bell, ChevronLeft, ChevronRight, User, LogOut, Settings, Moon, Sun } from "lucide-react"
-import { DatePresetPicker } from "./date-preset-picker"
-import { format, startOfWeek, endOfWeek, getWeek } from "date-fns"
-import { fr } from "date-fns/locale"
+import { Bell, User, LogOut, Settings, Moon, Sun } from "lucide-react"
+import { PeriodPicker } from "./period-picker"
 import { useTheme } from "next-themes"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { Separator } from "@/components/ui/separator"
 import { Skeleton } from "@/components/ui/skeleton"
 
 export function Header() {
-  const { selectedStation, setSelectedStation, granularity, setGranularity, selectedDate, setSelectedDate, navigatePeriod } =
-    useDashboardStore()
+  const { selectedStation, setSelectedStation } = useDashboardStore()
 
   const { theme, setTheme } = useTheme()
 
@@ -44,24 +41,6 @@ export function Header() {
       })
     }
   }, [stations, selectedStation.id, setSelectedStation])
-
-  const formatPeriod = () => {
-    if (granularity === "week") {
-      const weekNum = getWeek(selectedDate, { locale: fr })
-      const start = startOfWeek(selectedDate, { weekStartsOn: 1 })
-      const end = endOfWeek(selectedDate, { weekStartsOn: 1 })
-      return {
-        main: `Semaine ${weekNum}, ${selectedDate.getFullYear()}`,
-        sub: `${format(start, "d", { locale: fr })} - ${format(end, "d MMMM", { locale: fr })}`,
-      }
-    }
-    return {
-      main: format(selectedDate, "EEEE d MMMM yyyy", { locale: fr }),
-      sub: null,
-    }
-  }
-
-  const period = formatPeriod()
 
   return (
     <header className="sticky top-0 z-40 flex h-14 md:h-16 shrink-0 items-center gap-2 border-b border-border bg-background/80 px-3 md:px-4 backdrop-blur-sm">
@@ -119,40 +98,8 @@ export function Header() {
             </Button>
           )}
 
-          {/* Period navigation */}
-          <div className="flex items-center gap-1 md:gap-2 rounded-lg border border-border bg-card px-2 md:px-3 py-1">
-            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => navigatePeriod("prev")}>
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-
-            <div className="min-w-[80px] md:min-w-[200px] text-center">
-              <div className="text-xs md:text-sm font-medium capitalize truncate">{period.main}</div>
-              {period.sub && <div className="text-[10px] md:text-xs text-muted-foreground capitalize hidden sm:block">{period.sub}</div>}
-            </div>
-
-            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => navigatePeriod("next")}>
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-
-            <div className="ml-1 md:ml-2 border-l border-border pl-1 md:pl-2 hidden sm:block">
-              <DatePresetPicker
-                selectedDate={selectedDate}
-                onDateChange={setSelectedDate}
-                granularity={granularity}
-              />
-            </div>
-          </div>
-
-          {/* Granularity selector - hidden on mobile */}
-          <Select value={granularity} onValueChange={(value: "day" | "week") => setGranularity(value)}>
-            <SelectTrigger className="w-[80px] md:w-[120px] border-border bg-card text-card-foreground h-9 hidden sm:flex">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent className="bg-popover text-popover-foreground">
-              <SelectItem value="day">Jour</SelectItem>
-              <SelectItem value="week">Semaine</SelectItem>
-            </SelectContent>
-          </Select>
+          {/* Period picker */}
+          <PeriodPicker />
         </div>
 
         {/* Right side */}

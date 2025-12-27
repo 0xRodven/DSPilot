@@ -12,6 +12,7 @@ import type * as admin from "../admin.js";
 import type * as coaching from "../coaching.js";
 import type * as drivers from "../drivers.js";
 import type * as imports from "../imports.js";
+import type * as seed from "../seed.js";
 import type * as stations from "../stations.js";
 import type * as stats from "../stats.js";
 
@@ -26,6 +27,7 @@ declare const fullApi: ApiFromModules<{
   coaching: typeof coaching;
   drivers: typeof drivers;
   imports: typeof imports;
+  seed: typeof seed;
   stations: typeof stations;
   stats: typeof stats;
 }>;

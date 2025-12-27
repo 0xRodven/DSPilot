@@ -127,6 +127,7 @@ export interface CoachingAction {
 
 export interface CoachingActionFull {
   id: string
+  stationId: string
   driverId: string
   driverName: string
   driverAmazonId: string
@@ -245,4 +246,46 @@ export interface WeekCoverage {
   week: number
   year: number
   status: "complete" | "partial" | "failed" | "missing"
+}
+
+// Daily performance with coaching marker (for chart)
+export interface DailyPerformanceWithCoaching {
+  date: string
+  dwcPercent: number | null
+  iadcPercent: number | null
+  deliveries: number
+  errors: number
+  coachingAction: CoachingMarkerData | null
+}
+
+export interface CoachingMarkerData {
+  id: string
+  actionType: CoachingActionType
+  status: CoachingStatus
+  reason: string
+  dwcAtAction: number
+  dwcAfterAction?: number
+  followUpDate?: string
+  notes?: string
+  createdAt: number
+}
+
+// Coaching pipeline suggestion
+export interface CoachingPipelineSuggestion {
+  suggestedAction: CoachingActionType
+  reason: string
+  pipelineStage: 1 | 2 | 3 | 4 | 5
+  history: {
+    discussionCount: number
+    warningCount: number
+    trainingCount: number
+    suspensionCount: number
+    pendingActions: number
+    lastAction?: {
+      type: CoachingActionType
+      date: string
+      status: CoachingStatus
+    }
+  }
+  canEscalate: boolean
 }

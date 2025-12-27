@@ -1,19 +1,20 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState } from "react"
+import Link from "next/link"
 import { useQuery } from "convex/react"
 import { api } from "../../../../convex/_generated/api"
+import type { Id } from "../../../../convex/_generated/dataModel"
 import { useDashboardStore } from "@/lib/store"
 import { getWeek } from "date-fns"
-import { GraduationCap } from "lucide-react"
+import { GraduationCap, Calendar, ChevronRight, Plus } from "lucide-react"
+import { Button } from "@/components/ui/button"
 import { CoachingKPIs } from "@/components/coaching/coaching-kpis"
-import { CoachingToolbar } from "@/components/coaching/coaching-toolbar"
-import { ActionCard } from "@/components/coaching/action-card"
-import { CoachingSuggestions } from "@/components/coaching/coaching-suggestions"
+import { CoachingKanban } from "@/components/coaching/kanban"
 import { CoachingEffectiveness } from "@/components/coaching/coaching-effectiveness"
 import { NewActionModal } from "@/components/coaching/new-action-modal"
 import { EvaluateActionModal } from "@/components/coaching/evaluate-action-modal"
-import type { CoachingActionFull, CoachingSuggestion } from "@/lib/types"
+import type { CoachingSuggestion, CoachingActionFull } from "@/lib/types"
 
 export default function CoachingPage() {
   const { selectedStation, selectedDate } = useDashboardStore()
@@ -23,54 +24,49 @@ export default function CoachingPage() {
   // Get station from Convex
   const station = useQuery(api.stations.getStationByCode, { code: selectedStation.code })
 
-  // Get coaching data from Convex
+  // Get coaching stats from Convex
   const stats = useQuery(
     api.coaching.getCoachingStats,
     station ? { stationId: station._id } : "skip"
   )
 
-  // Filters
-  const [searchQuery, setSearchQuery] = useState("")
-  const [typeFilter, setTypeFilter] = useState("all")
-  const [periodFilter, setPeriodFilter] = useState("all")
-  const [statusFilter, setStatusFilter] = useState<string | null>(null)
-
-  // Get coaching actions from Convex with filters
-  const actions = useQuery(
-    api.coaching.listCoachingActions,
-    station
-      ? {
-          stationId: station._id,
-          status: statusFilter || undefined,
-          actionType: typeFilter !== "all" ? typeFilter : undefined,
-          search: searchQuery || undefined,
-        }
-      : "skip"
-  )
-
-  // Get suggestions for drivers needing coaching
-  const suggestions = useQuery(
-    api.coaching.getCoachingSuggestions,
-    station ? { stationId: station._id, year, week } : "skip"
-  )
-
-  // Modals
+  // Modals state
   const [newActionOpen, setNewActionOpen] = useState(false)
   const [evaluateOpen, setEvaluateOpen] = useState(false)
-  const [actionToEvaluate, setActionToEvaluate] = useState<CoachingActionFull | null>(null)
   const [prefillSuggestion, setPrefillSuggestion] = useState<CoachingSuggestion | null>(null)
+  const [actionToEvaluate, setActionToEvaluate] = useState<CoachingActionFull | null>(null)
+  const [statusFilter, setStatusFilter] = useState<string | null>(null)
 
-  // Filter actions is now handled by the query
-  const filteredActions = actions || []
+  // Get all actions for finding the one to evaluate
+  const actions = useQuery(
+    api.coaching.listCoachingActions,
+    station ? { stationId: station._id } : "skip"
+  )
 
-  const handleEvaluate = (action: CoachingActionFull) => {
-    setActionToEvaluate(action)
-    setEvaluateOpen(true)
+  // Handlers
+  const handlePlanCoaching = (driverId: Id<"drivers">, driverName: string, dwcPercent: number) => {
+    setPrefillSuggestion({
+      id: `kanban-${driverId}`,
+      driverId,
+      driverName,
+      driverTier: dwcPercent >= 90 ? "fair" : "poor",
+      driverDwc: dwcPercent,
+      priority: dwcPercent < 90 ? "high" : "new_poor",
+      reason: `Performance sous le seuil: ${dwcPercent}% DWC`,
+      mainError: "DWC",
+      mainErrorCount: 0,
+      hasActiveAction: false,
+    })
+    setNewActionOpen(true)
   }
 
-  const handlePlanCoaching = (suggestion: CoachingSuggestion) => {
-    setPrefillSuggestion(suggestion)
-    setNewActionOpen(true)
+  const handleEvaluateAction = (actionId: Id<"coachingActions">) => {
+    // Find the action in our list
+    const action = actions?.find((a) => a.id === actionId)
+    if (action) {
+      setActionToEvaluate(action)
+      setEvaluateOpen(true)
+    }
   }
 
   const handleNewAction = () => {
@@ -109,7 +105,7 @@ export default function CoachingPage() {
     <main className="min-h-[calc(100vh-4rem)]">
       <div className="p-6">
         {/* Page Title */}
-        <div className="mb-6">
+        <div className="mb-6 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <GraduationCap className="h-8 w-8 text-primary" />
             <div>
@@ -119,6 +115,10 @@ export default function CoachingPage() {
               </p>
             </div>
           </div>
+          <Button onClick={handleNewAction}>
+            <Plus className="mr-2 h-4 w-4" />
+            Nouvelle action
+          </Button>
         </div>
 
         {/* Zone 1: KPIs */}
@@ -126,44 +126,28 @@ export default function CoachingPage() {
           <CoachingKPIs stats={stats} onFilterChange={setStatusFilter} activeFilter={statusFilter} />
         </div>
 
-        {/* Zone 2: Toolbar + Tabs */}
-        <div className="mb-6">
-          <CoachingToolbar
-            searchQuery={searchQuery}
-            onSearchChange={setSearchQuery}
-            typeFilter={typeFilter}
-            onTypeFilterChange={setTypeFilter}
-            periodFilter={periodFilter}
-            onPeriodFilterChange={setPeriodFilter}
-            statusFilter={statusFilter}
-            onStatusFilterChange={setStatusFilter}
-            onNewAction={handleNewAction}
-            stats={stats}
-          />
+        {/* Zone 2: Kanban Header */}
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-foreground">Vue tâches</h2>
+          <Link
+            href="/dashboard/coaching/calendar"
+            className="inline-flex items-center text-sm text-primary hover:underline"
+          >
+            <Calendar className="mr-1.5 h-4 w-4" />
+            Calendrier
+            <ChevronRight className="ml-1 h-4 w-4" />
+          </Link>
         </div>
 
-        {/* Zone 3: Two Columns */}
-        <div className="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-[1fr_360px]">
-          {/* Left: Actions List */}
-          <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">{filteredActions.length} actions • Triées par date décroissante</p>
-            {filteredActions.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12 border border-dashed border-border rounded-lg">
-                <GraduationCap className="h-12 w-12 text-muted-foreground/50 mb-4" />
-                <p className="text-muted-foreground">Aucune action de coaching</p>
-                <p className="text-sm text-muted-foreground mt-1">Créez votre première action</p>
-              </div>
-            ) : (
-              filteredActions.map((action) => (
-                <ActionCard key={action.id} action={action} onEvaluate={handleEvaluate} />
-              ))
-            )}
-          </div>
-
-          {/* Right: Suggestions */}
-          <div>
-            <CoachingSuggestions suggestions={suggestions || []} onPlanCoaching={handlePlanCoaching} />
-          </div>
+        {/* Zone 3: Kanban Board */}
+        <div className="mb-6">
+          <CoachingKanban
+            stationId={station._id}
+            year={year}
+            week={week}
+            onPlanCoaching={handlePlanCoaching}
+            onEvaluateAction={handleEvaluateAction}
+          />
         </div>
 
         {/* Zone 4: Effectiveness */}
@@ -176,7 +160,11 @@ export default function CoachingPage() {
           prefillSuggestion={prefillSuggestion}
           stationId={station._id}
         />
-        <EvaluateActionModal open={evaluateOpen} onOpenChange={setEvaluateOpen} action={actionToEvaluate} />
+        <EvaluateActionModal
+          open={evaluateOpen}
+          onOpenChange={setEvaluateOpen}
+          action={actionToEvaluate}
+        />
       </div>
     </main>
   )

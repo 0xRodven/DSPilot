@@ -1120,3 +1120,115 @@ export const getDashboardDriversDaily = query({
     return driversWithStats.filter((d) => d !== null);
   },
 });
+
+/**
+ * Get weekly comparison for recaps page
+ * Returns drivers with current week, previous week, and diff
+ */
+export const getWeeklyComparison = query({
+  args: {
+    stationId: v.id("stations"),
+    year: v.number(),
+    week: v.number(),
+  },
+  handler: async (ctx, args) => {
+    // Get current week stats
+    const currentWeekStats = await ctx.db
+      .query("driverWeeklyStats")
+      .withIndex("by_station_week", (q) =>
+        q.eq("stationId", args.stationId).eq("year", args.year).eq("week", args.week)
+      )
+      .collect();
+
+    // Calculate previous week
+    const prevWeek = args.week === 1 ? 52 : args.week - 1;
+    const prevYear = args.week === 1 ? args.year - 1 : args.year;
+
+    // Get previous week stats
+    const prevWeekStats = await ctx.db
+      .query("driverWeeklyStats")
+      .withIndex("by_station_week", (q) =>
+        q.eq("stationId", args.stationId).eq("year", prevYear).eq("week", prevWeek)
+      )
+      .collect();
+
+    // Create map of previous week stats by driver
+    const prevStatsByDriver = new Map<string, typeof prevWeekStats[0]>();
+    for (const stat of prevWeekStats) {
+      prevStatsByDriver.set(stat.driverId.toString(), stat);
+    }
+
+    // Build comparison data for each driver
+    const comparisons = await Promise.all(
+      currentWeekStats.map(async (stat) => {
+        const driver = await ctx.db.get(stat.driverId);
+        if (!driver) return null;
+
+        // Calculate current stats
+        const dwcTotal = stat.dwcCompliant + stat.dwcMisses + stat.failedAttempts;
+        const dwcPercent = dwcTotal > 0 ? Math.round((stat.dwcCompliant / dwcTotal) * 1000) / 10 : 0;
+
+        const iadcTotal = stat.iadcCompliant + stat.iadcNonCompliant;
+        const iadcPercent = iadcTotal > 0 ? Math.round((stat.iadcCompliant / iadcTotal) * 1000) / 10 : 0;
+
+        const deliveries = dwcTotal;
+
+        // Get previous week stats
+        const prevStat = prevStatsByDriver.get(stat.driverId.toString());
+
+        let prevDwcPercent = 0;
+        let prevIadcPercent = 0;
+        let prevDeliveries = 0;
+
+        if (prevStat) {
+          const prevDwcTotal = prevStat.dwcCompliant + prevStat.dwcMisses + prevStat.failedAttempts;
+          prevDwcPercent = prevDwcTotal > 0 ? Math.round((prevStat.dwcCompliant / prevDwcTotal) * 1000) / 10 : 0;
+
+          const prevIadcTotal = prevStat.iadcCompliant + prevStat.iadcNonCompliant;
+          prevIadcPercent = prevIadcTotal > 0 ? Math.round((prevStat.iadcCompliant / prevIadcTotal) * 1000) / 10 : 0;
+
+          prevDeliveries = prevDwcTotal;
+        }
+
+        // Calculate diffs
+        const dwcDiff = Math.round((dwcPercent - prevDwcPercent) * 10) / 10;
+        const iadcDiff = Math.round((iadcPercent - prevIadcPercent) * 10) / 10;
+        const deliveriesDiff = deliveries - prevDeliveries;
+
+        // Determine status
+        let status: "ok" | "watch" | "alert" = "ok";
+        if (dwcPercent < 90 || dwcDiff < -5) {
+          status = "alert";
+        } else if (dwcPercent < 96 || dwcDiff < -2) {
+          status = "watch";
+        }
+
+        return {
+          id: driver._id,
+          name: driver.name,
+          amazonId: driver.amazonId,
+          current: {
+            deliveries,
+            dwc: dwcPercent,
+            iadc: iadcPercent,
+          },
+          previous: {
+            deliveries: prevDeliveries,
+            dwc: prevDwcPercent,
+            iadc: prevIadcPercent,
+          },
+          diff: {
+            deliveries: deliveriesDiff,
+            dwc: dwcDiff,
+            iadc: iadcDiff,
+          },
+          status,
+        };
+      })
+    );
+
+    return comparisons
+      .filter((c): c is NonNullable<typeof c> => c !== null)
+      .sort((a, b) => a.current.dwc - b.current.dwc); // Lowest DWC first
+  },
+});
