@@ -6,7 +6,7 @@ import { useQuery } from "convex/react"
 import { api } from "../../../../convex/_generated/api"
 import type { Id } from "../../../../convex/_generated/dataModel"
 import { useDashboardStore } from "@/lib/store"
-import { getWeek } from "date-fns"
+import { useFilters } from "@/lib/filters"
 import { GraduationCap, Calendar, ChevronRight, Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { CoachingKPIs } from "@/components/coaching/coaching-kpis"
@@ -17,9 +17,8 @@ import { EvaluateActionModal } from "@/components/coaching/evaluate-action-modal
 import type { CoachingSuggestion, CoachingActionFull } from "@/lib/types"
 
 export default function CoachingPage() {
-  const { selectedStation, selectedDate } = useDashboardStore()
-  const week = getWeek(selectedDate, { weekStartsOn: 1 })
-  const year = selectedDate.getFullYear()
+  const { selectedStation } = useDashboardStore()
+  const { year, weekNum } = useFilters()
 
   // Get station from Convex
   const station = useQuery(api.stations.getStationByCode, { code: selectedStation.code })
@@ -144,7 +143,7 @@ export default function CoachingPage() {
           <CoachingKanban
             stationId={station._id}
             year={year}
-            week={week}
+            week={weekNum}
             onPlanCoaching={handlePlanCoaching}
             onEvaluateAction={handleEvaluateAction}
           />

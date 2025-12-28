@@ -6,7 +6,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts"
 import { useQuery } from "convex/react"
 import { api } from "../../../convex/_generated/api"
 import { useDashboardStore } from "@/lib/store"
-import { getWeek } from "date-fns"
+import { useFilters } from "@/lib/filters"
 
 const tierConfig = [
   { key: "fantastic", label: "Fantastic", color: "#34d399" },
@@ -16,9 +16,8 @@ const tierConfig = [
 ]
 
 export function TierDistribution() {
-  const { selectedStation, selectedDate } = useDashboardStore()
-  const week = getWeek(selectedDate, { weekStartsOn: 1 })
-  const year = selectedDate.getFullYear()
+  const { selectedStation } = useDashboardStore()
+  const { year, weekNum } = useFilters()
 
   // Get station from Convex
   const station = useQuery(api.stations.getStationByCode, { code: selectedStation.code })
@@ -26,7 +25,7 @@ export function TierDistribution() {
   // Get KPIs from Convex
   const kpis = useQuery(
     api.stats.getDashboardKPIs,
-    station ? { stationId: station._id, year, week } : "skip"
+    station ? { stationId: station._id, year, week: weekNum } : "skip"
   )
 
   // Loading state
@@ -62,7 +61,7 @@ export function TierDistribution() {
       <Card className="border-border bg-card">
         <CardHeader className="pb-2">
           <CardTitle className="text-base font-semibold text-card-foreground">Distribution Tiers</CardTitle>
-          <p className="text-xs text-muted-foreground">Semaine {week}</p>
+          <p className="text-xs text-muted-foreground">Semaine {weekNum}</p>
         </CardHeader>
         <CardContent className="text-center py-8">
           <p className="text-muted-foreground text-sm">Aucune donnée</p>
@@ -86,7 +85,7 @@ export function TierDistribution() {
     <Card className="border-border bg-card">
       <CardHeader className="pb-2">
         <CardTitle className="text-base font-semibold text-card-foreground">Distribution Tiers</CardTitle>
-        <p className="text-xs text-muted-foreground">Semaine {week} • {total} drivers</p>
+        <p className="text-xs text-muted-foreground">Semaine {weekNum} • {total} drivers</p>
       </CardHeader>
 
       <CardContent>

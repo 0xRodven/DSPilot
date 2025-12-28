@@ -5,14 +5,15 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/button"
 import { formatNumber } from "@/lib/calculations"
 import { useDashboardStore } from "@/lib/store"
+import { useFilters } from "@/lib/filters"
 import { useQuery } from "convex/react"
 import { api } from "../../../convex/_generated/api"
-import { getWeek } from "date-fns"
+import { useRouter } from "next/navigation"
 
 export function TopErrors() {
-  const { selectedStation, selectedDate, periodMode } = useDashboardStore()
-  const week = getWeek(selectedDate, { weekStartsOn: 1 })
-  const year = selectedDate.getFullYear()
+  const router = useRouter()
+  const { selectedStation } = useDashboardStore()
+  const { year, weekNum, displayLabel } = useFilters()
 
   // Get station from Convex
   const station = useQuery(api.stations.getStationByCode, { code: selectedStation.code })
@@ -20,12 +21,10 @@ export function TopErrors() {
   // Get error breakdown from Convex
   const errorBreakdown = useQuery(
     api.stats.getErrorBreakdown,
-    station ? { stationId: station._id, year, week } : "skip"
+    station ? { stationId: station._id, year, week: weekNum } : "skip"
   )
 
-  const periodLabel = periodMode === "week"
-    ? `Semaine ${week}`
-    : selectedDate.toLocaleDateString("fr-FR", { day: "numeric", month: "short" })
+  const periodLabel = displayLabel
 
   // Loading state
   if (!station || errorBreakdown === undefined) {
@@ -157,7 +156,11 @@ export function TopErrors() {
           })}
         </div>
 
-        <Button variant="ghost" className="mt-4 w-full text-primary hover:text-primary">
+        <Button
+          variant="ghost"
+          className="mt-4 w-full text-primary hover:text-primary"
+          onClick={() => router.push("/dashboard/errors")}
+        >
           Voir analyse →
         </Button>
       </CardContent>

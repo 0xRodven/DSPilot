@@ -1,121 +1,211 @@
+// src/lib/store.ts
+// Store Zustand unifié pour DSPilot avec nouveau système de filtrage
+
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
-import { startOfWeek, endOfWeek, addWeeks, subWeeks, addDays, subDays } from "date-fns"
+import { getWeek, getYear, startOfWeek, endOfWeek } from "date-fns"
+import type {
+  TimeContext,
+  TimeQueryParams,
+  Station,
+  FiltersState,
+  SerializedTimeContext,
+  PeriodMode,
+  DateRange,
+} from "@/lib/types/filters"
+import {
+  timeContextToQueryParams,
+  formatTimeContext,
+  navigateTimeContext,
+  getCurrentPeriod,
+  serializeTimeContext,
+  deserializeTimeContext,
+  getDateFromWeek,
+} from "@/lib/utils/time-context"
 
-type PeriodMode = "day" | "week" | "range"
+// ============================================================================
+// DEFAULTS
+// ============================================================================
 
-interface DateRange {
-  from: Date
-  to: Date
-}
-
-interface Station {
-  id: string
-  name: string
-  code: string
-}
-
-interface DashboardState {
-  // Sidebar
-  sidebarCollapsed: boolean
-  toggleSidebar: () => void
-  setSidebarCollapsed: (collapsed: boolean) => void
-
-  // Global filters
-  selectedStation: Station
-  setSelectedStation: (station: Station) => void
-
-  // Period selection
-  periodMode: PeriodMode
-  setPeriodMode: (mode: PeriodMode) => void
-
-  selectedDate: Date
-  setSelectedDate: (date: Date) => void
-
-  dateRange: DateRange | null
-  setDateRange: (range: DateRange | null) => void
-
-  // Computed getters
-  getEffectiveDateRange: () => DateRange
-
-  // Navigation helpers
-  navigatePeriod: (direction: "prev" | "next") => void
-}
-
-// Default empty station (will be replaced when stations load)
 const defaultStation: Station = { id: "", name: "", code: "" }
 
-export const useDashboardStore = create<DashboardState>()(
+// Default to week 49, 2025 (December 1st) to show imported data
+const defaultTime: TimeContext = {
+  type: "week",
+  year: 2025,
+  week: 49,
+}
+
+// ============================================================================
+// HELPER FUNCTIONS
+// ============================================================================
+
+function timeToSelectedDate(time: TimeContext): Date {
+  switch (time.type) {
+    case "day":
+      return time.date
+    case "week":
+      return getDateFromWeek(time.year, time.week)
+    case "range":
+      return time.from
+    case "relative":
+      return new Date()
+  }
+}
+
+function timeToPeriodMode(time: TimeContext): PeriodMode {
+  if (time.type === "day") return "day"
+  if (time.type === "week") return "week"
+  return "range" // range et relative -> range
+}
+
+function timeToDateRange(time: TimeContext): DateRange | null {
+  if (time.type === "range") {
+    return { from: time.from, to: time.to }
+  }
+  return null
+}
+
+function getEffectiveDateRangeFromTime(time: TimeContext): DateRange {
+  switch (time.type) {
+    case "day":
+      return { from: time.date, to: time.date }
+    case "week": {
+      const date = getDateFromWeek(time.year, time.week)
+      return {
+        from: startOfWeek(date, { weekStartsOn: 1 }),
+        to: endOfWeek(date, { weekStartsOn: 1 }),
+      }
+    }
+    case "range":
+      return { from: time.from, to: time.to }
+    case "relative": {
+      // Pour relative, on retourne la plage actuelle
+      const now = new Date()
+      return { from: now, to: now }
+    }
+  }
+}
+
+// ============================================================================
+// STORE
+// ============================================================================
+
+export const useDashboardStore = create<FiltersState>()(
   persist(
     (set, get) => ({
-      // Sidebar
+      // === Sidebar ===
       sidebarCollapsed: false,
-      toggleSidebar: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
+      toggleSidebar: () =>
+        set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
       setSidebarCollapsed: (collapsed) => set({ sidebarCollapsed: collapsed }),
 
-      // Global filters
+      // === Global Context ===
       selectedStation: defaultStation,
+      time: defaultTime,
+
+      // === Actions ===
       setSelectedStation: (station) => set({ selectedStation: station }),
+      setTime: (time) => set({ time }),
 
-      // Period selection
-      periodMode: "week",
-      setPeriodMode: (mode) => set({ periodMode: mode }),
+      // === Navigation ===
+      navigateTime: (direction) => {
+        const { time } = get()
+        set({ time: navigateTimeContext(time, direction) })
+      },
 
-      // Default to week 49, 2025 (December 1st) to show imported data
-      selectedDate: new Date(2025, 11, 1), // December 1, 2025 = Week 49
-      setSelectedDate: (date) => set({ selectedDate: date }),
+      goToToday: () => {
+        const { time } = get()
+        set({ time: getCurrentPeriod(time.type) })
+      },
 
-      dateRange: null,
-      setDateRange: (range) => set({ dateRange: range }),
+      // === Computed ===
+      getQueryParams: () => {
+        const { time } = get()
+        return timeContextToQueryParams(time)
+      },
 
-      // Get effective date range based on period mode
-      getEffectiveDateRange: () => {
-        const { periodMode, selectedDate, dateRange } = get()
+      getDisplayLabel: () => {
+        const { time } = get()
+        return formatTimeContext(time)
+      },
 
-        if (periodMode === "range" && dateRange) {
-          return dateRange
-        }
+      // === Legacy Compatibility (computed getters) ===
+      get selectedDate() {
+        return timeToSelectedDate(get().time)
+      },
 
-        if (periodMode === "day") {
-          return {
-            from: selectedDate,
-            to: selectedDate,
-          }
-        }
+      get periodMode() {
+        return timeToPeriodMode(get().time)
+      },
 
-        // Week mode (default)
-        return {
-          from: startOfWeek(selectedDate, { weekStartsOn: 1 }),
-          to: endOfWeek(selectedDate, { weekStartsOn: 1 }),
+      get dateRange() {
+        return timeToDateRange(get().time)
+      },
+
+      setSelectedDate: (date: Date) => {
+        const { time } = get()
+        if (time.type === "day") {
+          set({ time: { type: "day", date } })
+        } else if (time.type === "week") {
+          set({
+            time: {
+              type: "week",
+              year: getYear(date),
+              week: getWeek(date, { weekStartsOn: 1 }),
+            },
+          })
         }
       },
 
-      navigatePeriod: (direction) => {
-        const { periodMode, selectedDate, dateRange } = get()
-
-        if (periodMode === "range" && dateRange) {
-          // For range mode, shift by the range duration
-          const duration = dateRange.to.getTime() - dateRange.from.getTime()
-          const days = Math.ceil(duration / (24 * 60 * 60 * 1000)) + 1
-          const newFrom = direction === "next"
-            ? addDays(dateRange.from, days)
-            : subDays(dateRange.from, days)
-          const newTo = direction === "next"
-            ? addDays(dateRange.to, days)
-            : subDays(dateRange.to, days)
-          set({ dateRange: { from: newFrom, to: newTo } })
-        } else if (periodMode === "week") {
-          const newDate = direction === "next"
-            ? addWeeks(selectedDate, 1)
-            : subWeeks(selectedDate, 1)
-          set({ selectedDate: newDate })
-        } else {
-          // Day mode
-          const newDate = direction === "next"
-            ? addDays(selectedDate, 1)
-            : subDays(selectedDate, 1)
-          set({ selectedDate: newDate })
+      setPeriodMode: (mode: PeriodMode) => {
+        const now = new Date()
+        switch (mode) {
+          case "day":
+            set({ time: { type: "day", date: now } })
+            break
+          case "week":
+            set({
+              time: {
+                type: "week",
+                year: getYear(now),
+                week: getWeek(now, { weekStartsOn: 1 }),
+              },
+            })
+            break
+          case "range":
+            set({
+              time: {
+                type: "range",
+                from: startOfWeek(now, { weekStartsOn: 1 }),
+                to: endOfWeek(now, { weekStartsOn: 1 }),
+                granularity: "week",
+              },
+            })
+            break
         }
+      },
+
+      setDateRange: (range: DateRange | null) => {
+        if (range) {
+          set({
+            time: {
+              type: "range",
+              from: range.from,
+              to: range.to,
+              granularity: "week",
+            },
+          })
+        }
+      },
+
+      navigatePeriod: (direction: "prev" | "next") => {
+        const { time } = get()
+        set({ time: navigateTimeContext(time, direction) })
+      },
+
+      getEffectiveDateRange: () => {
+        return getEffectiveDateRangeFromTime(get().time)
       },
     }),
     {
@@ -123,12 +213,52 @@ export const useDashboardStore = create<DashboardState>()(
       partialize: (state) => ({
         sidebarCollapsed: state.sidebarCollapsed,
         selectedStation: state.selectedStation,
-        periodMode: state.periodMode,
+        // Serialize time for localStorage
+        time: serializeTimeContext(state.time),
       }),
-    },
-  ),
-
+      // Custom storage to handle Date serialization
+      storage: {
+        getItem: (name) => {
+          const str = localStorage.getItem(name)
+          if (!str) return null
+          const parsed = JSON.parse(str)
+          // Deserialize time if present
+          if (parsed?.state?.time) {
+            parsed.state.time = deserializeTimeContext(
+              parsed.state.time as SerializedTimeContext
+            )
+          }
+          return parsed
+        },
+        setItem: (name, value) => {
+          localStorage.setItem(name, JSON.stringify(value))
+        },
+        removeItem: (name) => {
+          localStorage.removeItem(name)
+        },
+      },
+    }
+  )
 )
 
-// Export types for use in components
-export type { PeriodMode, DateRange, Station }
+// ============================================================================
+// EXPORTS
+// ============================================================================
+
+// Types exportés pour compatibilité
+export type { Station, TimeContext, TimeQueryParams, PeriodMode, DateRange }
+
+// Re-export nuqs-based hooks as the new source of truth
+export { useFilters, useTimeParams } from "@/lib/filters"
+
+// Helper pour savoir si on est en mode jour
+export function useIsDayMode() {
+  const time = useDashboardStore((s) => s.time)
+  return time.type === "day"
+}
+
+// Helper pour obtenir l'effectiveMode (pour compatibilité)
+export function useEffectiveMode(): "day" | "week" {
+  const time = useDashboardStore((s) => s.time)
+  return time.type === "day" ? "day" : "week"
+}

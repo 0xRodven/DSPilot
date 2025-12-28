@@ -14,7 +14,7 @@ import { CoachingHistory } from "@/components/drivers/coaching-history"
 import { DailyPerformance } from "@/components/drivers/daily-performance"
 import { NewActionModal } from "@/components/coaching/new-action-modal"
 import { useDashboardStore } from "@/lib/store"
-import { getWeek } from "date-fns"
+import { useFilters } from "@/lib/filters"
 import { ChevronLeft } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
@@ -169,12 +169,12 @@ function NoDataState({ driverName }: { driverName: string }) {
 
 export default function DriverDetailPage({ params }: DriverDetailPageProps) {
   const { id } = use(params)
-  const { selectedStation, selectedDate, periodMode } = useDashboardStore()
+  const { selectedStation } = useDashboardStore()
+  const { year, weekNum, period } = useFilters()
   const [coachingModalOpen, setCoachingModalOpen] = useState(false)
 
-  // Calculate current week/year
-  const year = selectedDate.getFullYear()
-  const week = getWeek(selectedDate, { weekStartsOn: 1 })
+  // Determine period mode from time context
+  const periodMode = period
 
   // Get station from Convex
   const station = useQuery(api.stations.getStationByCode, { code: selectedStation.code })
@@ -183,7 +183,7 @@ export default function DriverDetailPage({ params }: DriverDetailPageProps) {
   const driverDetail = useQuery(api.drivers.getDriverDetail, {
     driverId: id as Id<"drivers">,
     year,
-    week,
+    week: weekNum,
   })
 
   // Get coaching history
@@ -194,7 +194,7 @@ export default function DriverDetailPage({ params }: DriverDetailPageProps) {
   // Calculate comparison label based on period mode
   const getComparisonLabel = () => {
     if (periodMode === "week") {
-      const prevWeek = week === 1 ? 52 : week - 1
+      const prevWeek = weekNum === 1 ? 52 : weekNum - 1
       return `vs S${prevWeek}`
     } else if (periodMode === "day") {
       return "vs veille"
@@ -271,7 +271,7 @@ export default function DriverDetailPage({ params }: DriverDetailPageProps) {
         </div>
 
         {/* Daily Performance */}
-        <DailyPerformance driver={driver} week={week} />
+        <DailyPerformance driver={driver} week={weekNum} />
       </div>
 
       {/* Coaching Modal */}

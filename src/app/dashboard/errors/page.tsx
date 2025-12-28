@@ -4,7 +4,7 @@ import { useState } from "react"
 import { useQuery } from "convex/react"
 import { api } from "../../../../convex/_generated/api"
 import { useDashboardStore } from "@/lib/store"
-import { getWeek } from "date-fns"
+import { useFilters } from "@/lib/filters"
 import { ErrorTabs } from "@/components/errors/error-tabs"
 import { ErrorKPIs } from "@/components/errors/error-kpis"
 import { BreakdownChart } from "@/components/errors/breakdown-chart"
@@ -15,9 +15,8 @@ import { AlertTriangle } from "lucide-react"
 import type { ErrorCategory } from "@/lib/types"
 
 export default function ErrorsPage() {
-  const { selectedStation, selectedDate } = useDashboardStore()
-  const week = getWeek(selectedDate, { weekStartsOn: 1 })
-  const year = selectedDate.getFullYear()
+  const { selectedStation } = useDashboardStore()
+  const { year, weekNum } = useFilters()
 
   const [activeTab, setActiveTab] = useState<ErrorCategory>("dwc")
   const [selectedSubcategory, setSelectedSubcategory] = useState("Contact Miss")
@@ -29,11 +28,11 @@ export default function ErrorsPage() {
   // Get error data from Convex
   const errorsData = useQuery(
     api.stats.getErrorBreakdown,
-    station ? { stationId: station._id, year, week } : "skip"
+    station ? { stationId: station._id, year, week: weekNum } : "skip"
   )
   const topDrivers = useQuery(
     api.stats.getTopDriversErrors,
-    station ? { stationId: station._id, year, week, limit: 10, errorTypeFilter } : "skip"
+    station ? { stationId: station._id, year, week: weekNum, limit: 10, errorTypeFilter } : "skip"
   )
   const trendData = useQuery(
     api.stats.getErrorTrends,
@@ -85,11 +84,11 @@ export default function ErrorsPage() {
         <div className="space-y-6 p-6">
           <div>
             <h1 className="text-2xl font-bold text-foreground">Analyse des Erreurs</h1>
-            <p className="text-sm text-muted-foreground">Semaine {week}</p>
+            <p className="text-sm text-muted-foreground">Semaine {weekNum}</p>
           </div>
           <div className="flex flex-col items-center justify-center h-64 border border-dashed border-border rounded-lg">
             <AlertTriangle className="h-12 w-12 text-muted-foreground/50 mb-4" />
-            <p className="text-muted-foreground">Aucune donnée d'erreur pour la semaine {week}</p>
+            <p className="text-muted-foreground">Aucune donnée d'erreur pour la semaine {weekNum}</p>
             <p className="text-sm text-muted-foreground mt-1">Importez des données pour voir l'analyse</p>
           </div>
         </div>
@@ -103,7 +102,7 @@ export default function ErrorsPage() {
         {/* Page Title */}
         <div>
           <h1 className="text-2xl font-bold text-foreground">Analyse des Erreurs</h1>
-          <p className="text-sm text-muted-foreground">Semaine {week} • {year}</p>
+          <p className="text-sm text-muted-foreground">Semaine {weekNum} • {year}</p>
         </div>
 
         {/* Zone 1: Tabs */}

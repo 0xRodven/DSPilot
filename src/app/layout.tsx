@@ -4,6 +4,7 @@ import { Geist, Geist_Mono } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import { Toaster } from "sonner"
 import { ClerkProvider } from "@clerk/nextjs"
+import { NuqsAdapter } from "nuqs/adapters/next/app"
 import { ThemeProvider } from "@/components/theme-provider"
 import { ConvexClientProvider } from "@/providers/convex-client-provider"
 import "./globals.css"
@@ -32,12 +33,14 @@ export default function RootLayout({
     <ClerkProvider>
       <html lang="fr" suppressHydrationWarning>
         <body className="font-sans antialiased">
-          <ConvexClientProvider>
-            <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
-              {children}
-              <Toaster richColors position="bottom-right" />
-            </ThemeProvider>
-          </ConvexClientProvider>
+          <NuqsAdapter>
+            <ConvexClientProvider>
+              <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
+                {children}
+                <Toaster richColors position="bottom-right" />
+              </ThemeProvider>
+            </ConvexClientProvider>
+          </NuqsAdapter>
           <Analytics />
         </body>
       </html>

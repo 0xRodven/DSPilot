@@ -4,8 +4,10 @@ import { useState, useMemo } from "react"
 import { useQuery } from "convex/react"
 import { api } from "../../../../../convex/_generated/api"
 import { useDashboardStore } from "@/lib/store"
-import { getWeek, startOfWeek, endOfWeek, format } from "date-fns"
+import { useFilters } from "@/lib/filters"
+import { startOfWeek, endOfWeek, format } from "date-fns"
 import { fr } from "date-fns/locale"
+import { getDateFromWeek } from "@/lib/utils/time-context"
 import { MessageSquare, Search, TrendingUp, TrendingDown, Copy, Check, AlertTriangle, CheckCircle } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -41,9 +43,8 @@ type DriverComparison = {
 }
 
 export default function RecapsPage() {
-  const { selectedStation, selectedDate } = useDashboardStore()
-  const week = getWeek(selectedDate, { weekStartsOn: 1 })
-  const year = selectedDate.getFullYear()
+  const { selectedStation } = useDashboardStore()
+  const { year, weekNum } = useFilters()
 
   // Get station from Convex
   const station = useQuery(api.stations.getStationByCode, { code: selectedStation.code })
@@ -51,7 +52,7 @@ export default function RecapsPage() {
   // Get weekly comparison data
   const comparisons = useQuery(
     api.stats.getWeeklyComparison,
-    station ? { stationId: station._id, year, week } : "skip"
+    station ? { stationId: station._id, year, week: weekNum } : "skip"
   )
 
   // State
@@ -60,7 +61,8 @@ export default function RecapsPage() {
   const [modalOpen, setModalOpen] = useState(false)
   const [copiedAll, setCopiedAll] = useState(false)
 
-  // Week date range
+  // Week date range - compute from year/week
+  const selectedDate = getDateFromWeek(year, weekNum)
   const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 })
   const weekEnd = endOfWeek(selectedDate, { weekStartsOn: 1 })
   const weekRange = `${format(weekStart, "d", { locale: fr })} - ${format(weekEnd, "d MMM", { locale: fr })}`
@@ -86,7 +88,7 @@ export default function RecapsPage() {
     if (!filteredDrivers) return
 
     const allMessages = filteredDrivers
-      .map((d) => generateWhatsAppRecap(d, week))
+      .map((d) => generateWhatsAppRecap(d, weekNum))
       .join("\n\n---\n\n")
 
     await navigator.clipboard.writeText(allMessages)
@@ -128,7 +130,7 @@ export default function RecapsPage() {
             <div>
               <h1 className="text-2xl font-bold text-foreground">Recapitulatifs Hebdomadaires</h1>
               <p className="text-sm text-muted-foreground">
-                Semaine {week} ({weekRange})
+                Semaine {weekNum} ({weekRange})
               </p>
             </div>
           </div>
@@ -250,7 +252,7 @@ export default function RecapsPage() {
         open={modalOpen}
         onOpenChange={setModalOpen}
         driver={selectedDriver}
-        week={week}
+        week={weekNum}
       />
     </main>
   )

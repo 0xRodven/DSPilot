@@ -4,8 +4,7 @@ import { useState } from "react"
 import { useQuery } from "convex/react"
 import { api } from "../../../../convex/_generated/api"
 import { useDashboardStore } from "@/lib/store"
-import { getWeek, format } from "date-fns"
-import { fr } from "date-fns/locale"
+import { useFilters } from "@/lib/filters"
 import { TierStatsCards } from "@/components/drivers/tier-stats-cards"
 import { DriversListTable } from "@/components/drivers/drivers-list-table"
 import { Button } from "@/components/ui/button"
@@ -14,13 +13,11 @@ import { downloadCSV, formatDriversForCSV } from "@/lib/utils/csv"
 import { toast } from "sonner"
 
 export default function DriversPage() {
-  const { selectedStation, selectedDate, periodMode, dateRange } = useDashboardStore()
-  const week = getWeek(selectedDate, { weekStartsOn: 1 })
-  const year = selectedDate.getFullYear()
-  const dateStr = format(selectedDate, "yyyy-MM-dd")
+  const { selectedStation } = useDashboardStore()
+  const { period, year, weekNum, date, displayLabel } = useFilters()
 
   // For range mode, we'll fall back to week for now (could add range queries later)
-  const effectiveMode = periodMode === "range" ? "week" : periodMode
+  const effectiveMode = period === "range" ? "week" : period
 
   const [selectedTier, setSelectedTier] = useState("all")
 
@@ -30,31 +27,31 @@ export default function DriversPage() {
   // Get KPIs - choose query based on period mode
   const kpisWeekly = useQuery(
     api.stats.getDashboardKPIs,
-    station && effectiveMode === "week" ? { stationId: station._id, year, week } : "skip"
+    station && effectiveMode === "week" ? { stationId: station._id, year, week: weekNum } : "skip"
   )
   const kpisDaily = useQuery(
     api.stats.getDashboardKPIsDaily,
-    station && effectiveMode === "day" ? { stationId: station._id, date: dateStr } : "skip"
+    station && effectiveMode === "day" ? { stationId: station._id, date } : "skip"
   )
   const kpis = effectiveMode === "week" ? kpisWeekly : kpisDaily
 
   // Get drivers list - choose query based on period mode
   const driversWeekly = useQuery(
     api.stats.getDashboardDrivers,
-    station && effectiveMode === "week" ? { stationId: station._id, year, week } : "skip"
+    station && effectiveMode === "week" ? { stationId: station._id, year, week: weekNum } : "skip"
   )
   const driversDaily = useQuery(
     api.stats.getDashboardDriversDaily,
-    station && effectiveMode === "day" ? { stationId: station._id, date: dateStr } : "skip"
+    station && effectiveMode === "day" ? { stationId: station._id, date } : "skip"
   )
   const drivers = effectiveMode === "week" ? driversWeekly : driversDaily
 
   // Calculate comparison label based on period mode
   const getComparisonLabel = () => {
-    if (periodMode === "week") {
-      const prevWeek = week === 1 ? 52 : week - 1
+    if (period === "week") {
+      const prevWeek = weekNum === 1 ? 52 : weekNum - 1
       return `vs S${prevWeek}`
-    } else if (periodMode === "day") {
+    } else if (period === "day") {
       return "vs veille"
     } else {
       return "vs période préc."
@@ -62,17 +59,8 @@ export default function DriversPage() {
   }
   const comparisonLabel = getComparisonLabel()
 
-  // Period label for display
-  const getPeriodLabel = () => {
-    if (periodMode === "week") {
-      return `Semaine ${week}`
-    } else if (periodMode === "range" && dateRange) {
-      return `${format(dateRange.from, "d MMM", { locale: fr })} - ${format(dateRange.to, "d MMM", { locale: fr })}`
-    } else {
-      return format(selectedDate, "EEEE d MMMM", { locale: fr })
-    }
-  }
-  const periodLabel = getPeriodLabel()
+  // Use displayLabel from useFilters
+  const periodLabel = displayLabel
 
   // Loading state
   if (!station || kpis === undefined || drivers === undefined) {
@@ -175,10 +163,10 @@ export default function DriversPage() {
                   daysActive: d.daysActive,
                 })),
                 selectedStation.code,
-                week,
+                weekNum,
                 year
               )
-              downloadCSV(csvData, `drivers-${selectedStation.code}-S${week}-${year}`)
+              downloadCSV(csvData, `drivers-${selectedStation.code}-S${weekNum}-${year}`)
               toast.success("Export CSV téléchargé")
             }}
           >

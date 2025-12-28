@@ -14,7 +14,8 @@ import { cn } from "@/lib/utils"
 import { useQuery } from "convex/react"
 import { api } from "../../../convex/_generated/api"
 import { useDashboardStore } from "@/lib/store"
-import { getWeek } from "date-fns"
+import { useFilters } from "@/lib/filters"
+import { useRouter } from "next/navigation"
 
 type SortField = "name" | "dwcPercent" | "iadcPercent" | "daysActive"
 type SortOrder = "asc" | "desc"
@@ -30,9 +31,9 @@ const tierLabels = {
 const ITEMS_PER_PAGE = 10
 
 export function DriversTable() {
-  const { selectedStation, selectedDate } = useDashboardStore()
-  const week = getWeek(selectedDate, { weekStartsOn: 1 })
-  const year = selectedDate.getFullYear()
+  const router = useRouter()
+  const { selectedStation } = useDashboardStore()
+  const { year, weekNum } = useFilters()
 
   const [search, setSearch] = useState("")
   const [tierFilter, setTierFilter] = useState<TierFilter>("all")
@@ -46,7 +47,7 @@ export function DriversTable() {
   // Get drivers from Convex
   const drivers = useQuery(
     api.stats.getDashboardDrivers,
-    station ? { stationId: station._id, year, week } : "skip"
+    station ? { stationId: station._id, year, week: weekNum } : "skip"
   )
 
   const filteredDrivers = useMemo(() => {
@@ -166,7 +167,7 @@ export function DriversTable() {
         </CardHeader>
         <CardContent className="p-6 text-center">
           <User className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
-          <p className="text-muted-foreground">Aucun driver pour la semaine {week}</p>
+          <p className="text-muted-foreground">Aucun driver pour la semaine {weekNum}</p>
           <p className="text-sm text-muted-foreground mt-1">Importez un rapport pour voir les drivers</p>
         </CardContent>
       </Card>
@@ -179,7 +180,7 @@ export function DriversTable() {
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <CardTitle className="text-lg font-semibold text-card-foreground">Tous les Drivers</CardTitle>
-            <p className="text-sm text-muted-foreground">{filteredDrivers.length} drivers • Semaine {week}</p>
+            <p className="text-sm text-muted-foreground">{filteredDrivers.length} drivers • Semaine {weekNum}</p>
           </div>
 
           <Button variant="outline" size="sm" className="w-fit bg-transparent">
@@ -294,7 +295,11 @@ export function DriversTable() {
             </TableHeader>
             <TableBody>
               {paginatedDrivers.map((driver, index) => (
-                <TableRow key={driver.id} className="cursor-pointer border-border transition-colors hover:bg-muted/30">
+                <TableRow
+                  key={driver.id}
+                  className="cursor-pointer border-border transition-colors hover:bg-muted/30"
+                  onClick={() => router.push(`/dashboard/drivers/${driver.id}`)}
+                >
                   <TableCell className="font-medium text-muted-foreground">
                     {(page - 1) * ITEMS_PER_PAGE + index + 1}
                   </TableCell>
@@ -330,11 +335,17 @@ export function DriversTable() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="bg-popover text-popover-foreground">
-                        <DropdownMenuItem>
+                        <DropdownMenuItem onClick={(e) => {
+                          e.stopPropagation()
+                          router.push(`/dashboard/drivers/${driver.id}`)
+                        }}>
                           <Eye className="mr-2 h-4 w-4" />
                           Voir détail
                         </DropdownMenuItem>
-                        <DropdownMenuItem>
+                        <DropdownMenuItem onClick={(e) => {
+                          e.stopPropagation()
+                          router.push(`/dashboard/coaching?driverId=${driver.id}`)
+                        }}>
                           <Calendar className="mr-2 h-4 w-4" />
                           Planifier coaching
                         </DropdownMenuItem>

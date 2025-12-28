@@ -8,7 +8,8 @@ import { cn } from "@/lib/utils"
 import { useQuery } from "convex/react"
 import { api } from "../../../convex/_generated/api"
 import { useDashboardStore } from "@/lib/store"
-import { getWeek } from "date-fns"
+import { useFilters } from "@/lib/filters"
+import { useRouter } from "next/navigation"
 
 const tierLabels = {
   fantastic: "Fantastic",
@@ -18,9 +19,9 @@ const tierLabels = {
 }
 
 export function KPICards() {
-  const { selectedStation, selectedDate } = useDashboardStore()
-  const week = getWeek(selectedDate, { weekStartsOn: 1 })
-  const year = selectedDate.getFullYear()
+  const router = useRouter()
+  const { selectedStation } = useDashboardStore()
+  const { year, weekNum } = useFilters()
 
   // Get station from Convex
   const station = useQuery(api.stations.getStationByCode, { code: selectedStation.code })
@@ -28,7 +29,7 @@ export function KPICards() {
   // Get KPIs from Convex
   const kpis = useQuery(
     api.stats.getDashboardKPIs,
-    station ? { stationId: station._id, year, week } : "skip"
+    station ? { stationId: station._id, year, week: weekNum } : "skip"
   )
 
   // Loading state
@@ -48,7 +49,7 @@ export function KPICards() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card className="border-border bg-card col-span-full">
           <CardContent className="p-6 text-center">
-            <p className="text-muted-foreground">Aucune donnée pour la semaine {week}</p>
+            <p className="text-muted-foreground">Aucune donnée pour la semaine {weekNum}</p>
             <p className="text-sm text-muted-foreground mt-1">Importez un rapport pour voir les KPIs</p>
           </CardContent>
         </Card>
@@ -160,7 +161,12 @@ export function KPICards() {
               À traiter
             </span>
           </div>
-          <button className="mt-2 md:mt-3 text-xs md:text-sm text-primary hover:underline">Voir →</button>
+          <button
+            className="mt-2 md:mt-3 text-xs md:text-sm text-primary hover:underline"
+            onClick={() => router.push("/dashboard/errors")}
+          >
+            Voir →
+          </button>
         </CardContent>
       </Card>
     </div>

@@ -11,7 +11,8 @@ import { cn } from "@/lib/utils"
 import { useQuery } from "convex/react"
 import { api } from "../../../convex/_generated/api"
 import { useDashboardStore } from "@/lib/store"
-import { getWeek } from "date-fns"
+import { useFilters } from "@/lib/filters"
+import { useRouter } from "next/navigation"
 
 type MetricType = "dwc" | "iadc" | "volume" | "progression"
 type ViewType = "top" | "bottom"
@@ -26,9 +27,9 @@ const metricLabels: Record<MetricType, string> = {
 const rankEmojis = ["🥇", "🥈", "🥉", "4.", "5."]
 
 export function TopDrivers() {
-  const { selectedStation, selectedDate } = useDashboardStore()
-  const week = getWeek(selectedDate, { weekStartsOn: 1 })
-  const year = selectedDate.getFullYear()
+  const router = useRouter()
+  const { selectedStation } = useDashboardStore()
+  const { year, weekNum } = useFilters()
 
   const [metric, setMetric] = useState<MetricType>("dwc")
   const [view, setView] = useState<ViewType>("top")
@@ -39,7 +40,7 @@ export function TopDrivers() {
   // Get drivers from Convex
   const drivers = useQuery(
     api.stats.getDashboardDrivers,
-    station ? { stationId: station._id, year, week } : "skip"
+    station ? { stationId: station._id, year, week: weekNum } : "skip"
   )
 
   const sortedDrivers = useMemo(() => {
@@ -170,7 +171,8 @@ export function TopDrivers() {
           {sortedDrivers.map((driver, index) => (
             <div
               key={driver.id}
-              className="flex items-center justify-between rounded-lg border border-border/50 bg-muted/30 px-3 py-2 transition-colors hover:bg-muted/50"
+              className="flex items-center justify-between rounded-lg border border-border/50 bg-muted/30 px-3 py-2 transition-colors hover:bg-muted/50 cursor-pointer"
+              onClick={() => router.push(`/dashboard/drivers/${driver.id}`)}
             >
               <div className="flex items-center gap-3">
                 <span className="w-6 text-center text-sm">{rankEmojis[index]}</span>
@@ -186,7 +188,7 @@ export function TopDrivers() {
                       {driver.trend > 0 ? "+" : ""}
                       {driver.trend}%
                     </span>
-                    <span>vs S{week > 1 ? week - 1 : 52}</span>
+                    <span>vs S{weekNum > 1 ? weekNum - 1 : 52}</span>
                   </div>
                 </div>
               </div>
@@ -199,7 +201,11 @@ export function TopDrivers() {
           ))}
         </div>
 
-        <Button variant="ghost" className="mt-4 w-full text-primary hover:text-primary">
+        <Button
+          variant="ghost"
+          className="mt-4 w-full text-primary hover:text-primary"
+          onClick={() => router.push("/dashboard/drivers")}
+        >
           Voir tous →
         </Button>
       </CardContent>

@@ -1,116 +1,177 @@
 "use client"
 
 import { useState } from "react"
-import { useDashboardStore, type PeriodMode } from "@/lib/store"
+import { useFilters, type PeriodMode } from "@/lib/filters"
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { CalendarIcon, ChevronLeft, ChevronRight } from "lucide-react"
-import { format, getWeek, startOfWeek, endOfWeek } from "date-fns"
-import { fr } from "date-fns/locale"
+import { CalendarIcon, ChevronLeft, ChevronRight, RotateCcw } from "lucide-react"
+import { getWeek, getYear, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subMonths, addWeeks } from "date-fns"
+import { getDateFromWeek } from "@/lib/utils/time-context"
 import { cn } from "@/lib/utils"
 import type { DateRange } from "react-day-picker"
 
 export function PeriodPicker() {
   const {
-    periodMode,
-    setPeriodMode,
-    selectedDate,
-    setSelectedDate,
-    dateRange,
-    setDateRange,
-    navigatePeriod,
-  } = useDashboardStore()
+    period,
+    week,
+    date,
+    range,
+    setPeriod,
+    setWeek,
+    setDate,
+    setRange,
+    setFilters,
+    navigate,
+    goToToday,
+    displayLabel,
+    isCurrent,
+    canNavigate,
+  } = useFilters()
 
   const [open, setOpen] = useState(false)
 
-  // Format display text based on mode
-  const getDisplayText = () => {
-    if (periodMode === "day") {
-      return format(selectedDate, "EEEE d MMMM yyyy", { locale: fr })
-    }
-    if (periodMode === "week") {
-      const weekNum = getWeek(selectedDate, { weekStartsOn: 1 })
-      const year = selectedDate.getFullYear()
-      const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 })
-      const weekEnd = endOfWeek(selectedDate, { weekStartsOn: 1 })
-      return `Semaine ${weekNum} (${format(weekStart, "d MMM", { locale: fr })} - ${format(weekEnd, "d MMM", { locale: fr })})`
-    }
-    if (periodMode === "range" && dateRange) {
-      return `${format(dateRange.from, "d MMM", { locale: fr })} - ${format(dateRange.to, "d MMM yyyy", { locale: fr })}`
-    }
-    return "Sélectionner une période"
-  }
+  // Get current mode
+  const currentMode: PeriodMode = period
 
   // Handle mode change
   const handleModeChange = (mode: string) => {
-    setPeriodMode(mode as PeriodMode)
-    if (mode === "range" && !dateRange) {
-      // Initialize with current week when switching to range
-      const from = startOfWeek(selectedDate, { weekStartsOn: 1 })
-      const to = endOfWeek(selectedDate, { weekStartsOn: 1 })
-      setDateRange({ from, to })
+    const now = new Date()
+
+    switch (mode as PeriodMode) {
+      case "day":
+        setFilters({
+          period: "day",
+          date: now.toISOString().slice(0, 10),
+        })
+        break
+      case "week":
+        setFilters({
+          period: "week",
+          week: {
+            year: getYear(now),
+            week: getWeek(now, { weekStartsOn: 1 }),
+          },
+        })
+        break
+      case "range":
+        // Initialize with current week when switching to range
+        const from = startOfWeek(now, { weekStartsOn: 1 })
+        const to = endOfWeek(now, { weekStartsOn: 1 })
+        setFilters({
+          period: "range",
+          range: { start: from, end: to },
+        })
+        break
     }
   }
 
   // Handle day selection
-  const handleDaySelect = (date: Date | undefined) => {
-    if (date) {
-      setSelectedDate(date)
-      if (periodMode === "day") {
-        setOpen(false)
-      }
-    }
-  }
-
-  // Handle range selection
-  const handleRangeSelect = (range: DateRange | undefined) => {
-    if (range?.from && range?.to) {
-      setDateRange({ from: range.from, to: range.to })
+  const handleDaySelect = (selectedDate: Date | undefined) => {
+    if (selectedDate) {
+      setDate(selectedDate.toISOString().slice(0, 10))
       setOpen(false)
-    } else if (range?.from) {
-      setDateRange({ from: range.from, to: range.from })
     }
   }
 
   // Handle week selection (click on any day to select that week)
-  const handleWeekSelect = (date: Date | undefined) => {
-    if (date) {
-      setSelectedDate(date)
+  const handleWeekSelect = (selectedDate: Date | undefined) => {
+    if (selectedDate) {
+      setWeek({
+        year: getYear(selectedDate),
+        week: getWeek(selectedDate, { weekStartsOn: 1 }),
+      })
       setOpen(false)
     }
   }
 
+  // Handle range selection
+  const handleRangeSelect = (selectedRange: DateRange | undefined) => {
+    if (selectedRange?.from && selectedRange?.to) {
+      setRange({
+        start: selectedRange.from,
+        end: selectedRange.to,
+      })
+      setOpen(false)
+    } else if (selectedRange?.from) {
+      // Partial selection, don't close yet
+      setRange({
+        start: selectedRange.from,
+        end: selectedRange.from,
+      })
+    }
+  }
+
+  // Get selected date for calendar (for week mode highlighting)
+  const getSelectedDate = (): Date => {
+    if (period === "day") return new Date(date)
+    if (period === "week") {
+      return getDateFromWeek(week.year, week.week)
+    }
+    if (period === "range" && range) return range.start
+    return new Date()
+  }
+
+  const selectedDate = getSelectedDate()
+
+  // Show navigation for all modes except relative (which we don't have anymore)
+  const showNavigation = canNavigate
+  const showTodayButton = !isCurrent && showNavigation
+
+  // Handle relative presets (convert to actual range)
+  const handleRelativePreset = (offsetWeeks: number) => {
+    const now = new Date()
+    const end = endOfWeek(now, { weekStartsOn: 1 })
+    const start = startOfWeek(addWeeks(now, offsetWeeks), { weekStartsOn: 1 })
+    setFilters({
+      period: "range",
+      range: { start, end },
+    })
+    setOpen(false)
+  }
+
+  const handleMonthsPreset = (offsetMonths: number) => {
+    const now = new Date()
+    const end = now
+    const start = subMonths(now, Math.abs(offsetMonths))
+    setFilters({
+      period: "range",
+      range: { start, end },
+    })
+    setOpen(false)
+  }
+
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-1 md:gap-2">
       {/* Navigation buttons */}
-      <Button
-        variant="ghost"
-        size="icon"
-        onClick={() => navigatePeriod("prev")}
-        className="h-8 w-8"
-      >
-        <ChevronLeft className="h-4 w-4" />
-      </Button>
+      {showNavigation && (
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => navigate("prev")}
+          className="h-7 w-7 md:h-8 md:w-8"
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </Button>
+      )}
 
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button
             variant="outline"
             className={cn(
-              "min-w-[240px] justify-start text-left font-normal",
-              !selectedDate && "text-muted-foreground"
+              "min-w-[140px] md:min-w-[240px] justify-start text-left font-normal h-8 md:h-9 text-xs md:text-sm"
             )}
           >
-            <CalendarIcon className="mr-2 h-4 w-4" />
-            {getDisplayText()}
+            <CalendarIcon className="mr-1.5 md:mr-2 h-3.5 w-3.5 md:h-4 md:w-4 flex-shrink-0" />
+            <span className="truncate">{displayLabel}</span>
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0" align="start">
           {/* Mode tabs */}
           <div className="border-b p-3">
-            <Tabs value={periodMode} onValueChange={handleModeChange}>
+            <Tabs value={currentMode} onValueChange={handleModeChange}>
               <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="day">Jour</TabsTrigger>
                 <TabsTrigger value="week">Semaine</TabsTrigger>
@@ -121,25 +182,25 @@ export function PeriodPicker() {
 
           {/* Calendar based on mode */}
           <div className="p-3">
-            {periodMode === "day" && (
+            {currentMode === "day" && (
               <Calendar
                 mode="single"
-                selected={selectedDate}
+                selected={new Date(date)}
                 onSelect={handleDaySelect}
                 initialFocus
               />
             )}
 
-            {periodMode === "week" && (
+            {currentMode === "week" && (
               <Calendar
                 mode="single"
                 selected={selectedDate}
                 onSelect={handleWeekSelect}
                 modifiers={{
-                  selectedWeek: (date) => {
+                  selectedWeek: (d) => {
                     const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 })
                     const weekEnd = endOfWeek(selectedDate, { weekStartsOn: 1 })
-                    return date >= weekStart && date <= weekEnd
+                    return d >= weekStart && d <= weekEnd
                   },
                 }}
                 modifiersClassNames={{
@@ -149,10 +210,10 @@ export function PeriodPicker() {
               />
             )}
 
-            {periodMode === "range" && (
+            {currentMode === "range" && (
               <Calendar
                 mode="range"
-                selected={dateRange ? { from: dateRange.from, to: dateRange.to } : undefined}
+                selected={range ? { from: range.start, to: range.end } : undefined}
                 onSelect={handleRangeSelect}
                 numberOfMonths={2}
                 initialFocus
@@ -161,17 +222,34 @@ export function PeriodPicker() {
           </div>
 
           {/* Quick presets for range mode */}
-          {periodMode === "range" && (
+          {currentMode === "range" && (
             <div className="border-t p-3">
               <div className="flex flex-wrap gap-2">
                 <Button
                   variant="outline"
                   size="sm"
+                  onClick={() => handleRelativePreset(-4)}
+                >
+                  4 semaines
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleRelativePreset(-8)}
+                >
+                  8 semaines
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={() => {
                     const now = new Date()
-                    const from = new Date(now.getFullYear(), now.getMonth(), 1)
-                    const to = new Date(now.getFullYear(), now.getMonth() + 1, 0)
-                    setDateRange({ from, to })
+                    const from = startOfMonth(now)
+                    const to = endOfMonth(now)
+                    setFilters({
+                      period: "range",
+                      range: { start: from, end: to },
+                    })
                     setOpen(false)
                   }}
                 >
@@ -182,9 +260,12 @@ export function PeriodPicker() {
                   size="sm"
                   onClick={() => {
                     const now = new Date()
-                    const from = new Date(now.getFullYear(), now.getMonth() - 1, 1)
-                    const to = new Date(now.getFullYear(), now.getMonth(), 0)
-                    setDateRange({ from, to })
+                    const from = startOfMonth(subMonths(now, 1))
+                    const to = endOfMonth(subMonths(now, 1))
+                    setFilters({
+                      period: "range",
+                      range: { start: from, end: to },
+                    })
                     setOpen(false)
                   }}
                 >
@@ -193,15 +274,9 @@ export function PeriodPicker() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => {
-                    const now = new Date()
-                    const from = new Date(now.getFullYear(), now.getMonth() - 2, 1)
-                    const to = new Date(now.getFullYear(), now.getMonth() + 1, 0)
-                    setDateRange({ from, to })
-                    setOpen(false)
-                  }}
+                  onClick={() => handleMonthsPreset(-3)}
                 >
-                  3 derniers mois
+                  3 mois
                 </Button>
               </div>
             </div>
@@ -209,14 +284,30 @@ export function PeriodPicker() {
         </PopoverContent>
       </Popover>
 
-      <Button
-        variant="ghost"
-        size="icon"
-        onClick={() => navigatePeriod("next")}
-        className="h-8 w-8"
-      >
-        <ChevronRight className="h-4 w-4" />
-      </Button>
+      {/* Navigation buttons */}
+      {showNavigation && (
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => navigate("next")}
+          className="h-7 w-7 md:h-8 md:w-8"
+        >
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+      )}
+
+      {/* Today button */}
+      {showTodayButton && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={goToToday}
+          className="h-7 md:h-8 text-xs hidden sm:flex"
+        >
+          <RotateCcw className="h-3 w-3 mr-1" />
+          Aujourd&apos;hui
+        </Button>
+      )}
     </div>
   )
 }
