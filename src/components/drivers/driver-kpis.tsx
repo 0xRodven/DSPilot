@@ -12,7 +12,6 @@ interface DriverKpisProps {
 }
 
 export function DriverKpis({ driver, comparisonLabel = "vs S49" }: DriverKpisProps) {
-  // Mock trends - in real app would compare to previous week
   const kpis = [
     {
       label: "DWC",
@@ -34,7 +33,7 @@ export function DriverKpis({ driver, comparisonLabel = "vs S49" }: DriverKpisPro
               ? "fair"
               : "poor",
       showTier: true,
-      trend: -0.5,
+      trend: driver.iadcTrend ?? 0,
       trendLabel: comparisonLabel,
     },
     {
@@ -42,7 +41,7 @@ export function DriverKpis({ driver, comparisonLabel = "vs S49" }: DriverKpisPro
       value: driver.deliveries.toString(),
       tier: null,
       showTier: false,
-      trend: 52,
+      trend: driver.deliveriesTrend ?? 0,
       trendLabel: comparisonLabel,
     },
     {
@@ -50,7 +49,7 @@ export function DriverKpis({ driver, comparisonLabel = "vs S49" }: DriverKpisPro
       value: driver.errors.toString(),
       tier: null,
       showTier: false,
-      trend: -2,
+      trend: driver.errorsTrend ?? 0,
       trendLabel: comparisonLabel,
       invertColors: true,
     },

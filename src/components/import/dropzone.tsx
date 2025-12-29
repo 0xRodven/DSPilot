@@ -9,14 +9,14 @@ import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
 
 interface DropzoneProps {
-  onFileSelect: (file: File) => void
+  onFilesSelect: (files: File[]) => void
   onUrlImport: (url: string) => void
   disabled?: boolean
 }
 
 type DropzoneState = "idle" | "drag-over" | "invalid"
 
-export function Dropzone({ onFileSelect, onUrlImport, disabled }: DropzoneProps) {
+export function Dropzone({ onFilesSelect, onUrlImport, disabled }: DropzoneProps) {
   const [state, setState] = useState<DropzoneState>("idle")
   const [invalidFile, setInvalidFile] = useState<string | null>(null)
   const [urlValue, setUrlValue] = useState("")
@@ -59,23 +59,34 @@ export function Dropzone({ onFileSelect, onUrlImport, disabled }: DropzoneProps)
       e.preventDefault()
       e.stopPropagation()
 
-      const file = e.dataTransfer.files[0]
-      if (file && validateFile(file)) {
+      const droppedFiles = Array.from(e.dataTransfer.files)
+      const validFiles = droppedFiles.filter(file => validateFile(file))
+
+      if (validFiles.length > 0) {
         setState("idle")
-        onFileSelect(file)
+        onFilesSelect(validFiles)
+      } else if (droppedFiles.length > 0) {
+        // All files were invalid, state already set by validateFile
       }
     },
-    [onFileSelect],
+    [onFilesSelect],
   )
 
   const handleFileInput = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0]
-      if (file && validateFile(file)) {
-        onFileSelect(file)
+      if (!e.target.files?.length) return
+
+      const selectedFiles = Array.from(e.target.files)
+      const validFiles = selectedFiles.filter(file => validateFile(file))
+
+      if (validFiles.length > 0) {
+        onFilesSelect(validFiles)
       }
+
+      // Reset input to allow selecting same files again
+      e.target.value = ""
     },
-    [onFileSelect],
+    [onFilesSelect],
   )
 
   const handleUrlImport = () => {
@@ -126,13 +137,14 @@ export function Dropzone({ onFileSelect, onUrlImport, disabled }: DropzoneProps)
               )}
             </div>
             <p className="text-lg font-medium mb-2">
-              {state === "drag-over" ? "Déposez le fichier ici" : "Glissez votre fichier HTML ici"}
+              {state === "drag-over" ? "Déposez les fichiers ici" : "Glissez vos fichiers HTML ici"}
             </p>
             <p className="text-sm text-muted-foreground mb-4">ou</p>
             <label>
               <input
                 type="file"
                 accept=".html,.htm"
+                multiple
                 className="hidden"
                 onChange={handleFileInput}
                 disabled={disabled}
@@ -141,7 +153,7 @@ export function Dropzone({ onFileSelect, onUrlImport, disabled }: DropzoneProps)
                 <span className="cursor-pointer">Parcourir les fichiers</span>
               </Button>
             </label>
-            <p className="text-xs text-muted-foreground mt-4">.html uniquement • Max 10 MB</p>
+            <p className="text-xs text-muted-foreground mt-4">.html uniquement • Max 10 MB par fichier • Multi-sélection supportée</p>
           </div>
         )}
       </div>

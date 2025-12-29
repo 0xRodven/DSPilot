@@ -17,7 +17,11 @@ import { FormatGuide } from "@/components/import/format-guide"
 import { ImportState, type ImportStep } from "@/components/import/import-state"
 import { ImportHistory } from "@/components/import/import-history"
 import { CoverageStats } from "@/components/import/coverage-stats"
+import { BatchImportProgress } from "@/components/import/batch-import-progress"
+import { BatchImportSummaryCard } from "@/components/import/batch-import-summary"
+import { useBatchImport } from "@/hooks/use-batch-import"
 import type { DriverNameMapping } from "@/lib/parser/driver-names-csv"
+import type { BatchImportSummary } from "@/lib/types/import"
 
 // Convert ParsedReport to ParsedImportData format for UI
 function convertToParsedImportData(report: ParsedReport): ParsedImportData {
@@ -93,6 +97,10 @@ export default function ImportPage() {
   const [isImportingNames, setIsImportingNames] = useState(false)
   const [namesImportSuccess, setNamesImportSuccess] = useState(false)
 
+  // Batch import mode
+  const [isBatchMode, setIsBatchMode] = useState(false)
+  const [batchSummary, setBatchSummary] = useState<BatchImportSummary | null>(null)
+
   // Convex mutations
   const getOrCreateStation = useMutation(api.stations.getOrCreateStation)
   const bulkUpsertDrivers = useMutation(api.drivers.bulkUpsertDrivers)
@@ -111,6 +119,19 @@ export default function ImportPage() {
     { code: selectedStation.code }
   )
 
+  // Batch import hook
+  const batchImport = useBatchImport({
+    stationId: currentStation?._id!,
+    userId: user?.id || "",
+    onComplete: (summary) => {
+      setBatchSummary(summary)
+      toast.success(`Import terminé: ${summary.successful}/${summary.total} fichiers`)
+    },
+    onError: (error) => {
+      toast.error(error.message)
+    },
+  })
+
   // Convex queries for real data (only when station exists)
   const importHistory = useQuery(
     api.imports.listImports,
@@ -121,8 +142,23 @@ export default function ImportPage() {
     currentStation ? { stationId: currentStation._id, year: 2025 } : "skip"
   )
 
-  // Real file parsing
-  const handleFileSelect = useCallback(async (file: File) => {
+  // Real file parsing - handles single file (legacy) or triggers batch mode
+  const handleFilesSelect = useCallback(async (files: File[]) => {
+    if (files.length === 0) return
+
+    // If multiple files, switch to batch mode
+    if (files.length > 1) {
+      setIsBatchMode(true)
+      setBatchSummary(null)
+      batchImport.addFiles(files)
+      // Start parsing immediately
+      setTimeout(() => batchImport.startParsing(), 100)
+      return
+    }
+
+    // Single file: use existing flow
+    const file = files[0]
+    setIsBatchMode(false)
     setFilename(file.name)
     setImportStep("uploading")
     setProgress(0)
@@ -139,7 +175,7 @@ export default function ImportPage() {
         startParsing(file)
       }
     }, 100)
-  }, [])
+  }, [batchImport])
 
   const startParsing = useCallback(async (file: File) => {
     setImportStep("parsing")
@@ -425,7 +461,25 @@ export default function ImportPage() {
     setSuccessStats(null)
     setDriverMappings([])
     setNamesImportSuccess(false)
-  }, [])
+    // Reset batch mode
+    setIsBatchMode(false)
+    setBatchSummary(null)
+    batchImport.reset()
+  }, [batchImport])
+
+  // Batch import handlers
+  const handleBatchConfirm = useCallback(() => {
+    if (!currentStation) {
+      toast.error("Station non disponible")
+      return
+    }
+    batchImport.startImport()
+  }, [batchImport, currentStation])
+
+  const handleBatchCancel = useCallback(() => {
+    batchImport.cancel()
+    handleReset()
+  }, [batchImport, handleReset])
 
   // Standalone CSV import handler
   const handleImportNames = useCallback(async () => {
@@ -533,9 +587,9 @@ export default function ImportPage() {
         {/* Zone 1: Upload + Guide */}
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
           <div className="lg:col-span-3 space-y-4">
-            {!importStep ? (
+            {!importStep && !isBatchMode ? (
               <>
-                <Dropzone onFileSelect={handleFileSelect} onUrlImport={handleUrlImport} />
+                <Dropzone onFilesSelect={handleFilesSelect} onUrlImport={handleUrlImport} />
                 <CsvDropzone
                   mappings={driverMappings}
                   onMappingsChange={setDriverMappings}
@@ -544,7 +598,43 @@ export default function ImportPage() {
                   importSuccess={namesImportSuccess}
                 />
               </>
-            ) : (
+            ) : isBatchMode ? (
+              // Batch import mode
+              <>
+                {batchSummary ? (
+                  // Show summary when complete
+                  <BatchImportSummaryCard
+                    summary={batchSummary}
+                    onViewDashboard={handleViewDashboard}
+                    onReset={handleReset}
+                  />
+                ) : batchImport.state.phase === "ready" ? (
+                  // Ready to import - show confirm button
+                  <div className="space-y-4">
+                    <BatchImportProgress state={batchImport.state} onCancel={handleBatchCancel} />
+                    <div className="flex gap-3">
+                      <button
+                        onClick={handleBatchConfirm}
+                        disabled={!batchImport.canStart}
+                        className="flex-1 px-4 py-3 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 disabled:opacity-50"
+                      >
+                        Confirmer l'import ({batchImport.readyCount} fichiers)
+                      </button>
+                      <button
+                        onClick={handleBatchCancel}
+                        className="px-4 py-3 border border-border rounded-lg text-muted-foreground hover:bg-muted"
+                      >
+                        Annuler
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  // In progress (parsing or processing)
+                  <BatchImportProgress state={batchImport.state} onCancel={handleBatchCancel} />
+                )}
+              </>
+            ) : importStep ? (
+              // Single file mode (legacy)
               <>
                 <ImportState
                   step={importStep}
@@ -570,7 +660,7 @@ export default function ImportPage() {
                   />
                 )}
               </>
-            )}
+            ) : null}
           </div>
           <div className="lg:col-span-2">
             <FormatGuide />

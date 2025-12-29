@@ -3,6 +3,7 @@
 // Client-side providers et initializers pour le dashboard
 
 import { FilterInitializer } from "./filter-initializer"
+import { ChatWidget } from "@/components/chat/chat-widget"
 
 interface DashboardProvidersProps {
   children: React.ReactNode
@@ -13,6 +14,7 @@ export function DashboardProviders({ children }: DashboardProvidersProps) {
     <>
       <FilterInitializer />
       {children}
+      <ChatWidget />
     </>
   )
 }

@@ -27,6 +27,10 @@ export interface DriverDetail extends Driver {
   coachingHistory: CoachingAction[]
   weeklyHistory: WeeklyData[]
   hasDataForSelectedWeek?: boolean // false when selected week has no data
+  // Trends vs previous week
+  iadcTrend?: number       // IADC% difference vs previous week
+  deliveriesTrend?: number // Deliveries count difference vs previous week
+  errorsTrend?: number     // Errors count difference vs previous week
 }
 
 export interface DailyPerformance {
@@ -289,4 +293,37 @@ export interface CoachingPipelineSuggestion {
     }
   }
   canEscalate: boolean
+}
+
+// ============================================
+// CHAT TYPES
+// ============================================
+
+export interface ChatMessage {
+  key: string
+  role: "user" | "assistant" | "system"
+  text: string
+  status?: "pending" | "streaming" | "complete" | "failed"
+  toolCalls?: ChatToolCall[]
+  createdAt: number
+}
+
+export interface ChatToolCall {
+  id: string
+  name: string
+  args: Record<string, unknown>
+  result?: unknown
+  status: "pending" | "running" | "complete" | "error"
+}
+
+export interface ChatThread {
+  threadId: string
+  stationId: string
+  userId: string
+  createdAt: number
+  lastMessageAt?: number
+  metadata?: {
+    stationCode?: string
+    stationName?: string
+  }
 }

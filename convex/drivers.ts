@@ -584,12 +584,34 @@ export const getDriverWithFullHistory = query({
       totalErrors = targetStats.dwcMisses + targetStats.failedAttempts;
     }
 
-    // Calculate trend
+    // Calculate DWC trend
     let trend = 0;
     if (targetStats && prevStats) {
       const prevDwcTotal = prevStats.dwcCompliant + prevStats.dwcMisses + prevStats.failedAttempts;
       const prevDwcPercent = prevDwcTotal > 0 ? (prevStats.dwcCompliant / prevDwcTotal) * 100 : 0;
       trend = Math.round((dwcPercent - prevDwcPercent) * 10) / 10;
+    }
+
+    // Calculate IADC trend
+    let iadcTrend = 0;
+    if (targetStats && prevStats) {
+      const prevIadcTotal = prevStats.iadcCompliant + prevStats.iadcNonCompliant;
+      const prevIadcPercent = prevIadcTotal > 0 ? (prevStats.iadcCompliant / prevIadcTotal) * 100 : 0;
+      iadcTrend = Math.round((iadcPercent - prevIadcPercent) * 10) / 10;
+    }
+
+    // Calculate deliveries trend (absolute difference)
+    let deliveriesTrend = 0;
+    if (targetStats && prevStats) {
+      const prevDeliveries = prevStats.dwcCompliant + prevStats.dwcMisses + prevStats.failedAttempts;
+      deliveriesTrend = dwcTotal - prevDeliveries;
+    }
+
+    // Calculate errors trend (absolute difference)
+    let errorsTrend = 0;
+    if (targetStats && prevStats) {
+      const prevErrors = prevStats.dwcMisses + prevStats.failedAttempts;
+      errorsTrend = totalErrors - prevErrors;
     }
 
     // Determine tier
@@ -720,6 +742,9 @@ export const getDriverWithFullHistory = query({
       daysActive,
       tier,
       trend,
+      iadcTrend,
+      deliveriesTrend,
+      errorsTrend,
       deliveries: dwcTotal,
       errors: totalErrors,
       activeSince: driver.firstSeenWeek || "Inconnu",
@@ -842,5 +867,40 @@ export const getDriverDailyPerformanceWithCoaching = query({
         end: args.endDate,
       },
     };
+  },
+});
+
+/**
+ * Recherche des drivers par nom (partiel accepté)
+ * Utilisé par l'agent AI pour trouver un driver
+ */
+export const searchDriversByName = query({
+  args: {
+    stationId: v.id("stations"),
+    name: v.string(),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const searchTerm = args.name.toLowerCase().trim();
+    const limit = args.limit || 5;
+
+    // Get all active drivers for station
+    const allDrivers = await ctx.db
+      .query("drivers")
+      .withIndex("by_station_active", (q) =>
+        q.eq("stationId", args.stationId).eq("isActive", true)
+      )
+      .collect();
+
+    // Filter by name (case-insensitive partial match)
+    const matches = allDrivers
+      .filter((d) => d.name.toLowerCase().includes(searchTerm))
+      .slice(0, limit);
+
+    return matches.map((d) => ({
+      _id: d._id,
+      name: d.name,
+      amazonId: d.amazonId,
+    }));
   },
 });
