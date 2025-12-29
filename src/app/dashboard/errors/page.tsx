@@ -8,7 +8,6 @@ import { useFilters } from "@/lib/filters"
 import { ErrorTabs } from "@/components/errors/error-tabs"
 import { ErrorKPIs } from "@/components/errors/error-kpis"
 import { BreakdownChart } from "@/components/errors/breakdown-chart"
-import { DrillDown } from "@/components/errors/drill-down"
 import { TopDriversErrors } from "@/components/errors/top-drivers-errors"
 import { ErrorTrendChart } from "@/components/errors/error-trend-chart"
 import { AlertTriangle } from "lucide-react"
@@ -19,7 +18,6 @@ export default function ErrorsPage() {
   const { year, weekNum } = useFilters()
 
   const [activeTab, setActiveTab] = useState<ErrorCategory>("dwc")
-  const [selectedSubcategory, setSelectedSubcategory] = useState("Contact Miss")
   const [errorTypeFilter, setErrorTypeFilter] = useState("all")
 
   // Get station from Convex
@@ -66,15 +64,6 @@ export default function ErrorsPage() {
 
   const handleTabChange = (tab: ErrorCategory) => {
     setActiveTab(tab)
-    const category = errorsData.find((c) => c.id === tab)
-    if (category && category.subcategories.length > 0) {
-      setSelectedSubcategory(category.subcategories[0].name)
-    }
-  }
-
-  const handleSubcategoryClick = (name: string) => {
-    setSelectedSubcategory(name)
-    document.getElementById("drill-down")?.scrollIntoView({ behavior: "smooth" })
   }
 
   // No data state
@@ -109,18 +98,11 @@ export default function ErrorsPage() {
         <ErrorTabs categories={errorsData} activeTab={activeTab} onTabChange={handleTabChange} />
 
         {/* Zone 2: KPIs */}
-        <ErrorKPIs category={activeCategory} onSubcategoryClick={handleSubcategoryClick} />
+        <ErrorKPIs category={activeCategory} />
 
-        {/* Zone 3: Breakdown Chart */}
-        <BreakdownChart category={activeCategory} onSubcategoryClick={handleSubcategoryClick} />
-
-        {/* Zone 4: Two Columns */}
-        <div id="drill-down" className="grid gap-6 lg:grid-cols-2">
-          <DrillDown
-            subcategories={activeCategory.subcategories}
-            selectedSubcategory={selectedSubcategory}
-            onSubcategoryChange={setSelectedSubcategory}
-          />
+        {/* Zone 3: Charts - Two Columns */}
+        <div className="grid gap-6 lg:grid-cols-2">
+          <BreakdownChart category={activeCategory} />
           <TopDriversErrors
             drivers={topDrivers}
             totalErrors={activeCategory.total}
@@ -129,7 +111,7 @@ export default function ErrorsPage() {
           />
         </div>
 
-        {/* Zone 5: Trend Chart */}
+        {/* Zone 4: Trend Chart */}
         <ErrorTrendChart data={trendData} />
       </div>
     </main>

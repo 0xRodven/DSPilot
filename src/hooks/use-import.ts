@@ -191,13 +191,21 @@ export function useImport(options: UseImportOptions) {
       });
 
       // Calculate days worked per driver from daily stats
-      const daysWorkedByDriver = new Map<string, number>();
+      // Group by unique dates to avoid counting same day multiple times
+      const daysWorkedByDriver = new Map<string, Set<string>>();
       for (const stat of report.dailyStats) {
-        const hasActivity = stat.dwcCompliant + stat.dwcMisses + stat.failedAttempts > 0;
-        if (hasActivity) {
-          const current = daysWorkedByDriver.get(stat.transporterId) || 0;
-          daysWorkedByDriver.set(stat.transporterId, current + 1);
+        const totalDeliveries = stat.dwcCompliant + stat.dwcMisses + stat.failedAttempts;
+        // Only count days with actual deliveries AND a valid date
+        if (totalDeliveries > 0 && stat.date) {
+          const dates = daysWorkedByDriver.get(stat.transporterId) || new Set<string>();
+          dates.add(stat.date);
+          daysWorkedByDriver.set(stat.transporterId, dates);
         }
+      }
+      // Convert Set<dates> to count
+      const daysWorkedCount = new Map<string, number>();
+      for (const [transporterId, dates] of daysWorkedByDriver) {
+        daysWorkedCount.set(transporterId, dates.size);
       }
 
       const weeklyStatsWithIds = report.weeklyStats.map((stat) => ({
@@ -210,7 +218,7 @@ export function useImport(options: UseImportOptions) {
         failedAttempts: stat.failedAttempts,
         iadcCompliant: stat.iadcCompliant,
         iadcNonCompliant: stat.iadcNonCompliant,
-        daysWorked: daysWorkedByDriver.get(stat.transporterId) || 0,
+        daysWorked: daysWorkedCount.get(stat.transporterId) || 0,
         dwcBreakdown: stat.dwcBreakdown,
         iadcBreakdown: stat.iadcBreakdown
           ? {

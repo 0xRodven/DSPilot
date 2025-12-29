@@ -2,7 +2,7 @@
 // Parsers nuqs pour la gestion de l'état URL
 
 import { parseAsString, parseAsInteger } from "nuqs"
-import { getWeek, getYear } from "date-fns"
+import { getISOWeek, getISOWeekYear } from "date-fns"
 
 // ============================================================================
 // TYPES
@@ -64,8 +64,10 @@ export function serializeRange(value: RangeValue): string {
 
 function getCurrentWeekString(): string {
   const now = new Date()
-  const year = getYear(now)
-  const week = getWeek(now, { weekStartsOn: 1 })
+  // Use ISO week year to handle year boundary correctly
+  // e.g., Dec 29, 2025 is ISO week 1 of 2026, not week 1 of 2025
+  const year = getISOWeekYear(now)
+  const week = getISOWeek(now)
   return serializeWeek({ year, week })
 }
 

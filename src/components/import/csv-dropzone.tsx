@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { useState, useCallback } from "react"
-import { FileSpreadsheet, X, Check, Users, AlertCircle } from "lucide-react"
+import { FileSpreadsheet, X, Check, Users, AlertCircle, Upload, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { parseDriverNamesCsvFile, type DriverNameMapping } from "@/lib/parser/driver-names-csv"
@@ -11,11 +11,21 @@ interface CsvDropzoneProps {
   onMappingsChange: (mappings: DriverNameMapping[]) => void
   mappings: DriverNameMapping[]
   disabled?: boolean
+  onImport?: () => Promise<void>
+  isImporting?: boolean
+  importSuccess?: boolean
 }
 
 type DropzoneState = "idle" | "drag-over" | "loading" | "success" | "error"
 
-export function CsvDropzone({ onMappingsChange, mappings, disabled }: CsvDropzoneProps) {
+export function CsvDropzone({
+  onMappingsChange,
+  mappings,
+  disabled,
+  onImport,
+  isImporting,
+  importSuccess
+}: CsvDropzoneProps) {
   const [state, setState] = useState<DropzoneState>(mappings.length > 0 ? "success" : "idle")
   const [filename, setFilename] = useState<string>("")
   const [errorMessage, setErrorMessage] = useState<string>("")
@@ -114,19 +124,26 @@ export function CsvDropzone({ onMappingsChange, mappings, disabled }: CsvDropzon
   // Success state
   if (state === "success" && mappings.length > 0) {
     return (
-      <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-4">
+      <div className={cn(
+        "rounded-lg border p-4",
+        importSuccess
+          ? "border-emerald-500/50 bg-emerald-500/10"
+          : "border-emerald-500/30 bg-emerald-500/5"
+      )}>
         <div className="flex items-start justify-between">
           <div className="flex items-start gap-3">
             <div className="p-2 rounded-lg bg-emerald-500/20">
               <Check className="h-4 w-4 text-emerald-400" />
             </div>
             <div>
-              <p className="font-medium text-emerald-400">Fichier chargé</p>
+              <p className="font-medium text-emerald-400">
+                {importSuccess ? "Noms importés !" : "Fichier chargé"}
+              </p>
               <p className="text-sm text-muted-foreground">{filename}</p>
               <div className="flex items-center gap-2 mt-2">
                 <Users className="h-4 w-4 text-muted-foreground" />
                 <span className="text-sm text-muted-foreground">
-                  {mappings.length} noms de livreurs détectés
+                  {mappings.length} noms de livreurs {importSuccess ? "mis à jour" : "détectés"}
                 </span>
               </div>
               {warnings.length > 0 && (
@@ -137,14 +154,36 @@ export function CsvDropzone({ onMappingsChange, mappings, disabled }: CsvDropzon
               )}
             </div>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleReset}
-            className="text-muted-foreground hover:text-foreground"
-          >
-            <X className="h-4 w-4" />
-          </Button>
+          <div className="flex items-center gap-2">
+            {onImport && !importSuccess && (
+              <Button
+                size="sm"
+                onClick={onImport}
+                disabled={isImporting || disabled}
+              >
+                {isImporting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    Import...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="h-4 w-4 mr-2" />
+                    Importer ({mappings.length})
+                  </>
+                )}
+              </Button>
+            )}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleReset}
+              className="text-muted-foreground hover:text-foreground"
+              disabled={isImporting}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </div>
     )

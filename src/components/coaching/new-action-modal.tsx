@@ -11,14 +11,16 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { Calendar } from "@/components/ui/calendar"
-import { Search, MessageSquare, AlertTriangle, BookOpen, Ban, Lightbulb, CalendarIcon } from "lucide-react"
+import { Search, MessageSquare, AlertTriangle, BookOpen, Ban, Lightbulb, CalendarIcon, Check, Copy } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { CoachingSuggestion } from "@/lib/types"
 import { getTierBgColor } from "@/lib/utils/tier"
 import type { CoachingActionType } from "@/lib/utils/status"
 import { withToast } from "@/lib/utils/mutation"
+import { generateCoachingMessage, type ActionType } from "@/lib/coaching/coaching-message-generator"
+import { toast } from "sonner"
 import type { Id } from "../../../convex/_generated/dataModel"
-import { format, addWeeks, addMonths } from "date-fns"
+import { format, addWeeks, addMonths, getWeek, getYear } from "date-fns"
 import { fr } from "date-fns/locale"
 
 interface NewActionModalProps {
@@ -55,6 +57,9 @@ export function NewActionModal({ open, onOpenChange, prefillSuggestion, stationI
   const [followUpDate, setFollowUpDate] = useState<Date>(addWeeks(new Date(), 2))
   const [showCalendar, setShowCalendar] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [showSuccess, setShowSuccess] = useState(false)
+  const [generatedMessage, setGeneratedMessage] = useState("")
+  const [copied, setCopied] = useState(false)
 
   // Get existing follow-up dates for the calendar
   const currentMonth = useMemo(() => followUpDate.getMonth() + 1, [followUpDate])
@@ -72,10 +77,11 @@ export function NewActionModal({ open, onOpenChange, prefillSuggestion, stationI
   }, [followUpDates])
 
   // Get drivers from Convex
+  const now = new Date()
   const drivers = useQuery(api.stats.getDashboardDrivers, {
     stationId,
-    year: new Date().getFullYear(),
-    week: Math.ceil((new Date().getTime() - new Date(new Date().getFullYear(), 0, 1).getTime()) / (7 * 24 * 60 * 60 * 1000)),
+    year: getYear(now),
+    week: getWeek(now, { weekStartsOn: 1 }),
   })
 
   const createAction = useMutation(api.coaching.createCoachingAction)
@@ -134,17 +140,54 @@ export function NewActionModal({ open, onOpenChange, prefillSuggestion, stationI
     )
 
     if (result) {
-      // Reset and close
-      setSelectedDriver(null)
-      setSelectedDriverInfo(null)
-      setReason("")
-      setTargetCategory("")
-      setTargetSubcategory("")
-      setNotes("")
-      setFollowUpDate(addWeeks(new Date(), 2))
-      onOpenChange(false)
+      // Generate WhatsApp message
+      const message = generateCoachingMessage({
+        driverName: selectedDriverInfo?.name || "",
+        actionType: selectedType as ActionType,
+        dwcPercent: selectedDriverInfo?.dwcPercent || 0,
+        reason,
+        followUpDate: followUpDate.toISOString(),
+        targetCategory: targetCategory || undefined,
+      })
+      setGeneratedMessage(message)
+      setShowSuccess(true)
     }
     setIsSubmitting(false)
+  }
+
+  const handleCopyMessage = async () => {
+    await navigator.clipboard.writeText(generatedMessage)
+    setCopied(true)
+    toast.success("Message copie dans le presse-papier")
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  const handleCreateAnother = () => {
+    // Reset form for new action
+    setShowSuccess(false)
+    setGeneratedMessage("")
+    setCopied(false)
+    setSelectedDriver(null)
+    setSelectedDriverInfo(null)
+    setReason("")
+    setTargetCategory("")
+    setTargetSubcategory("")
+    setNotes("")
+    setFollowUpDate(addWeeks(new Date(), 2))
+  }
+
+  const handleCloseAfterSuccess = () => {
+    setShowSuccess(false)
+    setGeneratedMessage("")
+    setCopied(false)
+    setSelectedDriver(null)
+    setSelectedDriverInfo(null)
+    setReason("")
+    setTargetCategory("")
+    setTargetSubcategory("")
+    setNotes("")
+    setFollowUpDate(addWeeks(new Date(), 2))
+    onOpenChange(false)
   }
 
   // Handle preset selection
@@ -167,6 +210,78 @@ export function NewActionModal({ open, onOpenChange, prefillSuggestion, stationI
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] overflow-y-auto border-zinc-800 bg-zinc-900 text-white sm:max-w-2xl">
+        {showSuccess ? (
+          <>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500/20">
+                  <Check className="h-5 w-5 text-emerald-400" />
+                </div>
+                Action creee avec succes
+              </DialogTitle>
+            </DialogHeader>
+
+            <div className="space-y-4 py-4">
+              {/* Summary */}
+              <div className="rounded-lg border border-blue-500/30 bg-blue-500/10 p-4">
+                <div className="flex items-center gap-2 text-white">
+                  <span className="font-medium">{selectedDriverInfo?.name}</span>
+                  <Badge className={cn("text-xs", getTierBgColor(selectedDriverInfo?.tier as "fantastic" | "great" | "fair" | "poor"))}>
+                    {selectedDriverInfo?.dwcPercent}% DWC
+                  </Badge>
+                </div>
+                <p className="mt-1 text-sm text-zinc-400">
+                  {actionTypes.find(a => a.type === selectedType)?.label} - {reason}
+                </p>
+              </div>
+
+              {/* WhatsApp Message Preview */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-sm text-zinc-400">
+                  <MessageSquare className="h-4 w-4" />
+                  Message WhatsApp
+                </div>
+                <div className="rounded-lg border border-zinc-700 bg-zinc-800 p-4 font-mono text-sm whitespace-pre-wrap text-zinc-300">
+                  {generatedMessage}
+                </div>
+              </div>
+            </div>
+
+            <DialogFooter className="flex-col gap-2 sm:flex-row">
+              <Button
+                variant="outline"
+                onClick={handleCreateAnother}
+                className="border-zinc-700 text-zinc-400 hover:text-white"
+              >
+                Creer une autre action
+              </Button>
+              <Button
+                variant="outline"
+                onClick={handleCopyMessage}
+                className="border-emerald-500/50 text-emerald-400 hover:bg-emerald-500/10"
+              >
+                {copied ? (
+                  <>
+                    <Check className="mr-2 h-4 w-4" />
+                    Copie !
+                  </>
+                ) : (
+                  <>
+                    <Copy className="mr-2 h-4 w-4" />
+                    Copier le message
+                  </>
+                )}
+              </Button>
+              <Button
+                onClick={handleCloseAfterSuccess}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                Fermer
+              </Button>
+            </DialogFooter>
+          </>
+        ) : (
+          <>
         <DialogHeader>
           <DialogTitle>Planifier une action de coaching</DialogTitle>
         </DialogHeader>
@@ -498,6 +613,8 @@ export function NewActionModal({ open, onOpenChange, prefillSuggestion, stationI
             {isSubmitting ? "Création..." : "Créer l'action"}
           </Button>
         </DialogFooter>
+          </>
+        )}
       </DialogContent>
     </Dialog>
   )

@@ -9,6 +9,8 @@ import { useFilters } from "@/lib/filters"
 import { useQuery } from "convex/react"
 import { api } from "../../../convex/_generated/api"
 import { useRouter } from "next/navigation"
+import { TrendingUp, TrendingDown } from "lucide-react"
+import { cn } from "@/lib/utils"
 
 export function TopErrors() {
   const router = useRouter()
@@ -53,7 +55,7 @@ export function TopErrors() {
   }
 
   // Transform error breakdown into top errors list
-  const allErrors: { id: string; name: string; count: number }[] = []
+  const allErrors: { id: string; name: string; count: number; trend: number | null }[] = []
 
   if (errorBreakdown) {
     // DWC errors
@@ -65,6 +67,7 @@ export function TopErrors() {
             id: `dwc-${sub.name}`,
             name: sub.name,
             count: sub.count,
+            trend: sub.trend ?? null,
           })
         }
       })
@@ -79,6 +82,7 @@ export function TopErrors() {
             id: `iadc-${sub.name}`,
             name: sub.name,
             count: sub.count,
+            trend: sub.trend ?? null,
           })
         }
       })
@@ -91,6 +95,7 @@ export function TopErrors() {
         id: "false-scans",
         name: "Tentatives échouées",
         count: falseScans.total,
+        trend: falseScans.trend ?? null,
       })
     }
   }
@@ -138,7 +143,24 @@ export function TopErrors() {
                     <span className="text-xs font-medium text-muted-foreground">#{index + 1}</span>
                     <span className="text-sm font-medium text-card-foreground">{error.name}</span>
                   </div>
-                  <span className="text-sm font-semibold text-card-foreground">{formatNumber(error.count)}</span>
+                  <div className="flex items-center gap-2">
+                    {error.trend !== null && error.trend !== 0 && (
+                      <span
+                        className={cn(
+                          "flex items-center gap-0.5 text-xs font-medium",
+                          error.trend > 0 ? "text-red-500" : "text-emerald-500"
+                        )}
+                      >
+                        {error.trend > 0 ? (
+                          <TrendingUp className="h-3 w-3" />
+                        ) : (
+                          <TrendingDown className="h-3 w-3" />
+                        )}
+                        {error.trend > 0 ? "+" : ""}{error.trend}
+                      </span>
+                    )}
+                    <span className="text-sm font-semibold text-card-foreground tabular-nums">{formatNumber(error.count)}</span>
+                  </div>
                 </div>
                 <div className="mt-1.5 flex items-center gap-2">
                   <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
@@ -147,7 +169,7 @@ export function TopErrors() {
                       style={{ width: `${percentage}%` }}
                     />
                   </div>
-                  <span className="w-12 text-right text-xs text-muted-foreground">
+                  <span className="w-12 text-right text-xs text-muted-foreground tabular-nums">
                     {totalErrors > 0 ? Math.round((error.count / totalErrors) * 100) : 0}%
                   </span>
                 </div>

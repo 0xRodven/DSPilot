@@ -6,6 +6,8 @@ export {
   useFilters,
   useStationFilter,
   useTimeParams, // Legacy compat
+  useFilteredHref,
+  useBuildFilteredHref,
 } from "./hooks"
 
 // Parsers & helpers

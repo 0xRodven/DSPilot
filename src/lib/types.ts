@@ -20,12 +20,13 @@ export interface DriverDetail extends Driver {
   errors: number
   activeSince: string
   streak: number
-  rank: number
+  rank: number | null // null when driver not found in ranking
   totalDrivers: number
   dailyPerformance: DailyPerformance[]
   errorBreakdown: ErrorBreakdown
   coachingHistory: CoachingAction[]
   weeklyHistory: WeeklyData[]
+  hasDataForSelectedWeek?: boolean // false when selected week has no data
 }
 
 export interface DailyPerformance {

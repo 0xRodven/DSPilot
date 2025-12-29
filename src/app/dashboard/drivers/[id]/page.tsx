@@ -14,11 +14,13 @@ import { CoachingHistory } from "@/components/drivers/coaching-history"
 import { DailyPerformance } from "@/components/drivers/daily-performance"
 import { NewActionModal } from "@/components/coaching/new-action-modal"
 import { useDashboardStore } from "@/lib/store"
-import { useFilters } from "@/lib/filters"
-import { ChevronLeft } from "lucide-react"
+import { useFilters, useBuildFilteredHref } from "@/lib/filters"
+import { ChevronLeft, AlertTriangle } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
-import type { DriverDetail, CoachingSuggestion } from "@/lib/types"
+import { Badge } from "@/components/ui/badge"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import type { DriverDetail } from "@/lib/types"
 
 interface DriverDetailPageProps {
   params: Promise<{ id: string }>
@@ -170,20 +172,21 @@ function NoDataState({ driverName }: { driverName: string }) {
 export default function DriverDetailPage({ params }: DriverDetailPageProps) {
   const { id } = use(params)
   const { selectedStation } = useDashboardStore()
-  const { year, weekNum, period } = useFilters()
   const [coachingModalOpen, setCoachingModalOpen] = useState(false)
 
-  // Determine period mode from time context
-  const periodMode = period
+  // Use global week filter from URL (nuqs)
+  const { week: globalWeek } = useFilters()
+  const buildHref = useBuildFilteredHref()
 
   // Get station from Convex
   const station = useQuery(api.stations.getStationByCode, { code: selectedStation.code })
 
-  // Get driver detail from Convex
-  const driverDetail = useQuery(api.drivers.getDriverDetail, {
+  // Get driver detail with GLOBAL week filter (linked to header selector)
+  const driverDetail = useQuery(api.drivers.getDriverWithFullHistory, {
     driverId: id as Id<"drivers">,
-    year,
-    week: weekNum,
+    weeksLimit: 12, // Always load 12 weeks of history for charts
+    year: globalWeek.year,
+    week: globalWeek.week,
   })
 
   // Get coaching history
@@ -191,18 +194,8 @@ export default function DriverDetailPage({ params }: DriverDetailPageProps) {
     driverId: id as Id<"drivers">,
   })
 
-  // Calculate comparison label based on period mode
-  const getComparisonLabel = () => {
-    if (periodMode === "week") {
-      const prevWeek = weekNum === 1 ? 52 : weekNum - 1
-      return `vs S${prevWeek}`
-    } else if (periodMode === "day") {
-      return "vs veille"
-    } else {
-      return "vs période préc."
-    }
-  }
-  const comparisonLabel = getComparisonLabel()
+  // Comparison label based on latest week
+  const comparisonLabel = "vs sem. préc."
 
   // Loading state
   if (driverDetail === undefined || coachingHistory === undefined || station === undefined) {
@@ -214,24 +207,29 @@ export default function DriverDetailPage({ params }: DriverDetailPageProps) {
     return <NotFoundState />
   }
 
+  // No data at all for this driver
+  if (!driverDetail.hasData) {
+    return <NoDataState driverName={driverDetail.name} />
+  }
+
   // Combine driver detail with coaching history
   const driver: DriverDetail = {
     ...driverDetail,
     coachingHistory: coachingHistory || [],
   }
 
-  // No data for this week (driver exists but no stats)
-  if (driver.deliveries === 0 && driver.dailyPerformance.length === 0) {
-    return <NoDataState driverName={driver.name} />
-  }
+  // Week info - now using global filter
+  const latestWeek = driverDetail.latestWeek
+  const weekNum = globalWeek.week
+  const hasDataForWeek = driverDetail.hasDataForSelectedWeek !== false
 
   return (
     <main className="min-h-[calc(100vh-4rem)]">
       <div className="p-6">
         {/* Breadcrumb */}
-        <div className="mb-6">
+        <div className="mb-6 flex items-center">
           <Link
-            href="/dashboard/drivers"
+            href={buildHref("/dashboard/drivers")}
             className="inline-flex items-center text-sm text-muted-foreground hover:text-card-foreground transition-colors"
           >
             <ChevronLeft className="mr-1 h-4 w-4" />
@@ -239,6 +237,11 @@ export default function DriverDetailPage({ params }: DriverDetailPageProps) {
           </Link>
           <span className="mx-2 text-muted-foreground">/</span>
           <span className="text-sm text-card-foreground">{driver.name}</span>
+          {latestWeek && (
+            <Badge variant="secondary" className="ml-3">
+              Dernière donnée: S{latestWeek.week} {latestWeek.year}
+            </Badge>
+          )}
         </div>
 
         {/* Driver Header */}
@@ -246,8 +249,28 @@ export default function DriverDetailPage({ params }: DriverDetailPageProps) {
           <DriverHeader driver={driver} onPlanCoaching={() => setCoachingModalOpen(true)} />
         </div>
 
-        {/* KPIs */}
+        {/* No data warning for selected week */}
+        {!hasDataForWeek && (
+          <Alert variant="default" className="mb-6 border-amber-500/50 bg-amber-500/10">
+            <AlertTriangle className="h-4 w-4 text-amber-500" />
+            <AlertTitle className="text-amber-500">Aucune donnée pour la semaine {globalWeek.week}</AlertTitle>
+            <AlertDescription className="text-muted-foreground">
+              Ce driver n&apos;a pas de données pour la semaine sélectionnée.
+              {latestWeek && (
+                <> Dernière donnée disponible: S{latestWeek.week} {latestWeek.year}.</>
+              )}
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {/* KPIs Section */}
         <div className="mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold">Performance</h2>
+            <Badge variant="outline" className="text-muted-foreground">
+              Semaine {globalWeek.week} • {globalWeek.year}
+            </Badge>
+          </div>
           <DriverKpis driver={driver} comparisonLabel={comparisonLabel} />
         </div>
 

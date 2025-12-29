@@ -1,8 +1,9 @@
 "use client"
 
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { LayoutDashboard, Users, AlertTriangle, GraduationCap, Upload, Settings, Truck, ChevronUp, ChevronRight, Calendar, ClipboardList, MessageSquare } from "lucide-react"
+import { useBuildFilteredHref } from "@/lib/filters"
 import {
   Sidebar,
   SidebarContent,
@@ -49,22 +50,28 @@ const bottomNavItems = [{ icon: Settings, label: "Paramètres", href: "/dashboar
 
 export function AppSidebar() {
   const pathname = usePathname()
+  const router = useRouter()
+  const buildHref = useBuildFilteredHref()
+
+  // Navigation handler that preserves filter params
+  const handleNavigate = (href: string) => {
+    const targetHref = buildHref(href)
+    router.push(targetHref)
+  }
 
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader className="border-b border-sidebar-border">
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg" asChild>
-              <Link href="/dashboard">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/20">
-                  <Truck className="h-5 w-5 text-primary" />
-                </div>
-                <div className="flex flex-col gap-0.5 leading-none">
-                  <span className="font-semibold">DSPilot</span>
-                  <span className="text-xs text-muted-foreground">Dashboard</span>
-                </div>
-              </Link>
+            <SidebarMenuButton size="lg" onClick={() => handleNavigate("/dashboard")}>
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/20">
+                <Truck className="h-5 w-5 text-primary" />
+              </div>
+              <div className="flex flex-col gap-0.5 leading-none">
+                <span className="font-semibold">DSPilot</span>
+                <span className="text-xs text-muted-foreground">Dashboard</span>
+              </div>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
@@ -78,11 +85,9 @@ export function AppSidebar() {
                 const isActive = pathname === item.href
                 return (
                   <SidebarMenuItem key={item.href}>
-                    <SidebarMenuButton asChild isActive={isActive} tooltip={item.label}>
-                      <Link href={item.href}>
-                        <item.icon className={isActive ? "text-primary" : ""} />
-                        <span>{item.label}</span>
-                      </Link>
+                    <SidebarMenuButton isActive={isActive} tooltip={item.label} onClick={() => handleNavigate(item.href)}>
+                      <item.icon className={isActive ? "text-primary" : ""} />
+                      <span>{item.label}</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 )
@@ -107,11 +112,9 @@ export function AppSidebar() {
                         const isActive = pathname === item.href
                         return (
                           <SidebarMenuSubItem key={item.href}>
-                            <SidebarMenuSubButton asChild isActive={isActive}>
-                              <Link href={item.href}>
-                                <item.icon className={`h-4 w-4 ${isActive ? "text-primary" : ""}`} />
-                                <span>{item.label}</span>
-                              </Link>
+                            <SidebarMenuSubButton isActive={isActive} onClick={() => handleNavigate(item.href)}>
+                              <item.icon className={`h-4 w-4 ${isActive ? "text-primary" : ""}`} />
+                              <span>{item.label}</span>
                             </SidebarMenuSubButton>
                           </SidebarMenuSubItem>
                         )
@@ -131,11 +134,9 @@ export function AppSidebar() {
             const isActive = pathname === item.href
             return (
               <SidebarMenuItem key={item.href}>
-                <SidebarMenuButton asChild isActive={isActive} tooltip={item.label}>
-                  <Link href={item.href}>
-                    <item.icon />
-                    <span>{item.label}</span>
-                  </Link>
+                <SidebarMenuButton isActive={isActive} tooltip={item.label} onClick={() => handleNavigate(item.href)}>
+                  <item.icon />
+                  <span>{item.label}</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             )
@@ -164,10 +165,10 @@ export function AppSidebar() {
                 sideOffset={4}
               >
                 <DropdownMenuItem asChild>
-                  <Link href="/dashboard/settings">Profil</Link>
+                  <Link href={buildHref("/dashboard/settings")}>Profil</Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <Link href="/dashboard/settings">Paramètres</Link>
+                  <Link href={buildHref("/dashboard/settings")}>Paramètres</Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem className="text-destructive">Déconnexion</DropdownMenuItem>

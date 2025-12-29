@@ -323,7 +323,7 @@ export const getDriverDetail = query({
     const rank = driversWithDwc.findIndex((d) => d.driverId === args.driverId) + 1;
 
     // Format daily performance
-    const dayNames = ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"];
+    const dayNames = ["Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"];
     const dailyPerformance = dailyStats.map((stat) => {
       const date = new Date(stat.date);
       const dayIndex = date.getDay();
@@ -418,13 +418,19 @@ export const getDriverDetail = query({
       }
     }
 
+    // Calculate daysActive from dailyStats (more accurate than stored daysWorked)
+    const daysActive = dailyStats.filter((stat) => {
+      const total = stat.dwcCompliant + stat.dwcMisses + stat.failedAttempts;
+      return total > 0;
+    }).length;
+
     return {
       id: driver._id,
       name: driver.name,
       amazonId: driver.amazonId,
       dwcPercent,
       iadcPercent,
-      daysActive: currentWeekStats?.daysWorked || 0,
+      daysActive,
       tier,
       trend,
       deliveries: totalDeliveries,
@@ -437,6 +443,298 @@ export const getDriverDetail = query({
       errorBreakdown,
       coachingHistory: [], // Will be filled by separate query
       weeklyHistory: formattedWeeklyHistory,
+    };
+  },
+});
+
+/**
+ * Récupère l'historique complet d'un driver (indépendant de la semaine globale)
+ * Utilisé pour la page détail avec filtre local
+ */
+export const getDriverWithFullHistory = query({
+  args: {
+    driverId: v.id("drivers"),
+    weeksLimit: v.optional(v.number()), // undefined = 12, 0 = all
+    year: v.optional(v.number()),       // Semaine spécifique à afficher
+    week: v.optional(v.number()),       // Semaine spécifique à afficher
+  },
+  handler: async (ctx, args) => {
+    // 1. Get driver info
+    const driver = await ctx.db.get(args.driverId);
+    if (!driver) return null;
+
+    // 2. Get weekly history (limited or full)
+    const limit = args.weeksLimit === 0 ? 100 : (args.weeksLimit ?? 12);
+    const weeklyHistory = await ctx.db
+      .query("driverWeeklyStats")
+      .withIndex("by_driver", (q) => q.eq("driverId", args.driverId))
+      .order("desc")
+      .take(limit);
+
+    if (weeklyHistory.length === 0) {
+      // No stats at all - return with defaults
+      return {
+        id: driver._id,
+        name: driver.name,
+        amazonId: driver.amazonId,
+        dwcPercent: 0,
+        iadcPercent: 0,
+        daysActive: 0,
+        tier: "poor" as const,
+        trend: 0,
+        deliveries: 0,
+        errors: 0,
+        activeSince: driver.firstSeenWeek || "Inconnu",
+        streak: 0,
+        rank: null, // No ranking when no data
+        totalDrivers: 0,
+        dailyPerformance: [],
+        errorBreakdown: {
+          dwcMisses: { total: 0, categories: [] },
+          iadcNonCompliant: { total: 0, categories: [] },
+        },
+        coachingHistory: [],
+        weeklyHistory: [],
+        hasData: false,
+        hasDataForSelectedWeek: false, // No data for any week
+        latestWeek: null,
+        selectedWeek: null,
+        totalWeeksInHistory: 0,
+      };
+    }
+
+    // 3. Determine which week to display
+    // If year/week specified, use that; otherwise use most recent
+    const latestStats = weeklyHistory[0];
+    const latestYear = latestStats.year;
+    const latestWeek = latestStats.week;
+
+    // Find the target week stats
+    const targetYear = args.year ?? latestYear;
+    const targetWeek = args.week ?? latestWeek;
+
+    // Find stats for target week (could be different from latest)
+    // IMPORTANT: Do NOT fallback to latestStats if target week doesn't exist
+    let targetStats: typeof latestStats | null = null;
+    let hasDataForSelectedWeek = true;
+
+    if (args.year !== undefined && args.week !== undefined) {
+      // Look for exact week match
+      const foundStats = weeklyHistory.find(
+        (s) => s.year === args.year && s.week === args.week
+      );
+      if (foundStats) {
+        targetStats = foundStats;
+      } else {
+        // If not in history, query directly
+        const directQuery = await ctx.db
+          .query("driverWeeklyStats")
+          .withIndex("by_driver_week", (q) =>
+            q.eq("driverId", args.driverId).eq("year", targetYear).eq("week", targetWeek)
+          )
+          .first();
+        if (directQuery) {
+          targetStats = directQuery;
+        } else {
+          // No data for this specific week - mark as no data
+          hasDataForSelectedWeek = false;
+        }
+      }
+    } else {
+      // No specific week requested, use latest
+      targetStats = latestStats;
+    }
+
+    // 4. Get previous week for trend (relative to target week)
+    const targetWeekIndex = weeklyHistory.findIndex(
+      (s) => s.year === targetYear && s.week === targetWeek
+    );
+    const prevStats = targetWeekIndex >= 0 && targetWeekIndex < weeklyHistory.length - 1
+      ? weeklyHistory[targetWeekIndex + 1]
+      : null;
+
+    // 5. Get daily stats for TARGET week (not necessarily latest)
+    const dailyStats = await ctx.db
+      .query("driverDailyStats")
+      .withIndex("by_driver_week", (q) =>
+        q.eq("driverId", args.driverId).eq("year", targetYear).eq("week", targetWeek)
+      )
+      .collect();
+
+    // 6. Get station stats for ranking (for target week)
+    const allStationDriverStats = await ctx.db
+      .query("driverWeeklyStats")
+      .withIndex("by_station_week", (q) =>
+        q.eq("stationId", driver.stationId).eq("year", targetYear).eq("week", targetWeek)
+      )
+      .collect();
+
+    // Calculate DWC% for TARGET week (handle null targetStats)
+    let dwcTotal = 0;
+    let dwcPercent = 0;
+    let iadcTotal = 0;
+    let iadcPercent = 0;
+    let totalErrors = 0;
+
+    if (targetStats) {
+      dwcTotal = targetStats.dwcCompliant + targetStats.dwcMisses + targetStats.failedAttempts;
+      dwcPercent = dwcTotal > 0 ? Math.round((targetStats.dwcCompliant / dwcTotal) * 1000) / 10 : 0;
+      iadcTotal = targetStats.iadcCompliant + targetStats.iadcNonCompliant;
+      iadcPercent = iadcTotal > 0 ? Math.round((targetStats.iadcCompliant / iadcTotal) * 1000) / 10 : 0;
+      totalErrors = targetStats.dwcMisses + targetStats.failedAttempts;
+    }
+
+    // Calculate trend
+    let trend = 0;
+    if (targetStats && prevStats) {
+      const prevDwcTotal = prevStats.dwcCompliant + prevStats.dwcMisses + prevStats.failedAttempts;
+      const prevDwcPercent = prevDwcTotal > 0 ? (prevStats.dwcCompliant / prevDwcTotal) * 100 : 0;
+      trend = Math.round((dwcPercent - prevDwcPercent) * 10) / 10;
+    }
+
+    // Determine tier
+    let tier: "fantastic" | "great" | "fair" | "poor";
+    if (dwcPercent >= 98.5) tier = "fantastic";
+    else if (dwcPercent >= 96) tier = "great";
+    else if (dwcPercent >= 90) tier = "fair";
+    else tier = "poor";
+
+    // Calculate rank (returns null if driver not found in week's data)
+    const driversWithDwc = allStationDriverStats.map((stat) => {
+      const total = stat.dwcCompliant + stat.dwcMisses + stat.failedAttempts;
+      return {
+        driverId: stat.driverId,
+        dwcPercent: total > 0 ? (stat.dwcCompliant / total) * 100 : 0,
+      };
+    });
+    driversWithDwc.sort((a, b) => b.dwcPercent - a.dwcPercent);
+    const rankIndex = driversWithDwc.findIndex((d) => d.driverId === args.driverId);
+    // Return null if driver not found (instead of 0)
+    const rank = rankIndex >= 0 ? rankIndex + 1 : null;
+
+    // Format daily performance
+    const dayNames = ["Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"];
+    const dailyPerformance = dailyStats.map((stat) => {
+      const date = new Date(stat.date);
+      const dayIndex = date.getDay();
+      const dTotal = stat.dwcCompliant + stat.dwcMisses + stat.failedAttempts;
+      const dailyDwcPercent = dTotal > 0 ? Math.round((stat.dwcCompliant / dTotal) * 1000) / 10 : null;
+      const iTotal = stat.iadcCompliant + stat.iadcNonCompliant;
+      const dailyIadcPercent = iTotal > 0 ? Math.round((stat.iadcCompliant / iTotal) * 1000) / 10 : null;
+
+      let status: "excellent" | "tres-bon" | "bon" | "moyen" | "non-travaille" = "non-travaille";
+      if (dailyDwcPercent !== null) {
+        if (dailyDwcPercent >= 98.5) status = "excellent";
+        else if (dailyDwcPercent >= 96) status = "tres-bon";
+        else if (dailyDwcPercent >= 90) status = "bon";
+        else status = "moyen";
+      }
+
+      return {
+        day: dayNames[dayIndex],
+        date: stat.date,
+        dwcPercent: dailyDwcPercent,
+        iadcPercent: dailyIadcPercent,
+        deliveries: dTotal > 0 ? dTotal : null,
+        errors: dTotal > 0 ? stat.dwcMisses + stat.failedAttempts : null,
+        status,
+      };
+    }).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+    // Error breakdown for TARGET week (handle null targetStats)
+    const emptyDwcBreakdown = {
+      contactMiss: 0,
+      photoDefect: 0,
+      noPhoto: 0,
+      otpMiss: 0,
+      other: 0,
+    };
+    const emptyIadcBreakdown = {
+      mailbox: 0,
+      unattended: 0,
+      safePlace: 0,
+      other: 0,
+    };
+    const dwcBreakdown = targetStats?.dwcBreakdown || emptyDwcBreakdown;
+    const iadcBreakdown = targetStats?.iadcBreakdown || emptyIadcBreakdown;
+
+    const errorBreakdown = {
+      dwcMisses: {
+        total: dwcBreakdown.contactMiss + dwcBreakdown.photoDefect + dwcBreakdown.noPhoto + dwcBreakdown.otpMiss + dwcBreakdown.other,
+        categories: [
+          { name: "Contact Miss", count: dwcBreakdown.contactMiss, subcategories: [] },
+          { name: "Photo Defect", count: dwcBreakdown.photoDefect, subcategories: [] },
+          { name: "No Photo", count: dwcBreakdown.noPhoto, subcategories: [] },
+          { name: "OTP Miss", count: dwcBreakdown.otpMiss, subcategories: [] },
+          { name: "Other", count: dwcBreakdown.other, subcategories: [] },
+        ].filter((c) => c.count > 0),
+      },
+      iadcNonCompliant: {
+        total: iadcBreakdown.mailbox + iadcBreakdown.unattended + iadcBreakdown.safePlace + iadcBreakdown.other,
+        categories: [
+          { name: "Mailbox", count: iadcBreakdown.mailbox },
+          { name: "Unattended", count: iadcBreakdown.unattended },
+          { name: "Safe Place", count: iadcBreakdown.safePlace },
+          { name: "Other", count: iadcBreakdown.other },
+        ].filter((c) => c.count > 0),
+      },
+    };
+
+    // Format weekly history for chart
+    const formattedWeeklyHistory = weeklyHistory.map((stat) => {
+      const t = stat.dwcCompliant + stat.dwcMisses + stat.failedAttempts;
+      const dwc = t > 0 ? Math.round((stat.dwcCompliant / t) * 1000) / 10 : 0;
+      const iT = stat.iadcCompliant + stat.iadcNonCompliant;
+      const iadc = iT > 0 ? Math.round((stat.iadcCompliant / iT) * 1000) / 10 : 0;
+
+      return {
+        week: `S${stat.week}`,
+        weekNumber: stat.week,
+        year: stat.year,
+        dwc,
+        iadc,
+      };
+    }).reverse();
+
+    // Calculate streak
+    let streak = 0;
+    for (const week of weeklyHistory) {
+      const total = week.dwcCompliant + week.dwcMisses + week.failedAttempts;
+      const pct = total > 0 ? (week.dwcCompliant / total) * 100 : 0;
+      if (pct >= 96) streak++;
+      else break;
+    }
+
+    // Calculate daysActive from dailyStats (more accurate than stored daysWorked)
+    const daysActive = dailyStats.filter((stat) => {
+      const total = stat.dwcCompliant + stat.dwcMisses + stat.failedAttempts;
+      return total > 0;
+    }).length;
+
+    return {
+      id: driver._id,
+      name: driver.name,
+      amazonId: driver.amazonId,
+      dwcPercent,
+      iadcPercent,
+      daysActive,
+      tier,
+      trend,
+      deliveries: dwcTotal,
+      errors: totalErrors,
+      activeSince: driver.firstSeenWeek || "Inconnu",
+      streak,
+      rank,
+      totalDrivers: allStationDriverStats.length,
+      dailyPerformance,
+      errorBreakdown,
+      coachingHistory: [],
+      weeklyHistory: formattedWeeklyHistory,
+      hasData: true,
+      hasDataForSelectedWeek, // New flag to indicate if selected week has data
+      latestWeek: { year: latestYear, week: latestWeek },
+      selectedWeek: { year: targetYear, week: targetWeek },
+      totalWeeksInHistory: weeklyHistory.length,
     };
   },
 });

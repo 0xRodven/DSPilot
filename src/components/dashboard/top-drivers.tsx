@@ -14,14 +14,13 @@ import { useDashboardStore } from "@/lib/store"
 import { useFilters } from "@/lib/filters"
 import { useRouter } from "next/navigation"
 
-type MetricType = "dwc" | "iadc" | "volume" | "progression"
+type MetricType = "dwc" | "iadc" | "volume"
 type ViewType = "top" | "bottom"
 
 const metricLabels: Record<MetricType, string> = {
   dwc: "DWC %",
   iadc: "IADC %",
-  volume: "Volume",
-  progression: "Progression",
+  volume: "Jours actifs",
 }
 
 const rankEmojis = ["🥇", "🥈", "🥉", "4.", "5."]
@@ -29,7 +28,7 @@ const rankEmojis = ["🥇", "🥈", "🥉", "4.", "5."]
 export function TopDrivers() {
   const router = useRouter()
   const { selectedStation } = useDashboardStore()
-  const { year, weekNum } = useFilters()
+  const { period, year, weekNum, date, displayLabel, normalizedTime } = useFilters()
 
   const [metric, setMetric] = useState<MetricType>("dwc")
   const [view, setView] = useState<ViewType>("top")
@@ -37,11 +36,25 @@ export function TopDrivers() {
   // Get station from Convex
   const station = useQuery(api.stations.getStationByCode, { code: selectedStation.code })
 
-  // Get drivers from Convex
-  const drivers = useQuery(
+  // Get drivers from Convex - choose query based on mode
+  const driversWeekly = useQuery(
     api.stats.getDashboardDrivers,
-    station ? { stationId: station._id, year, week: weekNum } : "skip"
+    station && period === "week" ? { stationId: station._id, year, week: weekNum } : "skip"
   )
+
+  const driversDaily = useQuery(
+    api.stats.getDashboardDriversDaily,
+    station && period === "day" ? { stationId: station._id, date } : "skip"
+  )
+
+  const driversRange = useQuery(
+    api.stats.getDashboardDriversRange,
+    station && period === "range"
+      ? { stationId: station._id, startDate: normalizedTime.start, endDate: normalizedTime.end }
+      : "skip"
+  )
+
+  const drivers = period === "day" ? driversDaily : period === "range" ? driversRange : driversWeekly
 
   const sortedDrivers = useMemo(() => {
     if (!drivers) return []
@@ -56,8 +69,6 @@ export function TopDrivers() {
               return driver.iadcPercent
             case "volume":
               return driver.daysActive
-            case "progression":
-              return driver.trend
           }
         }
         return view === "top" ? getValue(b) - getValue(a) : getValue(a) - getValue(b)
@@ -73,8 +84,6 @@ export function TopDrivers() {
         return `${driver.iadcPercent}%`
       case "volume":
         return `${driver.daysActive} jours`
-      case "progression":
-        return `${driver.trend > 0 ? "+" : ""}${driver.trend}%`
     }
   }
 
@@ -179,16 +188,27 @@ export function TopDrivers() {
                 <div>
                   <p className="text-sm font-medium text-card-foreground">{driver.name}</p>
                   <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                    {driver.trend >= 0 ? (
-                      <TrendingUp className="h-3 w-3 text-emerald-400" />
+                    {driver.trend === null ? (
+                      <>
+                        <span className="text-muted-foreground">—</span>
+                        <span>pas de données S{weekNum > 1 ? weekNum - 1 : 52}</span>
+                      </>
                     ) : (
-                      <TrendingDown className="h-3 w-3 text-red-400" />
+                      <>
+                        {driver.trend >= 0 ? (
+                          <TrendingUp className="h-3 w-3 text-emerald-400" />
+                        ) : (
+                          <TrendingDown className="h-3 w-3 text-red-400" />
+                        )}
+                        <span className={driver.trend >= 0 ? "text-emerald-400" : "text-red-400"}>
+                          {driver.trend > 0 ? "+" : ""}
+                          {driver.trend}%
+                        </span>
+                        <span>
+                          {period === "day" ? "vs veille" : period === "range" ? "évol." : `vs S${weekNum > 1 ? weekNum - 1 : 52}`}
+                        </span>
+                      </>
                     )}
-                    <span className={driver.trend >= 0 ? "text-emerald-400" : "text-red-400"}>
-                      {driver.trend > 0 ? "+" : ""}
-                      {driver.trend}%
-                    </span>
-                    <span>vs S{weekNum > 1 ? weekNum - 1 : 52}</span>
                   </div>
                 </div>
               </div>

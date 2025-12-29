@@ -2,7 +2,9 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts"
+import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as ChartTooltip } from "recharts"
+import { HelpCircle } from "lucide-react"
 import { useQuery } from "convex/react"
 import { api } from "../../../convex/_generated/api"
 import { useDashboardStore } from "@/lib/store"
@@ -17,16 +19,30 @@ const tierConfig = [
 
 export function TierDistribution() {
   const { selectedStation } = useDashboardStore()
-  const { year, weekNum } = useFilters()
+  const { period, year, weekNum, date, displayLabel, normalizedTime } = useFilters()
 
   // Get station from Convex
   const station = useQuery(api.stations.getStationByCode, { code: selectedStation.code })
 
-  // Get KPIs from Convex
-  const kpis = useQuery(
+  // Get KPIs from Convex - choose query based on mode
+  const kpisWeekly = useQuery(
     api.stats.getDashboardKPIs,
-    station ? { stationId: station._id, year, week: weekNum } : "skip"
+    station && period === "week" ? { stationId: station._id, year, week: weekNum } : "skip"
   )
+
+  const kpisDaily = useQuery(
+    api.stats.getDashboardKPIsDaily,
+    station && period === "day" ? { stationId: station._id, date } : "skip"
+  )
+
+  const kpisRange = useQuery(
+    api.stats.getDashboardKPIsRange,
+    station && period === "range"
+      ? { stationId: station._id, startDate: normalizedTime.start, endDate: normalizedTime.end }
+      : "skip"
+  )
+
+  const kpis = period === "day" ? kpisDaily : period === "range" ? kpisRange : kpisWeekly
 
   // Loading state
   if (!station || kpis === undefined) {
@@ -61,7 +77,7 @@ export function TierDistribution() {
       <Card className="border-border bg-card">
         <CardHeader className="pb-2">
           <CardTitle className="text-base font-semibold text-card-foreground">Distribution Tiers</CardTitle>
-          <p className="text-xs text-muted-foreground">Semaine {weekNum}</p>
+          <p className="text-xs text-muted-foreground">{displayLabel}</p>
         </CardHeader>
         <CardContent className="text-center py-8">
           <p className="text-muted-foreground text-sm">Aucune donnée</p>
@@ -82,10 +98,21 @@ export function TierDistribution() {
     : 0
 
   return (
+    <TooltipProvider delayDuration={300}>
     <Card className="border-border bg-card">
       <CardHeader className="pb-2">
-        <CardTitle className="text-base font-semibold text-card-foreground">Distribution Tiers</CardTitle>
-        <p className="text-xs text-muted-foreground">Semaine {weekNum} • {total} drivers</p>
+        <div className="flex items-center gap-1.5">
+          <CardTitle className="text-base font-semibold text-card-foreground">Distribution Tiers</CardTitle>
+          <UITooltip>
+            <TooltipTrigger asChild>
+              <HelpCircle className="h-3.5 w-3.5 text-muted-foreground/60 cursor-help" />
+            </TooltipTrigger>
+            <TooltipContent side="top" className="max-w-xs">
+              <p className="text-xs">Répartition des drivers par niveau de performance DWC : Fantastic (≥98.5%), Great (≥96%), Fair (≥90%), Poor (&lt;90%)</p>
+            </TooltipContent>
+          </UITooltip>
+        </div>
+        <p className="text-xs text-muted-foreground">{displayLabel} • {total} drivers</p>
       </CardHeader>
 
       <CardContent>
@@ -98,12 +125,12 @@ export function TierDistribution() {
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Pie>
-                <Tooltip
+                <ChartTooltip
                   contentStyle={{
-                    backgroundColor: "rgba(24, 24, 27, 0.95)",
-                    border: "1px solid rgba(255,255,255,0.1)",
+                    backgroundColor: "hsl(var(--popover))",
+                    border: "1px solid hsl(var(--border))",
                     borderRadius: "8px",
-                    color: "#fff",
+                    color: "hsl(var(--popover-foreground))",
                   }}
                   formatter={(value: number, name: string) => [
                     `${value} (${total > 0 ? ((value / total) * 100).toFixed(0) : 0}%)`,
@@ -144,5 +171,6 @@ export function TierDistribution() {
         </div>
       </CardContent>
     </Card>
+    </TooltipProvider>
   )
 }

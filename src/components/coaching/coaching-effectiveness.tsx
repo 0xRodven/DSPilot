@@ -56,13 +56,13 @@ export function CoachingEffectiveness({ stationId }: CoachingEffectivenessProps)
   // Handle empty data
   if (!effectiveness || effectiveness.byType.length === 0) {
     return (
-      <Card className="border-zinc-800 bg-zinc-900/50">
+      <Card className="border-border bg-card">
         <CardHeader>
-          <CardTitle className="text-lg font-semibold text-white">Efficacité du Coaching</CardTitle>
-          <p className="text-sm text-zinc-500">Aucune donnée disponible</p>
+          <CardTitle className="text-lg font-semibold text-foreground">Efficacité du Coaching</CardTitle>
+          <p className="text-sm text-muted-foreground">Aucune donnée disponible</p>
         </CardHeader>
         <CardContent className="text-center py-8">
-          <p className="text-zinc-400">Importez des données pour voir les statistiques de coaching</p>
+          <p className="text-muted-foreground">Importez des données pour voir les statistiques de coaching</p>
         </CardContent>
       </Card>
     )
@@ -73,11 +73,11 @@ export function CoachingEffectiveness({ stationId }: CoachingEffectivenessProps)
   )
 
   return (
-    <Card className="border-zinc-800 bg-zinc-900/50">
+    <Card className="border-border bg-card">
       <CardHeader className="flex flex-row items-center justify-between pb-3">
         <div>
-          <CardTitle className="text-lg font-semibold text-white">Efficacité du Coaching</CardTitle>
-          <p className="text-sm text-zinc-500">
+          <CardTitle className="text-lg font-semibold text-foreground">Efficacité du Coaching</CardTitle>
+          <p className="text-sm text-muted-foreground">
             Impact des actions sur les {period === "3M" ? "3" : period === "6M" ? "6" : "12"} derniers mois
           </p>
         </div>
@@ -88,7 +88,7 @@ export function CoachingEffectiveness({ stationId }: CoachingEffectivenessProps)
               size="sm"
               variant={period === p ? "default" : "ghost"}
               className={cn(
-                period === p ? "bg-zinc-700 text-white" : "text-zinc-400 hover:bg-zinc-800 hover:text-white",
+                period === p ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground",
               )}
               onClick={() => setPeriod(p)}
             >
@@ -100,31 +100,31 @@ export function CoachingEffectiveness({ stationId }: CoachingEffectivenessProps)
       <CardContent className="space-y-6">
         {/* Key Metrics */}
         <div className="grid grid-cols-3 gap-4">
-          <div className="rounded-lg border border-zinc-800 bg-zinc-900/50 p-4 text-center">
+          <div className="rounded-lg border border-border bg-muted/50 p-4 text-center">
             <CheckCircle className="mx-auto h-6 w-6 text-emerald-400" />
-            <p className="mt-2 text-3xl font-bold text-white">{effectiveness.successRate}%</p>
-            <p className="text-sm text-zinc-400">Taux de succès</p>
-            <p className="mt-1 text-xs text-zinc-500">
+            <p className="mt-2 text-3xl font-bold text-foreground">{effectiveness.successRate}%</p>
+            <p className="text-sm text-muted-foreground">Taux de succès</p>
+            <p className="mt-1 text-xs text-muted-foreground/70">
               {effectiveness.successCount}/{effectiveness.totalEvaluated} améliorés
             </p>
           </div>
-          <div className="rounded-lg border border-zinc-800 bg-zinc-900/50 p-4 text-center">
+          <div className="rounded-lg border border-border bg-muted/50 p-4 text-center">
             <TrendingUp className="mx-auto h-6 w-6 text-blue-400" />
-            <p className="mt-2 text-3xl font-bold text-white">+{effectiveness.avgImprovement.toFixed(1)}%</p>
-            <p className="text-sm text-zinc-400">Amélioration moyenne</p>
-            <p className="mt-1 text-xs text-zinc-500">DWC post-action</p>
+            <p className="mt-2 text-3xl font-bold text-foreground">+{effectiveness.avgImprovement.toFixed(1)}%</p>
+            <p className="text-sm text-muted-foreground">Amélioration moyenne</p>
+            <p className="mt-1 text-xs text-muted-foreground/70">DWC post-action</p>
           </div>
-          <div className="rounded-lg border border-zinc-800 bg-zinc-900/50 p-4 text-center">
+          <div className="rounded-lg border border-border bg-muted/50 p-4 text-center">
             <Clock className="mx-auto h-6 w-6 text-amber-400" />
-            <p className="mt-2 text-3xl font-bold text-white">{effectiveness.avgDaysToEffect}</p>
-            <p className="text-sm text-zinc-400">Jours moyens</p>
-            <p className="mt-1 text-xs text-zinc-500">Pour constater amélioration</p>
+            <p className="mt-2 text-3xl font-bold text-foreground">{effectiveness.avgDaysToEffect}</p>
+            <p className="text-sm text-muted-foreground">Jours moyens</p>
+            <p className="mt-1 text-xs text-muted-foreground/70">Pour constater amélioration</p>
           </div>
         </div>
 
         {/* Effectiveness by Type */}
-        <div className="rounded-lg border border-zinc-800 bg-zinc-900/50 p-4">
-          <h4 className="mb-4 text-sm font-medium text-zinc-300">Efficacité par type d'action</h4>
+        <div className="rounded-lg border border-border bg-muted/50 p-4">
+          <h4 className="mb-4 text-sm font-medium text-foreground/80">Efficacité par type d'action</h4>
           <div className="space-y-4">
             {effectiveness.byType.map((item) => {
               const Icon = typeIcons[item.type]
@@ -132,18 +132,18 @@ export function CoachingEffectiveness({ stationId }: CoachingEffectivenessProps)
                 <div key={item.type} className="space-y-1">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <Icon className="h-4 w-4 text-zinc-400" />
-                      <span className="text-sm text-white">{typeLabels[item.type]}</span>
+                      <Icon className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm text-foreground">{typeLabels[item.type]}</span>
                     </div>
                     <div className="flex items-center gap-3">
-                      <span className="text-sm text-zinc-400">
+                      <span className="text-sm text-muted-foreground">
                         {item.successCount}/{item.total}
                       </span>
-                      <span className="text-sm font-medium text-white">{item.successRate}%</span>
+                      <span className="text-sm font-medium text-foreground">{item.successRate}%</span>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="h-2 flex-1 rounded-full bg-zinc-800">
+                    <div className="h-2 flex-1 rounded-full bg-muted">
                       <div
                         className={cn(
                           "h-2 rounded-full",
@@ -157,7 +157,7 @@ export function CoachingEffectiveness({ stationId }: CoachingEffectivenessProps)
                       />
                     </div>
                   </div>
-                  <p className="text-xs text-zinc-500">Δ +{item.avgImprovement.toFixed(1)}% moyenne</p>
+                  <p className="text-xs text-muted-foreground">Δ +{item.avgImprovement.toFixed(1)}% moyenne</p>
                 </div>
               )
             })}
@@ -167,9 +167,9 @@ export function CoachingEffectiveness({ stationId }: CoachingEffectivenessProps)
         {/* Insight */}
         <div className="flex items-start gap-3 rounded-lg border border-blue-500/30 bg-blue-500/10 p-4">
           <Lightbulb className="mt-0.5 h-5 w-5 shrink-0 text-blue-400" />
-          <p className="text-sm text-zinc-300">
+          <p className="text-sm text-muted-foreground">
             <span className="font-medium text-blue-400">Insight:</span> Les{" "}
-            <span className="font-medium text-white">{typeLabels[bestType.type]}s</span> ont le meilleur taux de succès
+            <span className="font-medium text-foreground">{typeLabels[bestType.type]}s</span> ont le meilleur taux de succès
             ({bestType.successRate}%) avec une amélioration moyenne de +{bestType.avgImprovement.toFixed(1)}%.
             Privilégier ce type d'action.
           </p>

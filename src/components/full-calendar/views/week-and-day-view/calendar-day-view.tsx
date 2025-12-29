@@ -90,9 +90,9 @@ export function CalendarDayView({ singleDayEvents, multiDayEvents }: IProps) {
 					{/* Day header */}
 					<div className="relative z-20 flex border-b">
 						<div className="w-18"></div>
-						<span className="flex-1 border-l py-2 text-center text-xs font-medium text-t-quaternary">
+						<span className="flex-1 border-l py-2 text-center text-xs font-medium text-muted-foreground">
 							{format(selectedDate, "EE")}{" "}
-							<span className="font-semibold text-t-secondary">
+							<span className="font-semibold text-foreground">
 								{format(selectedDate, "d")}
 							</span>
 						</span>
@@ -107,7 +107,7 @@ export function CalendarDayView({ singleDayEvents, multiDayEvents }: IProps) {
 								<div key={hour} className="relative" style={{ height: "96px" }}>
 									<div className="absolute -top-3 right-2 flex h-6 items-center">
 										{index !== 0 && (
-											<span className="text-xs text-t-quaternary">
+											<span className="text-xs text-muted-foreground">
 												{format(
 													new Date().setHours(hour, 0, 0, 0),
 													use24HourFormat ? "HH:00" : "h a",

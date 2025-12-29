@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import { getTierBgColor } from "@/lib/utils/tier"
+import { useBuildFilteredHref } from "@/lib/filters"
 import { ArrowRight, GraduationCap, User } from "lucide-react"
 import type { DriverWithErrors } from "@/lib/types"
 
@@ -42,6 +43,7 @@ const tierLabels = {
 }
 
 export function TopDriversErrors({ drivers, totalErrors, errorTypeFilter, onFilterChange }: TopDriversErrorsProps) {
+  const buildHref = useBuildFilteredHref()
   const top5TotalErrors = drivers.reduce((sum, d) => sum + d.totalErrors, 0)
   const top5Percentage = totalErrors > 0 ? ((top5TotalErrors / totalErrors) * 100).toFixed(1) : "0"
   const maxErrors = Math.max(...drivers.map((d) => d.totalErrors), 1)
@@ -67,7 +69,8 @@ export function TopDriversErrors({ drivers, totalErrors, errorTypeFilter, onFilt
           Ces {drivers.length} drivers = <span className="font-medium text-foreground">{top5Percentage}%</span> des {selectedLabel.toLowerCase()}
         </p>
       </CardHeader>
-      <CardContent className="space-y-3">
+      <CardContent>
+        <div className="max-h-[400px] overflow-y-auto space-y-3 pr-1">
         {drivers.map((driver, index) => {
           const widthPercent = (driver.totalErrors / maxErrors) * 100
 
@@ -102,7 +105,7 @@ export function TopDriversErrors({ drivers, totalErrors, errorTypeFilter, onFilt
                   </div>
                   <div className="mt-2 flex gap-2">
                     <Button variant="outline" size="sm" className="h-7 text-xs bg-transparent" asChild>
-                      <Link href={`/dashboard/drivers/${driver.id}`}>
+                      <Link href={buildHref(`/dashboard/drivers/${driver.id}`)}>
                         <User className="mr-1 h-3 w-3" />
                         Voir driver
                       </Link>
@@ -117,7 +120,8 @@ export function TopDriversErrors({ drivers, totalErrors, errorTypeFilter, onFilt
             </div>
           )
         })}
-        <Button variant="ghost" className="w-full" asChild>
+        </div>
+        <Button variant="ghost" className="w-full mt-3" asChild>
           <Link href="/dashboard/drivers">
             Voir tous les drivers
             <ArrowRight className="ml-2 h-4 w-4" />

@@ -211,7 +211,7 @@ Workflow en plusieurs étapes avec fichiers d'analyse.
 
 ---
 
-## Tests à Lancer
+## Vérifications Qualité
 
 ```bash
 # Lint
@@ -223,3 +223,116 @@ npx tsc --noEmit
 # Build (vérifie tout)
 npm run build
 ```
+
+---
+
+## Testing avec Claude Chrome Extension
+
+Ce projet utilise l'extension Chrome de Claude Code pour les tests, pas Playwright/Jest.
+
+### Lancer les tests
+
+```bash
+# 1. S'assurer que l'app tourne
+npm run dev
+
+# 2. Lancer Claude avec Chrome
+claude --chrome
+
+# 3. Utiliser les slash commands
+/test-smoke              # Test rapide (~30s)
+/test-page dashboard     # Tester une page
+/test-flow weekly-review # Parcours utilisateur
+/test-visual dashboard   # Screenshots
+```
+
+### Commandes disponibles
+
+| Commande | Description | Durée |
+|----------|-------------|-------|
+| `/test-smoke` | Vérification rapide santé app | ~30s |
+| `/test-page [page]` | Test complet d'une page | 3-5 min |
+| `/test-flow [flow]` | Parcours utilisateur multi-pages | 3-5 min |
+| `/test-visual [page]` | Captures pour régression visuelle | 2 min |
+| `/test-full` | **Test complet 85 items** | 20-30 min |
+
+### Pages testables
+
+`dashboard`, `drivers`, `driver-detail`, `import`, `coaching`, `errors`, `settings`
+
+### Flows testables
+
+`weekly-review`, `coach-driver`, `import-verify`
+
+### Test Full (Couverture Complète)
+
+Le `/test-full` exécute **85 vérifications** en 6 phases:
+1. Auth & Navigation
+2. Dashboard complet
+3. Drivers & Detail
+4. Import & Coaching
+5. Errors & Settings
+6. Cross-page & Responsive
+
+Checklist: `tests/cases/full/checklist.md`
+Rapports: `tests/reports/full/`
+
+### Best Practices
+
+1. **Avant de tester**
+   - `npm run dev` actif sur localhost:3005
+   - Être authentifié dans Chrome (Clerk)
+   - Avoir des données importées
+
+2. **Gestion contexte**
+   - Un test à la fois
+   - `/compact` si contexte > 50%
+   - Rapports générés dans `tests/reports/`
+
+3. **Attente Convex**
+   - Attendre disparition des skeletons
+   - Ne pas vérifier valeurs exactes (données varient)
+   - Vérifier présence d'éléments, pas contenu
+
+4. **Screenshots**
+   - Pleine page, pas section par section
+   - Format: `{page}-{action}-{date}.png`
+   - Stockés dans `tests/reports/screenshots/`
+
+### Structure tests
+
+```
+tests/
+├── cases/           # Définitions tests (Markdown)
+│   ├── smoke/       # Tests santé
+│   ├── pages/       # Tests par page (7 pages)
+│   ├── flows/       # Parcours utilisateur (3 flows)
+│   └── full/        # Checklist complète (85 items)
+├── helpers/         # Instructions réutilisables
+└── reports/
+    ├── screenshots/ # Captures
+    └── full/        # Rapports test-full
+```
+
+### Format cas de test
+
+```markdown
+# Test: {Nom}
+
+## Prérequis
+- Condition 1
+
+## Tests
+### T1: Nom test
+- Action: Ce qu'il faut faire
+- Attendu: Ce qu'on doit voir
+
+## Assertions
+- [ ] Check 1
+```
+
+### Limitations
+
+- Pas de CI/CD automatisé (tests manuels via `claude --chrome`)
+- Chrome uniquement (pas Brave/Arc)
+- Consomme du contexte Claude

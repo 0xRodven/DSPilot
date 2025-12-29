@@ -83,7 +83,7 @@ export function DriverHeader({ driver, onPlanCoaching }: DriverHeaderProps) {
             <span className={cn("text-sm font-medium", getTierColor(driver.tier))}>{tierLabels[driver.tier]}</span>
             <span className={cn("text-3xl font-bold", getTierColor(driver.tier))}>{driver.dwcPercent}%</span>
             <span className="mt-1 text-sm text-muted-foreground">
-              Rang #{driver.rank} / {driver.totalDrivers}
+              {driver.rank !== null ? `Rang #${driver.rank} / ${driver.totalDrivers}` : "Non classé"}
             </span>
           </div>
         </div>

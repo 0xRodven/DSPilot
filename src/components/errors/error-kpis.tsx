@@ -10,10 +10,9 @@ import type { ErrorCategoryData } from "@/lib/types"
 
 interface ErrorKPIsProps {
   category: ErrorCategoryData
-  onSubcategoryClick: (name: string) => void
 }
 
-export function ErrorKPIs({ category, onSubcategoryClick }: ErrorKPIsProps) {
+export function ErrorKPIs({ category }: ErrorKPIsProps) {
   const totalCard = {
     label: category.id === "dwc" ? "Total Misses" : category.id === "iadc" ? "Total IADC" : "Total Scans Frauduleux",
     value: category.total,
@@ -21,6 +20,7 @@ export function ErrorKPIs({ category, onSubcategoryClick }: ErrorKPIsProps) {
     trendPercent: category.trendPercent,
   }
 
+  // Toujours prendre 3 sous-catégories pour avoir 4 cartes au total
   const subcategoryCards = category.subcategories.slice(0, 3).map((sub) => ({
     label: sub.name,
     value: sub.count,
@@ -32,7 +32,7 @@ export function ErrorKPIs({ category, onSubcategoryClick }: ErrorKPIsProps) {
 
   return (
     <TooltipProvider delayDuration={300}>
-      <div className={cn("grid gap-4", category.id === "false-scans" ? "grid-cols-3" : "grid-cols-4")}>
+      <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
         {cards.map((card, index) => {
           const isNegativeTrend = card.trend > 0
           const isImprovement = category.id === "dwc" || category.id === "false-scans" ? card.trend < 0 : card.trend < 0
@@ -42,10 +42,9 @@ export function ErrorKPIs({ category, onSubcategoryClick }: ErrorKPIsProps) {
             <Card
               key={card.label}
               className={cn(
-                "cursor-pointer border-border bg-card transition-colors hover:border-primary/50",
+                "border-border bg-card transition-colors hover:border-primary/50",
                 index === 0 && "border-l-4 border-l-primary",
               )}
-              onClick={() => index > 0 && onSubcategoryClick(card.label)}
             >
               <CardContent className="p-4">
                 <div className="flex items-center gap-1.5">

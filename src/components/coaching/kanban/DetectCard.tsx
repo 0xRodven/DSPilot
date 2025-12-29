@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { TrendingUp, TrendingDown, Plus, Package } from "lucide-react"
+import { TrendingUp, TrendingDown, Plus, Package, AlertTriangle, MapPin } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { getTierBgColor } from "@/lib/utils/tier"
 import type { Id } from "../../../../convex/_generated/dataModel"
@@ -12,9 +12,11 @@ interface DetectCardData {
   driverId: Id<"drivers">
   driverName: string
   dwcPercent: number
+  iadcPercent: number
   tier: "fantastic" | "great" | "fair" | "poor"
   trendPercent: number
   deliveries: number
+  errorsCount: number
 }
 
 interface DetectCardProps {
@@ -36,19 +38,32 @@ export function DetectCard({ data, onPlanCoaching }: DetectCardProps) {
           </Badge>
         </div>
         <div className="text-right flex-shrink-0">
-          <p className="text-lg font-bold text-card-foreground">{data.dwcPercent}%</p>
+          <p className="text-lg font-bold text-card-foreground tabular-nums">{data.dwcPercent}%</p>
           <p className="text-xs text-muted-foreground">DWC</p>
         </div>
       </div>
 
-      <div className="mt-3 flex items-center justify-between text-sm">
-        <div className="flex items-center gap-1.5 text-muted-foreground">
-          <Package className="h-3.5 w-3.5" />
-          <span>{data.deliveries}</span>
+      {/* Stats row */}
+      <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
+        <div className="flex items-center gap-1 text-muted-foreground">
+          <Package className="h-3 w-3" />
+          <span className="tabular-nums">{data.deliveries}</span>
         </div>
+        <div className="flex items-center gap-1 text-muted-foreground">
+          <MapPin className="h-3 w-3" />
+          <span className="tabular-nums">{data.iadcPercent}%</span>
+        </div>
+        <div className="flex items-center gap-1 text-red-400">
+          <AlertTriangle className="h-3 w-3" />
+          <span className="tabular-nums">{data.errorsCount}</span>
+        </div>
+      </div>
+
+      {/* Trend */}
+      <div className="mt-2 flex justify-end">
         <div className={cn("flex items-center gap-1", trendColor)}>
           <TrendIcon className="h-3.5 w-3.5" />
-          <span className="text-xs font-medium">
+          <span className="text-xs font-medium tabular-nums">
             {data.trendPercent > 0 ? "+" : ""}
             {data.trendPercent}%
           </span>

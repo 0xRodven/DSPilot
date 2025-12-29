@@ -5,6 +5,7 @@
 
 import { useQueryStates, useQueryState, parseAsString } from "nuqs"
 import { useCallback, useMemo } from "react"
+import { getISOWeek, getISOWeekYear } from "date-fns"
 import {
   filterParsers,
   parseWeekString,
@@ -41,7 +42,12 @@ export function useFilters() {
 
   // Parse raw string values to typed values
   const period = rawFilters.period as PeriodMode
-  const week = parseWeekString(rawFilters.week) ?? { year: new Date().getFullYear(), week: 1 }
+  // Fallback to CURRENT week (not week 1!) if parsing fails
+  const parsedWeek = parseWeekString(rawFilters.week)
+  const week = parsedWeek ?? {
+    year: getISOWeekYear(new Date()),
+    week: getISOWeek(new Date()),
+  }
   const date = rawFilters.date
   const range = rawFilters.range ? parseRangeString(rawFilters.range) : null
   const station = rawFilters.station
@@ -244,6 +250,60 @@ export function useTimeParams() {
       date: f.dateStr,
     },
   }
+}
+
+// ============================================================================
+// URL BUILDER HOOK (for preserving filters across navigation)
+// ============================================================================
+
+/**
+ * Hook pour construire des URLs qui préservent les filtres temps actuels
+ * Utilisé par le sidebar pour la navigation
+ */
+export function useFilteredHref(pathname: string): string {
+  const { period, week, date, range } = useFilters()
+
+  // Build query string with current time filters
+  const params = new URLSearchParams()
+
+  // Always include period
+  params.set("period", period)
+
+  // Include relevant time param based on period
+  if (period === "week") {
+    params.set("week", serializeWeek(week))
+  } else if (period === "day") {
+    params.set("date", date)
+  } else if (period === "range" && range) {
+    params.set("range", serializeRange(range))
+  }
+
+  return `${pathname}?${params.toString()}`
+}
+
+/**
+ * Hook qui retourne une fonction pour construire des hrefs avec filtres
+ */
+export function useBuildFilteredHref() {
+  const { period, week, date, range } = useFilters()
+
+  return useCallback(
+    (pathname: string): string => {
+      const params = new URLSearchParams()
+      params.set("period", period)
+
+      if (period === "week") {
+        params.set("week", serializeWeek(week))
+      } else if (period === "day") {
+        params.set("date", date)
+      } else if (period === "range" && range) {
+        params.set("range", serializeRange(range))
+      }
+
+      return `${pathname}?${params.toString()}`
+    },
+    [period, week, date, range]
+  )
 }
 
 // ============================================================================

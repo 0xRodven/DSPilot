@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { CalendarIcon, ChevronLeft, ChevronRight, RotateCcw } from "lucide-react"
+import { CalendarIcon, ChevronLeft, ChevronRight } from "lucide-react"
 import { getWeek, getYear, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subMonths, addWeeks } from "date-fns"
 import { getDateFromWeek } from "@/lib/utils/time-context"
 import { cn } from "@/lib/utils"
@@ -24,9 +24,7 @@ export function PeriodPicker() {
     setRange,
     setFilters,
     navigate,
-    goToToday,
     displayLabel,
-    isCurrent,
     canNavigate,
   } = useFilters()
 
@@ -117,7 +115,6 @@ export function PeriodPicker() {
 
   // Show navigation for all modes except relative (which we don't have anymore)
   const showNavigation = canNavigate
-  const showTodayButton = !isCurrent && showNavigation
 
   // Handle relative presets (convert to actual range)
   const handleRelativePreset = (offsetWeeks: number) => {
@@ -293,19 +290,6 @@ export function PeriodPicker() {
           className="h-7 w-7 md:h-8 md:w-8"
         >
           <ChevronRight className="h-4 w-4" />
-        </Button>
-      )}
-
-      {/* Today button */}
-      {showTodayButton && (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={goToToday}
-          className="h-7 md:h-8 text-xs hidden sm:flex"
-        >
-          <RotateCcw className="h-3 w-3 mr-1" />
-          Aujourd&apos;hui
         </Button>
       )}
     </div>

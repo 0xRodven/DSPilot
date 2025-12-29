@@ -764,14 +764,23 @@ export const getKanbanData = query({
             trendPercent = Math.round((dwcPercent - prevDwc) * 10) / 10;
           }
 
+          // Calculate IADC percent
+          const iadcTotal = stat.iadcCompliant + stat.iadcNonCompliant;
+          const iadcPercent = iadcTotal > 0 ? Math.round((stat.iadcCompliant / iadcTotal) * 1000) / 10 : 0;
+
+          // Calculate total errors (DWC misses + failed attempts + IADC non-compliant)
+          const errorsCount = stat.dwcMisses + stat.failedAttempts + stat.iadcNonCompliant;
+
           return {
             id: `detect-${driver._id}`,
             driverId: driver._id,
             driverName: driver.name,
             dwcPercent,
+            iadcPercent,
             tier: getTier(dwcPercent),
             trendPercent,
             deliveries: total,
+            errorsCount,
           };
         })
     );

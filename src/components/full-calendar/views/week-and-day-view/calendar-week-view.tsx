@@ -71,7 +71,7 @@ export function CalendarWeekView({singleDayEvents, multiDayEvents}: IProps) {
                             {weekDays.map((day, index) => (
                                 <motion.span
                                     key={index}
-                                    className="py-1 sm:py-2 text-center text-xs font-medium text-t-quaternary"
+                                    className="py-1 sm:py-2 text-center text-xs font-medium text-muted-foreground"
                                     initial={{opacity: 0, y: -10}}
                                     animate={{opacity: 1, y: 0}}
                                     transition={{delay: index * 0.05, ...transition}}
@@ -79,14 +79,14 @@ export function CalendarWeekView({singleDayEvents, multiDayEvents}: IProps) {
                                     {/* Mobile: Show only day abbreviation and number */}
                                     <span className="block sm:hidden">
 									{format(day, "EEE").charAt(0)}
-                                        <span className="block font-semibold text-t-secondary text-xs">
+                                        <span className="block font-semibold text-foreground text-xs">
 										{format(day, "d")}
 									</span>
 								</span>
                                     {/* Desktop: Show full format */}
                                     <span className="hidden sm:inline">
 									{format(day, "EE")}{" "}
-                                        <span className="ml-1 font-semibold text-t-secondary">
+                                        <span className="ml-1 font-semibold text-foreground">
 										{format(day, "d")}
 									</span>
 								</span>
@@ -112,7 +112,7 @@ export function CalendarWeekView({singleDayEvents, multiDayEvents}: IProps) {
                                 >
                                     <div className="absolute -top-3 right-2 flex h-6 items-center">
                                         {index !== 0 && (
-                                            <span className="text-xs text-t-quaternary">
+                                            <span className="text-xs text-muted-foreground">
 												{format(
                                                     new Date().setHours(hour, 0, 0, 0),
                                                     use24HourFormat ? "HH:00" : "h a",

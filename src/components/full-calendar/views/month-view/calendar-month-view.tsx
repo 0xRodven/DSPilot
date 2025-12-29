@@ -49,7 +49,7 @@ export function CalendarMonthView({ singleDayEvents, multiDayEvents }: IProps) {
 						animate={{ opacity: 1, y: 0 }}
 						transition={{ delay: index * 0.05, ...transition }}
 					>
-						<span className="text-xs font-medium text-t-quaternary">{day}</span>
+						<span className="text-xs font-medium text-muted-foreground">{day}</span>
 					</motion.div>
 				))}
 			</div>
