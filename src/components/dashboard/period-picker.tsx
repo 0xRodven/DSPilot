@@ -172,7 +172,7 @@ export function PeriodPicker() {
               <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="day">Jour</TabsTrigger>
                 <TabsTrigger value="week">Semaine</TabsTrigger>
-                <TabsTrigger value="range">Période</TabsTrigger>
+                <TabsTrigger value="range">Periode</TabsTrigger>
               </TabsList>
             </Tabs>
           </div>

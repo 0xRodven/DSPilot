@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useQuery } from "convex/react"
-import { api } from "../../../convex/_generated/api"
+import { api } from "@convex/_generated/api"
 import { useDashboardStore } from "@/lib/store"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"

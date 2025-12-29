@@ -1,13 +1,14 @@
 "use client"
 
-import { Card, CardContent } from "@/components/ui/card"
+import { Card, CardAction, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
 import { KPICardSkeleton } from "@/components/ui/skeletons"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { getTier, getTierBgColor } from "@/lib/utils/tier"
 import { TrendingUp, TrendingDown, Users, AlertTriangle, HelpCircle } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useQuery } from "convex/react"
-import { api } from "../../../convex/_generated/api"
+import { api } from "@convex/_generated/api"
 import { useDashboardStore } from "@/lib/store"
 import { useFilters } from "@/lib/filters"
 import { useRouter } from "next/navigation"
@@ -63,17 +64,17 @@ export function KPICards() {
     const periodLabel = period === "day" ? `le ${date}` : period === "range" ? "cette période" : `la semaine ${weekNum}`
     return (
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="border-border bg-card col-span-full">
-          <CardContent className="p-6 text-center">
-            <p className="text-muted-foreground">Aucune donnée pour {periodLabel}</p>
-            <p className="text-sm text-muted-foreground mt-1">Importez un rapport pour voir les KPIs</p>
-          </CardContent>
+        <Card className="col-span-full">
+          <CardHeader className="text-center">
+            <CardDescription>Aucune donnée pour {periodLabel}</CardDescription>
+            <CardTitle className="text-base font-normal text-muted-foreground">Importez un rapport pour voir les KPIs</CardTitle>
+          </CardHeader>
         </Card>
       </div>
     )
   }
 
-  // Calculate comparison label based on mode (after null check)
+  // Calculate comparison label based on mode
   const comparisonLabel = period === "day"
     ? "vs veille"
     : period === "range"
@@ -85,13 +86,12 @@ export function KPICards() {
 
   return (
     <TooltipProvider delayDuration={300}>
-    <div className="grid grid-cols-2 gap-3 md:gap-4 lg:grid-cols-4">
-      {/* DWC Card */}
-      <Card className="border-border bg-card transition-all duration-200 hover:shadow-lg hover:shadow-primary/5 hover:border-primary/20">
-        <CardContent className="p-4 md:p-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1">
-              <span className="text-xs md:text-sm font-medium text-muted-foreground">DWC</span>
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card *:data-[slot=card]:shadow-xs dark:*:data-[slot=card]:bg-card">
+        {/* DWC Card */}
+        <Card className="@container/card">
+          <CardHeader>
+            <CardDescription className="flex items-center gap-1">
+              <span>DWC</span>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <HelpCircle className="h-3 w-3 text-muted-foreground/60 cursor-help" />
@@ -100,42 +100,30 @@ export function KPICards() {
                   <p className="text-xs">Delivered With Customer - Taux de livraisons conformes avec interaction client (photo, signature, OTP). Objectif : ≥98.5% (Fantastic)</p>
                 </TooltipContent>
               </Tooltip>
+            </CardDescription>
+            <CardTitle className="@[250px]/card:text-3xl text-2xl tabular-nums">{kpis.avgDwc}%</CardTitle>
+            <CardAction>
+              <Badge variant="outline" className={kpis.dwcTrend >= 0 ? "text-emerald-500" : "text-red-500"}>
+                {kpis.dwcTrend >= 0 ? <TrendingUp className="mr-1" /> : <TrendingDown className="mr-1" />}
+                {kpis.dwcTrend >= 0 ? "+" : ""}{kpis.dwcTrend}%
+              </Badge>
+            </CardAction>
+          </CardHeader>
+          <CardFooter className="flex-col items-start gap-1.5 text-sm">
+            <div className="flex gap-2 font-medium">
+              <span className={cn("inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium", getTierBgColor(dwcTier))}>
+                {tierLabels[dwcTier]}
+              </span>
             </div>
-          </div>
-          <div className="mt-1 md:mt-2 text-2xl md:text-3xl font-bold text-card-foreground">{kpis.avgDwc}%</div>
-          <div className="mt-2 md:mt-3">
-            <span
-              className={cn(
-                "inline-flex items-center rounded-md px-2 py-0.5 md:py-1 text-xs font-medium",
-                getTierBgColor(dwcTier),
-              )}
-            >
-              {tierLabels[dwcTier]}
-            </span>
-          </div>
-          <div className="mt-2 md:mt-3 flex items-center gap-1 text-xs md:text-sm">
-            {kpis.dwcTrend >= 0 ? (
-              <>
-                <TrendingUp className="h-3 w-3 md:h-4 md:w-4 text-emerald-400" />
-                <span className="text-emerald-400">+{kpis.dwcTrend}</span>
-              </>
-            ) : (
-              <>
-                <TrendingDown className="h-3 w-3 md:h-4 md:w-4 text-red-400" />
-                <span className="text-red-400">{kpis.dwcTrend}</span>
-              </>
-            )}
-            <span className="text-muted-foreground hidden sm:inline">{comparisonLabel}</span>
-          </div>
-        </CardContent>
-      </Card>
+            <div className="text-muted-foreground">{comparisonLabel}</div>
+          </CardFooter>
+        </Card>
 
-      {/* IADC Card */}
-      <Card className="border-border bg-card transition-all duration-200 hover:shadow-lg hover:shadow-primary/5 hover:border-primary/20">
-        <CardContent className="p-4 md:p-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1">
-              <span className="text-xs md:text-sm font-medium text-muted-foreground">IADC</span>
+        {/* IADC Card */}
+        <Card className="@container/card">
+          <CardHeader>
+            <CardDescription className="flex items-center gap-1">
+              <span>IADC</span>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <HelpCircle className="h-3 w-3 text-muted-foreground/60 cursor-help" />
@@ -144,42 +132,30 @@ export function KPICards() {
                   <p className="text-xs">In Absence Delivery Compliance - Taux de livraisons conformes en l'absence du client (boîte aux lettres, lieu sûr). Objectif : ≥95%</p>
                 </TooltipContent>
               </Tooltip>
+            </CardDescription>
+            <CardTitle className="@[250px]/card:text-3xl text-2xl tabular-nums">{kpis.avgIadc}%</CardTitle>
+            <CardAction>
+              <Badge variant="outline" className={kpis.iadcTrend >= 0 ? "text-emerald-500" : "text-red-500"}>
+                {kpis.iadcTrend >= 0 ? <TrendingUp className="mr-1" /> : <TrendingDown className="mr-1" />}
+                {kpis.iadcTrend >= 0 ? "+" : ""}{kpis.iadcTrend}%
+              </Badge>
+            </CardAction>
+          </CardHeader>
+          <CardFooter className="flex-col items-start gap-1.5 text-sm">
+            <div className="flex gap-2 font-medium">
+              <span className={cn("inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium", getTierBgColor(iadcTier))}>
+                {tierLabels[iadcTier]}
+              </span>
             </div>
-          </div>
-          <div className="mt-1 md:mt-2 text-2xl md:text-3xl font-bold text-card-foreground">{kpis.avgIadc}%</div>
-          <div className="mt-2 md:mt-3">
-            <span
-              className={cn(
-                "inline-flex items-center rounded-md px-2 py-0.5 md:py-1 text-xs font-medium",
-                getTierBgColor(iadcTier),
-              )}
-            >
-              {tierLabels[iadcTier]}
-            </span>
-          </div>
-          <div className="mt-2 md:mt-3 flex items-center gap-1 text-xs md:text-sm">
-            {kpis.iadcTrend >= 0 ? (
-              <>
-                <TrendingUp className="h-3 w-3 md:h-4 md:w-4 text-emerald-400" />
-                <span className="text-emerald-400">+{kpis.iadcTrend}</span>
-              </>
-            ) : (
-              <>
-                <TrendingDown className="h-3 w-3 md:h-4 md:w-4 text-red-400" />
-                <span className="text-red-400">{kpis.iadcTrend}</span>
-              </>
-            )}
-            <span className="text-muted-foreground hidden sm:inline">{comparisonLabel}</span>
-          </div>
-        </CardContent>
-      </Card>
+            <div className="text-muted-foreground">{comparisonLabel}</div>
+          </CardFooter>
+        </Card>
 
-      {/* Drivers Card */}
-      <Card className="border-border bg-card transition-all duration-200 hover:shadow-lg hover:shadow-primary/5 hover:border-primary/20">
-        <CardContent className="p-4 md:p-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1">
-              <span className="text-xs md:text-sm font-medium text-muted-foreground">Drivers</span>
+        {/* Drivers Card */}
+        <Card className="@container/card">
+          <CardHeader>
+            <CardDescription className="flex items-center gap-1">
+              <span>Drivers</span>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <HelpCircle className="h-3 w-3 text-muted-foreground/60 cursor-help" />
@@ -188,28 +164,27 @@ export function KPICards() {
                   <p className="text-xs">Nombre de drivers actifs sur la période sélectionnée par rapport au total enregistré</p>
                 </TooltipContent>
               </Tooltip>
-            </div>
-            <Users className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
-          </div>
-          <div className="mt-1 md:mt-2 text-2xl md:text-3xl font-bold text-card-foreground">
-            <span>{kpis.activeDrivers}</span>
-            <span className="text-sm md:text-lg text-muted-foreground">/{kpis.totalDrivers}</span>
-          </div>
-          <div className="mt-2 md:mt-3 text-xs md:text-sm text-muted-foreground">
-            <span className="hidden sm:inline">
+            </CardDescription>
+            <CardTitle className="@[250px]/card:text-3xl text-2xl tabular-nums">
+              {kpis.activeDrivers}
+              <span className="text-lg text-muted-foreground">/{kpis.totalDrivers}</span>
+            </CardTitle>
+            <CardAction>
+              <Users className="h-5 w-5 text-muted-foreground" />
+            </CardAction>
+          </CardHeader>
+          <CardFooter className="flex-col items-start gap-1.5 text-sm">
+            <div className="flex gap-2 font-medium text-muted-foreground">
               {period === "day" ? "actifs ce jour" : period === "range" ? "actifs sur la période" : "actifs cette semaine"}
-            </span>
-            <span className="sm:hidden">actifs</span>
-          </div>
-        </CardContent>
-      </Card>
+            </div>
+          </CardFooter>
+        </Card>
 
-      {/* Alerts Card */}
-      <Card className="border-border bg-card transition-all duration-200 hover:shadow-lg hover:shadow-primary/5 hover:border-primary/20">
-        <CardContent className="p-4 md:p-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1">
-              <span className="text-xs md:text-sm font-medium text-muted-foreground">Alertes</span>
+        {/* Alerts Card */}
+        <Card className="@container/card cursor-pointer hover:border-primary/20 transition-colors" onClick={() => router.push("/dashboard/errors")}>
+          <CardHeader>
+            <CardDescription className="flex items-center gap-1">
+              <span>Alertes</span>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <HelpCircle className="h-3 w-3 text-muted-foreground/60 cursor-help" />
@@ -218,24 +193,22 @@ export function KPICards() {
                   <p className="text-xs">Drivers avec un score DWC inférieur à 90% nécessitant un coaching ou une attention particulière</p>
                 </TooltipContent>
               </Tooltip>
+            </CardDescription>
+            <CardTitle className="@[250px]/card:text-3xl text-2xl tabular-nums">{kpis.alerts}</CardTitle>
+            <CardAction>
+              <AlertTriangle className="h-5 w-5 text-amber-400" />
+            </CardAction>
+          </CardHeader>
+          <CardFooter className="flex-col items-start gap-1.5 text-sm">
+            <div className="flex gap-2 font-medium">
+              <span className="inline-flex items-center rounded-md bg-amber-500/20 px-2 py-0.5 text-xs font-medium text-amber-400">
+                À traiter
+              </span>
             </div>
-            <AlertTriangle className="h-3 w-3 md:h-4 md:w-4 text-amber-400" />
-          </div>
-          <div className="mt-1 md:mt-2 text-2xl md:text-3xl font-bold text-card-foreground">{kpis.alerts}</div>
-          <div className="mt-2 md:mt-3">
-            <span className="inline-flex items-center rounded-md bg-amber-500/20 px-2 py-0.5 md:py-1 text-xs font-medium text-amber-400">
-              À traiter
-            </span>
-          </div>
-          <button
-            className="mt-2 md:mt-3 text-xs md:text-sm text-primary hover:underline"
-            onClick={() => router.push("/dashboard/errors")}
-          >
-            Voir →
-          </button>
-        </CardContent>
-      </Card>
-    </div>
+            <div className="text-muted-foreground text-primary hover:underline">Voir les erreurs →</div>
+          </CardFooter>
+        </Card>
+      </div>
     </TooltipProvider>
   )
 }

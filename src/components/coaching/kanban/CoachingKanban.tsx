@@ -1,8 +1,8 @@
 "use client"
 
 import { useQuery } from "convex/react"
-import { api } from "../../../../convex/_generated/api"
-import type { Id } from "../../../../convex/_generated/dataModel"
+import { api } from "@convex/_generated/api"
+import type { Id } from "@convex/_generated/dataModel"
 import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { KanbanColumn } from "./KanbanColumn"

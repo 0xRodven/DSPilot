@@ -15,6 +15,7 @@ import type * as coaching from "../coaching.js";
 import type * as drivers from "../drivers.js";
 import type * as embeddings from "../embeddings.js";
 import type * as imports from "../imports.js";
+import type * as lib_permissions from "../lib/permissions.js";
 import type * as lib_timeQuery from "../lib/timeQuery.js";
 import type * as rag from "../rag.js";
 import type * as seed from "../seed.js";
@@ -36,6 +37,7 @@ declare const fullApi: ApiFromModules<{
   drivers: typeof drivers;
   embeddings: typeof embeddings;
   imports: typeof imports;
+  "lib/permissions": typeof lib_permissions;
   "lib/timeQuery": typeof lib_timeQuery;
   rag: typeof rag;
   seed: typeof seed;

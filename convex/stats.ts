@@ -1,7 +1,12 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
-import { Id } from "./_generated/dataModel";
+import type { Id } from "./_generated/dataModel";
 import { getWeeksInRange } from "./lib/timeQuery";
+import {
+  requireWriteAccess,
+  canAccessStation,
+  checkStationAccess,
+} from "./lib/permissions";
 
 // Validators réutilisables
 const dwcBreakdownValidator = v.object({
@@ -53,12 +58,18 @@ const weeklyStatValidator = v.object({
 /**
  * Bulk upsert des stats daily - idempotent
  * Clé d'unicité: (driverId, date)
+ * Nécessite: accès en écriture à la station
  */
 export const bulkUpsertDailyStats = mutation({
   args: {
     stats: v.array(dailyStatValidator),
   },
   handler: async (ctx, args) => {
+    // Vérifier les permissions sur la station du premier stat
+    if (args.stats.length > 0) {
+      await requireWriteAccess(ctx, args.stats[0].stationId);
+    }
+
     const now = Date.now();
     let inserted = 0;
     let updated = 0;
@@ -94,12 +105,18 @@ export const bulkUpsertDailyStats = mutation({
 /**
  * Bulk upsert des stats weekly - idempotent
  * Clé d'unicité: (driverId, year, week)
+ * Nécessite: accès en écriture à la station
  */
 export const bulkUpsertWeeklyStats = mutation({
   args: {
     stats: v.array(weeklyStatValidator),
   },
   handler: async (ctx, args) => {
+    // Vérifier les permissions sur la station du premier stat
+    if (args.stats.length > 0) {
+      await requireWriteAccess(ctx, args.stats[0].stationId);
+    }
+
     const now = Date.now();
     let inserted = 0;
     let updated = 0;
@@ -134,6 +151,7 @@ export const bulkUpsertWeeklyStats = mutation({
 
 /**
  * Calcule et upsert les stats station weekly (agrégées depuis les drivers)
+ * Nécessite: accès en écriture à la station
  */
 export const updateStationWeeklyStats = mutation({
   args: {
@@ -142,6 +160,9 @@ export const updateStationWeeklyStats = mutation({
     week: v.number(),
   },
   handler: async (ctx, args) => {
+    // Vérifier les permissions d'écriture
+    await requireWriteAccess(ctx, args.stationId);
+
     // Récupérer toutes les stats weekly des drivers pour cette semaine
     const driverStats = await ctx.db
       .query("driverWeeklyStats")
@@ -259,6 +280,7 @@ export const updateStationWeeklyStats = mutation({
 
 /**
  * Récupère les stats daily d'un driver
+ * Vérifie l'accès à la station du driver
  */
 export const getDriverDailyStats = query({
   args: {
@@ -267,6 +289,12 @@ export const getDriverDailyStats = query({
     week: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    // Vérifier l'accès via le driver
+    const driver = await ctx.db.get(args.driverId);
+    if (!driver) return [];
+    const hasAccess = await canAccessStation(ctx, driver.stationId);
+    if (!hasAccess) return [];
+
     if (args.year !== undefined && args.week !== undefined) {
       return await ctx.db
         .query("driverDailyStats")
@@ -286,6 +314,7 @@ export const getDriverDailyStats = query({
 
 /**
  * Récupère les stats weekly d'un driver
+ * Vérifie l'accès à la station du driver
  */
 export const getDriverWeeklyStats = query({
   args: {
@@ -293,6 +322,12 @@ export const getDriverWeeklyStats = query({
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    // Vérifier l'accès via le driver
+    const driver = await ctx.db.get(args.driverId);
+    if (!driver) return [];
+    const hasAccess = await canAccessStation(ctx, driver.stationId);
+    if (!hasAccess) return [];
+
     return await ctx.db
       .query("driverWeeklyStats")
       .withIndex("by_driver", (q) => q.eq("driverId", args.driverId))
@@ -303,6 +338,7 @@ export const getDriverWeeklyStats = query({
 
 /**
  * Récupère les stats station weekly
+ * Nécessite: accès à la station
  */
 export const getStationWeeklyStats = query({
   args: {
@@ -311,6 +347,10 @@ export const getStationWeeklyStats = query({
     week: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    // Vérifier l'accès à la station (sans throw si non authentifié)
+    const hasAccess = await checkStationAccess(ctx, args.stationId);
+    if (!hasAccess) return null;
+
     if (args.year !== undefined && args.week !== undefined) {
       return await ctx.db
         .query("stationWeeklyStats")
@@ -330,6 +370,7 @@ export const getStationWeeklyStats = query({
 
 /**
  * Récupère toutes les stats weekly des drivers d'une station pour une semaine
+ * Nécessite: accès à la station
  */
 export const getStationDriversWeeklyStats = query({
   args: {
@@ -338,6 +379,10 @@ export const getStationDriversWeeklyStats = query({
     week: v.number(),
   },
   handler: async (ctx, args) => {
+    // Vérifier l'accès à la station (sans throw si non authentifié)
+    const hasAccess = await checkStationAccess(ctx, args.stationId);
+    if (!hasAccess) return [];
+
     return await ctx.db
       .query("driverWeeklyStats")
       .withIndex("by_station_week", (q) =>
@@ -349,6 +394,7 @@ export const getStationDriversWeeklyStats = query({
 
 /**
  * Récupère les KPIs du dashboard pour une station/semaine
+ * Nécessite: accès à la station
  */
 export const getDashboardKPIs = query({
   args: {
@@ -357,6 +403,10 @@ export const getDashboardKPIs = query({
     week: v.number(),
   },
   handler: async (ctx, args) => {
+    // Vérifier l'accès à la station (sans throw si non authentifié)
+    const hasAccess = await checkStationAccess(ctx, args.stationId);
+    if (!hasAccess) return null;
+
     // Current week stats
     const currentStats = await ctx.db
       .query("stationWeeklyStats")
@@ -434,6 +484,7 @@ export const getDashboardKPIs = query({
 
 /**
  * Récupère les drivers avec leurs stats pour le tableau dashboard
+ * Nécessite: accès à la station
  */
 export const getDashboardDrivers = query({
   args: {
@@ -442,6 +493,10 @@ export const getDashboardDrivers = query({
     week: v.number(),
   },
   handler: async (ctx, args) => {
+    // Vérifier l'accès à la station (sans throw si non authentifié)
+    const hasAccess = await checkStationAccess(ctx, args.stationId);
+    if (!hasAccess) return [];
+
     // Calculate previous week
     const prevWeek = args.week === 1 ? 52 : args.week - 1;
     const prevYear = args.week === 1 ? args.year - 1 : args.year;
@@ -537,6 +592,10 @@ export const getErrorBreakdown = query({
     week: v.number(),
   },
   handler: async (ctx, args) => {
+    // Vérifier l'accès à la station (sans throw si non authentifié)
+    const hasAccess = await checkStationAccess(ctx, args.stationId);
+    if (!hasAccess) return [];
+
     // Get station weekly stats for current week
     const currentStats = await ctx.db
       .query("stationWeeklyStats")
@@ -719,6 +778,10 @@ export const getTopDriversErrors = query({
     errorTypeFilter: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    // Vérifier l'accès à la station (sans throw si non authentifié)
+    const hasAccess = await checkStationAccess(ctx, args.stationId);
+    if (!hasAccess) return [];
+
     const limit = args.limit || 10;
     const filter = args.errorTypeFilter || "all";
 
@@ -857,6 +920,7 @@ export const getTopDriversErrors = query({
 
 /**
  * Get weekly performance data for the evolution chart
+ * Nécessite: accès à la station
  */
 export const getPerformanceEvolution = query({
   args: {
@@ -864,6 +928,10 @@ export const getPerformanceEvolution = query({
     weeksCount: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    // Vérifier l'accès à la station (sans throw si non authentifié)
+    const hasAccess = await checkStationAccess(ctx, args.stationId);
+    if (!hasAccess) return [];
+
     const weeksCount = args.weeksCount || 12;
 
     // Get all station weekly stats
@@ -912,6 +980,10 @@ export const getErrorTrends = query({
     weeksCount: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    // Vérifier l'accès à la station (sans throw si non authentifié)
+    const hasAccess = await checkStationAccess(ctx, args.stationId);
+    if (!hasAccess) return [];
+
     const weeksCount = args.weeksCount || 8;
 
     // Get all station weekly stats
@@ -961,6 +1033,7 @@ export const getErrorTrends = query({
 
 /**
  * Récupère les KPIs du dashboard pour une station/jour spécifique
+ * Nécessite: accès à la station
  */
 export const getDashboardKPIsDaily = query({
   args: {
@@ -968,6 +1041,10 @@ export const getDashboardKPIsDaily = query({
     date: v.string(), // Format: "2024-12-09"
   },
   handler: async (ctx, args) => {
+    // Vérifier l'accès à la station (sans throw si non authentifié)
+    const hasAccess = await checkStationAccess(ctx, args.stationId);
+    if (!hasAccess) return null;
+
     // Get all daily stats for this date
     const dailyStats = await ctx.db
       .query("driverDailyStats")
@@ -1081,6 +1158,7 @@ export const getDashboardKPIsDaily = query({
 
 /**
  * Récupère les drivers avec leurs stats pour un jour spécifique
+ * Nécessite: accès à la station
  */
 export const getDashboardDriversDaily = query({
   args: {
@@ -1088,6 +1166,10 @@ export const getDashboardDriversDaily = query({
     date: v.string(), // Format: "2024-12-09"
   },
   handler: async (ctx, args) => {
+    // Vérifier l'accès à la station (sans throw si non authentifié)
+    const hasAccess = await checkStationAccess(ctx, args.stationId);
+    if (!hasAccess) return [];
+
     // Get all daily stats for this date
     const dailyStats = await ctx.db
       .query("driverDailyStats")
@@ -1165,6 +1247,7 @@ export const getDashboardDriversDaily = query({
 /**
  * Get weekly comparison for recaps page
  * Returns drivers with current week, previous week, and diff
+ * Nécessite: accès à la station
  */
 export const getWeeklyComparison = query({
   args: {
@@ -1173,6 +1256,10 @@ export const getWeeklyComparison = query({
     week: v.number(),
   },
   handler: async (ctx, args) => {
+    // Vérifier l'accès à la station (sans throw si non authentifié)
+    const hasAccess = await checkStationAccess(ctx, args.stationId);
+    if (!hasAccess) return [];
+
     // Get current week stats
     const currentWeekStats = await ctx.db
       .query("driverWeeklyStats")
@@ -1281,6 +1368,7 @@ export const getWeeklyComparison = query({
 /**
  * Récupère les KPIs du dashboard pour une plage de dates
  * Agrège les valeurs brutes (pas de moyenne pondérée de %)
+ * Nécessite: accès à la station
  */
 export const getDashboardKPIsRange = query({
   args: {
@@ -1289,6 +1377,10 @@ export const getDashboardKPIsRange = query({
     endDate: v.string(), // "2025-12-01"
   },
   handler: async (ctx, { stationId, startDate, endDate }) => {
+    // Vérifier l'accès à la station (sans throw si non authentifié)
+    const hasAccess = await checkStationAccess(ctx, stationId);
+    if (!hasAccess) return null;
+
     // 1. Récupérer les semaines dans la plage
     const weeks = getWeeksInRange(startDate, endDate);
     if (weeks.length === 0) return null;
@@ -1430,6 +1522,7 @@ export const getDashboardKPIsRange = query({
 
 /**
  * Récupère les drivers avec leurs stats agrégées sur une plage de dates
+ * Nécessite: accès à la station
  */
 export const getDashboardDriversRange = query({
   args: {
@@ -1438,6 +1531,10 @@ export const getDashboardDriversRange = query({
     endDate: v.string(),
   },
   handler: async (ctx, { stationId, startDate, endDate }) => {
+    // Vérifier l'accès à la station (sans throw si non authentifié)
+    const hasAccess = await checkStationAccess(ctx, stationId);
+    if (!hasAccess) return [];
+
     // 1. Fetch daily stats dans la plage
     const allStats = await ctx.db
       .query("driverDailyStats")
@@ -1540,12 +1637,17 @@ export const getDashboardDriversRange = query({
 /**
  * Récupère la dernière semaine avec des données pour une station
  * Utilisé pour initialiser le dashboard sur la semaine la plus récente
+ * Nécessite: accès à la station
  */
 export const getLatestWeekWithData = query({
   args: {
     stationId: v.id("stations"),
   },
   handler: async (ctx, { stationId }) => {
+    // Vérifier l'accès à la station (sans throw si non authentifié)
+    const hasAccess = await checkStationAccess(ctx, stationId);
+    if (!hasAccess) return null;
+
     // Récupérer toutes les stats de la station
     const allStats = await ctx.db
       .query("stationWeeklyStats")

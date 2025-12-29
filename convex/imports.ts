@@ -1,5 +1,11 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import {
+  requireWriteAccess,
+  canAccessStation,
+  checkStationAccess,
+} from "./lib/permissions";
+import type { Id } from "./_generated/dataModel";
 
 const tierDistributionValidator = v.object({
   fantastic: v.number(),
@@ -10,6 +16,7 @@ const tierDistributionValidator = v.object({
 
 /**
  * Crée un nouvel import (status: pending)
+ * Nécessite: accès en écriture à la station
  */
 export const createImport = mutation({
   args: {
@@ -20,6 +27,9 @@ export const createImport = mutation({
     importedBy: v.string(), // Clerk user ID
   },
   handler: async (ctx, args) => {
+    // Vérifier les permissions d'écriture
+    await requireWriteAccess(ctx, args.stationId);
+
     // Vérifier s'il existe déjà un import pour cette semaine
     const existing = await ctx.db
       .query("imports")
@@ -116,6 +126,7 @@ export const failImport = mutation({
 
 /**
  * Liste les imports d'une station
+ * Nécessite: accès à la station
  */
 export const listImports = query({
   args: {
@@ -123,6 +134,10 @@ export const listImports = query({
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    // Vérifier l'accès à la station (sans throw si non authentifié)
+    const hasAccess = await checkStationAccess(ctx, args.stationId);
+    if (!hasAccess) return [];
+
     return await ctx.db
       .query("imports")
       .withIndex("by_station", (q) => q.eq("stationId", args.stationId))
@@ -133,18 +148,27 @@ export const listImports = query({
 
 /**
  * Récupère un import par ID
+ * Nécessite: accès à la station de l'import
  */
 export const getImport = query({
   args: {
     importId: v.id("imports"),
   },
   handler: async (ctx, args) => {
-    return await ctx.db.get(args.importId);
+    const imp = await ctx.db.get(args.importId);
+    if (!imp) return null;
+
+    // Vérifier l'accès à la station
+    const hasAccess = await canAccessStation(ctx, imp.stationId);
+    if (!hasAccess) return null;
+
+    return imp;
   },
 });
 
 /**
  * Vérifie si un import existe pour une semaine donnée
+ * Nécessite: accès à la station
  */
 export const checkExistingImport = query({
   args: {
@@ -153,6 +177,10 @@ export const checkExistingImport = query({
     week: v.number(),
   },
   handler: async (ctx, args) => {
+    // Vérifier l'accès à la station (sans throw si non authentifié)
+    const hasAccess = await checkStationAccess(ctx, args.stationId);
+    if (!hasAccess) return null;
+
     return await ctx.db
       .query("imports")
       .withIndex("by_station_week", (q) =>
@@ -165,12 +193,17 @@ export const checkExistingImport = query({
 
 /**
  * Récupère les stats globales des imports d'une station
+ * Nécessite: accès à la station
  */
 export const getImportStats = query({
   args: {
     stationId: v.id("stations"),
   },
   handler: async (ctx, args) => {
+    // Vérifier l'accès à la station (sans throw si non authentifié)
+    const hasAccess = await checkStationAccess(ctx, args.stationId);
+    if (!hasAccess) return null;
+
     const imports = await ctx.db
       .query("imports")
       .withIndex("by_station", (q) => q.eq("stationId", args.stationId))
@@ -200,6 +233,7 @@ export const getImportStats = query({
 
 /**
  * Récupère la couverture des semaines pour une année
+ * Nécessite: accès à la station
  */
 export const getWeekCoverage = query({
   args: {
@@ -207,6 +241,10 @@ export const getWeekCoverage = query({
     year: v.number(),
   },
   handler: async (ctx, args) => {
+    // Vérifier l'accès à la station (sans throw si non authentifié)
+    const hasAccess = await checkStationAccess(ctx, args.stationId);
+    if (!hasAccess) return [];
+
     const imports = await ctx.db
       .query("imports")
       .withIndex("by_station", (q) => q.eq("stationId", args.stationId))
@@ -235,6 +273,7 @@ export const getWeekCoverage = query({
 
 /**
  * Supprime un import et toutes les données associées (cascade delete)
+ * Nécessite: accès en écriture à la station
  */
 export const deleteImport = mutation({
   args: {
@@ -246,6 +285,9 @@ export const deleteImport = mutation({
     if (!imp) {
       throw new Error("Import not found");
     }
+
+    // Vérifier les permissions d'écriture
+    await requireWriteAccess(ctx, imp.stationId);
 
     const { stationId, year, week } = imp;
 
@@ -298,6 +340,7 @@ export const deleteImport = mutation({
 
 /**
  * Récupère les données d'un import pour export CSV
+ * Nécessite: accès à la station
  */
 export const getImportData = query({
   args: {
@@ -309,6 +352,10 @@ export const getImportData = query({
     if (!imp) {
       return null;
     }
+
+    // Vérifier l'accès à la station
+    const hasAccess = await canAccessStation(ctx, imp.stationId);
+    if (!hasAccess) return null;
 
     // 2. Récupérer les driverWeeklyStats de cette semaine/station
     const weeklyStats = await ctx.db

@@ -1,5 +1,10 @@
 import { v } from "convex/values";
 import { query, mutation } from "./_generated/server";
+import {
+  requireWriteAccess,
+  canAccessStation,
+  checkStationAccess,
+} from "./lib/permissions";
 
 // ============================================
 // COACHING QUERIES
@@ -13,6 +18,10 @@ export const listCoachingActions = query({
     search: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    // Vérifier l'accès à la station (sans throw si non authentifié)
+    const hasAccess = await checkStationAccess(ctx, args.stationId);
+    if (!hasAccess) return [];
+
     // Get all coaching actions for this station
     let actions = await ctx.db
       .query("coachingActions")
@@ -110,6 +119,10 @@ export const getCoachingStats = query({
     stationId: v.id("stations"),
   },
   handler: async (ctx, args) => {
+    // Vérifier l'accès à la station (sans throw si non authentifié)
+    const hasAccess = await checkStationAccess(ctx, args.stationId);
+    if (!hasAccess) return null;
+
     const actions = await ctx.db
       .query("coachingActions")
       .withIndex("by_station", (q) => q.eq("stationId", args.stationId))
@@ -162,6 +175,10 @@ export const getCoachingEffectiveness = query({
     period: v.union(v.literal("3M"), v.literal("6M"), v.literal("1Y")),
   },
   handler: async (ctx, args) => {
+    // Vérifier l'accès à la station (sans throw si non authentifié)
+    const hasAccess = await checkStationAccess(ctx, args.stationId);
+    if (!hasAccess) return null;
+
     const now = Date.now();
     const periodMs = {
       "3M": 90 * 24 * 60 * 60 * 1000,
@@ -243,6 +260,10 @@ export const getCoachingSuggestions = query({
     week: v.number(),
   },
   handler: async (ctx, args) => {
+    // Vérifier l'accès à la station (sans throw si non authentifié)
+    const hasAccess = await checkStationAccess(ctx, args.stationId);
+    if (!hasAccess) return [];
+
     // Get drivers with poor performance
     const weeklyStats = await ctx.db
       .query("driverWeeklyStats")
@@ -335,12 +356,20 @@ export const getCoachingSuggestions = query({
 
 /**
  * Récupère l'historique de coaching d'un driver (pour la page detail)
+ * Vérifie l'accès à la station du driver
  */
 export const getDriverCoachingHistory = query({
   args: {
     driverId: v.id("drivers"),
   },
   handler: async (ctx, args) => {
+    // Vérifier l'accès via le driver
+    const driver = await ctx.db.get(args.driverId);
+    if (!driver) return [];
+
+    const hasAccess = await canAccessStation(ctx, driver.stationId);
+    if (!hasAccess) return [];
+
     const actions = await ctx.db
       .query("coachingActions")
       .withIndex("by_driver", (q) => q.eq("driverId", args.driverId))
@@ -417,6 +446,9 @@ export const createCoachingAction = mutation({
     createdBy: v.string(),
   },
   handler: async (ctx, args) => {
+    // Vérifier les permissions d'écriture
+    await requireWriteAccess(ctx, args.stationId);
+
     const now = Date.now();
 
     const actionId = await ctx.db.insert("coachingActions", {
@@ -453,6 +485,15 @@ export const evaluateCoachingAction = mutation({
     escalationDate: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    // Récupérer l'action pour vérifier les permissions
+    const action = await ctx.db.get(args.actionId);
+    if (!action) {
+      throw new Error("Action not found");
+    }
+
+    // Vérifier les permissions d'écriture
+    await requireWriteAccess(ctx, action.stationId);
+
     const now = Date.now();
 
     await ctx.db.patch(args.actionId, {
@@ -478,6 +519,10 @@ export const getCalendarEvents = query({
     endDate: v.string(), // ISO date string
   },
   handler: async (ctx, args) => {
+    // Vérifier l'accès à la station (sans throw si non authentifié)
+    const hasAccess = await checkStationAccess(ctx, args.stationId);
+    if (!hasAccess) return [];
+
     // Get all coaching actions for this station
     const actions = await ctx.db
       .query("coachingActions")
@@ -542,6 +587,10 @@ export const getFollowUpDatesForMonth = query({
     month: v.number(), // 1-12
   },
   handler: async (ctx, args) => {
+    // Vérifier l'accès à la station (sans throw si non authentifié)
+    const hasAccess = await checkStationAccess(ctx, args.stationId);
+    if (!hasAccess) return [];
+
     // Get all pending coaching actions for this station
     const actions = await ctx.db
       .query("coachingActions")
@@ -589,6 +638,13 @@ export const getCoachingPipelineSuggestion = query({
     driverId: v.id("drivers"),
   },
   handler: async (ctx, args) => {
+    // Vérifier l'accès via le driver
+    const driver = await ctx.db.get(args.driverId);
+    if (!driver) return null;
+
+    const hasAccess = await canAccessStation(ctx, driver.stationId);
+    if (!hasAccess) return null;
+
     const actions = await ctx.db
       .query("coachingActions")
       .withIndex("by_driver", (q) => q.eq("driverId", args.driverId))
@@ -702,6 +758,10 @@ export const getKanbanData = query({
     week: v.number(),
   },
   handler: async (ctx, args) => {
+    // Vérifier l'accès à la station (sans throw si non authentifié)
+    const hasAccess = await checkStationAccess(ctx, args.stationId);
+    if (!hasAccess) return { detect: [], waiting: [], evaluate: [] };
+
     const today = new Date().toISOString().split("T")[0];
 
     // 1. Get all weekly stats for current week

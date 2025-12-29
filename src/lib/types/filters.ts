@@ -1,7 +1,7 @@
 // src/lib/types/filters.ts
 // Types pour le système de filtrage unifié DSPilot
 
-import type { Id } from "../../../convex/_generated/dataModel"
+import type { Id } from "@convex/_generated/dataModel"
 
 // ============================================================================
 // TIME CONTEXT - Le cœur du système

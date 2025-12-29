@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { MessageSquare, AlertTriangle, BookOpen, Ban, TrendingUp, TrendingDown, ClipboardCheck } from "lucide-react"
 import { cn } from "@/lib/utils"
-import type { Id } from "../../../../convex/_generated/dataModel"
+import type { Id } from "@convex/_generated/dataModel"
 
 type ActionType = "discussion" | "warning" | "training" | "suspension"
 

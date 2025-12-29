@@ -30,7 +30,8 @@ export default defineSchema({
     code: v.string(), // "DIF1"
     name: v.string(), // "Paris Denfert"
     region: v.optional(v.string()),
-    ownerId: v.string(), // Clerk user ID
+    organizationId: v.optional(v.string()), // Clerk org ID (optional for migration)
+    ownerId: v.string(), // Clerk user ID (creator)
     plan: v.union(
       v.literal("free"),
       v.literal("pro"),
@@ -38,8 +39,25 @@ export default defineSchema({
     ),
     createdAt: v.number(),
   })
+    .index("by_organization", ["organizationId"])
     .index("by_owner", ["ownerId"])
     .index("by_code", ["code"]),
+
+  // Station access for Managers/Viewers (granular access control)
+  stationAccess: defineTable({
+    organizationId: v.string(), // Clerk org ID
+    userId: v.string(), // Clerk user ID
+    stationId: v.id("stations"), // Station granted access to
+    role: v.union(
+      v.literal("manager"),
+      v.literal("viewer")
+    ),
+    grantedBy: v.string(), // Who granted access
+    grantedAt: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_station", ["stationId"])
+    .index("by_org_user", ["organizationId", "userId"]),
 
   // Drivers
   drivers: defineTable({

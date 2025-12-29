@@ -2,13 +2,13 @@
 
 import { useState } from "react"
 import { useQuery } from "convex/react"
-import { api } from "../../../convex/_generated/api"
+import { api } from "@convex/_generated/api"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { CheckCircle, TrendingUp, Clock, Lightbulb, MessageSquare, AlertTriangle, BookOpen, Ban } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { CoachingActionType } from "@/lib/utils/status"
-import type { Id } from "../../../convex/_generated/dataModel"
+import type { Id } from "@convex/_generated/dataModel"
 
 const periodOptions = ["3M", "6M", "1Y"] as const
 

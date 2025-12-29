@@ -1,21 +1,40 @@
 "use client"
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Skeleton } from "@/components/ui/skeleton"
-import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as ChartTooltip } from "recharts"
-import { HelpCircle } from "lucide-react"
+import Link from "next/link"
+import { PieChart, Pie, Label } from "recharts"
 import { useQuery } from "convex/react"
-import { api } from "../../../convex/_generated/api"
+import { api } from "@convex/_generated/api"
+import { HelpCircle } from "lucide-react"
+
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Skeleton } from "@/components/ui/skeleton"
+import {
+  Tooltip as UITooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
+import {
+  ChartContainer,
+  ChartLegend,
+  ChartTooltip,
+  ChartTooltipContent,
+  type ChartConfig,
+} from "@/components/ui/chart"
 import { useDashboardStore } from "@/lib/store"
 import { useFilters } from "@/lib/filters"
 
-const tierConfig = [
-  { key: "fantastic", label: "Fantastic", color: "#34d399" },
-  { key: "great", label: "Great", color: "#60a5fa" },
-  { key: "fair", label: "Fair", color: "#fbbf24" },
-  { key: "poor", label: "Poor", color: "#f87171" },
-]
+// Chart configuration with tier colors
+const tierChartConfig = {
+  drivers: { label: "Drivers" },
+  fantastic: { label: "Fantastic", color: "#34d399" },
+  great: { label: "Great", color: "#60a5fa" },
+  fair: { label: "Fair", color: "#fbbf24" },
+  poor: { label: "Poor", color: "#f87171" },
+} satisfies ChartConfig
+
+type TierKey = "fantastic" | "great" | "fair" | "poor"
 
 export function TierDistribution() {
   const { selectedStation } = useDashboardStore()
@@ -47,25 +66,12 @@ export function TierDistribution() {
   // Loading state
   if (!station || kpis === undefined) {
     return (
-      <Card className="border-border bg-card">
+      <Card>
         <CardHeader className="pb-2">
-          <Skeleton className="h-5 w-32" />
-          <Skeleton className="h-3 w-24 mt-1" />
+          <Skeleton className="h-5 w-40" />
         </CardHeader>
-        <CardContent className="flex flex-col items-center">
+        <CardContent className="flex items-center justify-center h-48">
           <Skeleton className="h-[180px] w-[180px] rounded-full" />
-          <div className="mt-4 grid grid-cols-2 gap-2 w-full">
-            {[...Array(4)].map((_, i) => (
-              <div key={i} className="flex items-center gap-2">
-                <Skeleton className="h-3 w-3 rounded-full" />
-                <Skeleton className="h-3 w-16" />
-              </div>
-            ))}
-          </div>
-          <div className="mt-4 w-full border-t border-border pt-4">
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-2 w-full mt-2 rounded-full" />
-          </div>
         </CardContent>
       </Card>
     )
@@ -74,103 +80,125 @@ export function TierDistribution() {
   // No data state
   if (!kpis || !kpis.tierDistribution) {
     return (
-      <Card className="border-border bg-card">
+      <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-base font-semibold text-card-foreground">Distribution Tiers</CardTitle>
-          <p className="text-xs text-muted-foreground">{displayLabel}</p>
+          <CardTitle className="text-base font-semibold">Distribution des Tiers</CardTitle>
         </CardHeader>
         <CardContent className="text-center py-8">
-          <p className="text-muted-foreground text-sm">Aucune donnée</p>
+          <p className="text-muted-foreground text-sm">Aucune donnee disponible</p>
         </CardContent>
       </Card>
     )
   }
 
-  const data = tierConfig.map((tier) => ({
-    name: tier.label,
-    value: kpis.tierDistribution[tier.key as keyof typeof kpis.tierDistribution] || 0,
-    color: tier.color,
+  // Transform data for recharts
+  const chartData = (["fantastic", "great", "fair", "poor"] as TierKey[]).map((tier) => ({
+    tier,
+    drivers: kpis.tierDistribution[tier] || 0,
+    fill: `var(--color-${tier})`,
   }))
 
-  const total = data.reduce((sum, item) => sum + item.value, 0)
-  const highPerformers = total > 0
-    ? Math.round(((kpis.tierDistribution.fantastic + kpis.tierDistribution.great) / total) * 100)
-    : 0
+  const totalDrivers = chartData.reduce((sum, item) => sum + item.drivers, 0)
 
   return (
     <TooltipProvider delayDuration={300}>
-    <Card className="border-border bg-card">
-      <CardHeader className="pb-2">
-        <div className="flex items-center gap-1.5">
-          <CardTitle className="text-base font-semibold text-card-foreground">Distribution Tiers</CardTitle>
-          <UITooltip>
-            <TooltipTrigger asChild>
-              <HelpCircle className="h-3.5 w-3.5 text-muted-foreground/60 cursor-help" />
-            </TooltipTrigger>
-            <TooltipContent side="top" className="max-w-xs">
-              <p className="text-xs">Répartition des drivers par niveau de performance DWC : Fantastic (≥98.5%), Great (≥96%), Fair (≥90%), Poor (&lt;90%)</p>
-            </TooltipContent>
-          </UITooltip>
-        </div>
-        <p className="text-xs text-muted-foreground">{displayLabel} • {total} drivers</p>
-      </CardHeader>
+      <Card>
+        <CardHeader className="pb-2">
+          <div className="flex items-center gap-1.5">
+            <CardTitle className="text-base font-semibold">Distribution des Tiers</CardTitle>
+            <UITooltip>
+              <TooltipTrigger asChild>
+                <HelpCircle className="h-3.5 w-3.5 text-muted-foreground/60 cursor-help" />
+              </TooltipTrigger>
+              <TooltipContent side="top" className="max-w-xs">
+                <p className="text-xs">
+                  Repartition des drivers par niveau de performance DWC : Fantastic (≥98.5%), Great
+                  (≥96%), Fair (≥90%), Poor (&lt;90%)
+                </p>
+              </TooltipContent>
+            </UITooltip>
+          </div>
+        </CardHeader>
 
-      <CardContent>
-        <div className="flex items-center justify-center">
-          <div className="relative h-[180px] w-[180px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie data={data} cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={2} dataKey="value">
-                  {data.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <ChartTooltip
-                  contentStyle={{
-                    backgroundColor: "hsl(var(--popover))",
-                    border: "1px solid hsl(var(--border))",
-                    borderRadius: "8px",
-                    color: "hsl(var(--popover-foreground))",
+        <CardContent className="h-48">
+          <ChartContainer config={tierChartConfig} className="size-full">
+            <PieChart margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
+              <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
+              <Pie
+                data={chartData}
+                dataKey="drivers"
+                nameKey="tier"
+                innerRadius={65}
+                outerRadius={90}
+                paddingAngle={2}
+                cornerRadius={4}
+              >
+                <Label
+                  content={({ viewBox }) => {
+                    if (viewBox && "cx" in viewBox && "cy" in viewBox) {
+                      return (
+                        <text
+                          x={viewBox.cx}
+                          y={viewBox.cy}
+                          textAnchor="middle"
+                          dominantBaseline="middle"
+                        >
+                          <tspan
+                            x={viewBox.cx}
+                            y={viewBox.cy}
+                            className="fill-foreground font-bold text-3xl tabular-nums"
+                          >
+                            {totalDrivers.toLocaleString()}
+                          </tspan>
+                          <tspan
+                            x={viewBox.cx}
+                            y={(viewBox.cy ?? 0) + 24}
+                            className="fill-muted-foreground text-sm"
+                          >
+                            Drivers
+                          </tspan>
+                        </text>
+                      )
+                    }
                   }}
-                  formatter={(value: number, name: string) => [
-                    `${value} (${total > 0 ? ((value / total) * 100).toFixed(0) : 0}%)`,
-                    name,
-                  ]}
                 />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
+              </Pie>
+              <ChartLegend
+                layout="vertical"
+                verticalAlign="middle"
+                align="right"
+                content={() => (
+                  <ul className="ml-8 flex flex-col gap-3">
+                    {chartData.map((item) => (
+                      <li key={item.tier} className="flex w-32 items-center justify-between">
+                        <span className="flex items-center gap-2">
+                          <span
+                            className="size-2.5 rounded-full"
+                            style={{ background: item.fill }}
+                          />
+                          <span className="text-sm text-muted-foreground">
+                            {tierChartConfig[item.tier].label}
+                          </span>
+                        </span>
+                        <span className="text-sm font-medium tabular-nums">{item.drivers}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              />
+            </PieChart>
+          </ChartContainer>
+        </CardContent>
 
-        {/* Legend */}
-        <div className="mt-4 grid grid-cols-2 gap-2">
-          {data.map((item) => (
-            <div key={item.name} className="flex items-center gap-2">
-              <div className="h-3 w-3 rounded-full" style={{ backgroundColor: item.color }} />
-              <span className="text-xs text-muted-foreground">{item.name}</span>
-              <span className="text-xs font-medium text-card-foreground">
-                {total > 0 ? ((item.value / total) * 100).toFixed(0) : 0}%
-              </span>
-            </div>
-          ))}
-        </div>
-
-        {/* High performers progress */}
-        <div className="mt-4 border-t border-border pt-4">
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">High Performers</span>
-            <span className="font-medium text-card-foreground">{highPerformers}%</span>
-          </div>
-          <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-muted">
-            <div
-              className="h-full rounded-full bg-gradient-to-r from-blue-500 to-emerald-500"
-              style={{ width: `${highPerformers}%` }}
-            />
-          </div>
-          <p className="mt-1 text-xs text-muted-foreground">Objectif: ≥75%</p>
-        </div>
-      </CardContent>
-    </Card>
+        <CardFooter className="gap-2 pt-0">
+          <Button asChild variant="outline" size="sm" className="flex-1">
+            <Link href="/dashboard/drivers">Voir les drivers</Link>
+          </Button>
+          <Button variant="outline" size="sm" className="flex-1">
+            Exporter
+          </Button>
+        </CardFooter>
+      </Card>
     </TooltipProvider>
   )
 }

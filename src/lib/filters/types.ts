@@ -1,7 +1,7 @@
 // src/lib/filters/types.ts
 // Types pour le système de filtrage URL-first
 
-import type { Id } from "../../../convex/_generated/dataModel"
+import type { Id } from "@convex/_generated/dataModel"
 
 // ============================================================================
 // TIME GRANULARITY

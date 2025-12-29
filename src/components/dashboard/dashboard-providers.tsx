@@ -3,6 +3,7 @@
 // Client-side providers et initializers pour le dashboard
 
 import { FilterInitializer } from "./filter-initializer"
+import { OrgStationSync } from "./org-station-sync"
 import { ChatWidget } from "@/components/chat/chat-widget"
 
 interface DashboardProvidersProps {
@@ -12,6 +13,7 @@ interface DashboardProvidersProps {
 export function DashboardProviders({ children }: DashboardProvidersProps) {
   return (
     <>
+      <OrgStationSync />
       <FilterInitializer />
       {children}
       <ChatWidget />

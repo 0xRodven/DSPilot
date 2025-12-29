@@ -2,19 +2,22 @@
 
 import { useState, useEffect } from "react"
 import { useQuery, useMutation } from "convex/react"
-import { api } from "../../../convex/_generated/api"
-import type { Id } from "../../../convex/_generated/dataModel"
+import { useOrganization } from "@clerk/nextjs"
+import { api } from "@convex/_generated/api"
+import type { Id } from "@convex/_generated/dataModel"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Lock, Loader2, Save, Building2, Calendar } from "lucide-react"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Lock, Loader2, Save, Building2, Calendar, ArrowRightLeft, CheckCircle2, AlertCircle } from "lucide-react"
 import { useDashboardStore } from "@/lib/store"
 import { withToast } from "@/lib/utils/mutation"
 
 export function StationSettings() {
   const { selectedStation, setSelectedStation } = useDashboardStore()
+  const { organization } = useOrganization()
 
   // Get station from Convex
   const station = useQuery(
@@ -27,6 +30,7 @@ export function StationSettings() {
   const [code, setCode] = useState("")
   const [isEditing, setIsEditing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+  const [isMigrating, setIsMigrating] = useState(false)
 
   // Update form when station loads
   useEffect(() => {
@@ -36,8 +40,48 @@ export function StationSettings() {
     }
   }, [station])
 
-  // Mutation
+  // Force reassign state
+  const [forceCode, setForceCode] = useState("")
+  const [isForceReassigning, setIsForceReassigning] = useState(false)
+
+  // Mutations
   const updateStation = useMutation(api.stations.updateStation)
+  const migrateStations = useMutation(api.stations.migrateStationsToOrganization)
+  const forceReassign = useMutation(api.stations.forceReassignStationToCurrentOrg)
+
+  const handleForceReassign = async () => {
+    if (!organization || !forceCode.trim()) return
+
+    setIsForceReassigning(true)
+    try {
+      const result = await forceReassign({ stationCode: forceCode.trim().toUpperCase() })
+      if (result.success) {
+        setForceCode("")
+        // Refresh the page to pick up the new station
+        window.location.reload()
+      }
+    } catch (error) {
+      console.error("Force reassign error:", error)
+    } finally {
+      setIsForceReassigning(false)
+    }
+  }
+
+  const handleMigrate = async () => {
+    if (!organization) return
+
+    setIsMigrating(true)
+    try {
+      const result = await migrateStations()
+      if (result.totalMigrated > 0) {
+        // Success - station is now linked to org
+      }
+    } catch (error) {
+      console.error("Migration error:", error)
+    } finally {
+      setIsMigrating(false)
+    }
+  }
 
   const handleSave = async () => {
     if (!station) return
@@ -77,8 +121,15 @@ export function StationSettings() {
 
   const hasChanges = station && (name !== station.name || code !== station.code)
 
-  // Loading state
-  if (station === undefined) {
+  // Check if station needs to be linked to current org
+  const needsMigration = organization && station && !station.organizationId
+  const isLinkedToCurrentOrg = organization && station?.organizationId === organization.id
+
+  // Distinguish "loading" from "query skipped"
+  const isQuerySkipped = !selectedStation.code
+
+  // Loading state - only show skeleton if we're actually querying
+  if (station === undefined && !isQuerySkipped) {
     return (
       <div className="space-y-6">
         <Card>
@@ -97,18 +148,65 @@ export function StationSettings() {
     )
   }
 
-  // No station selected
+  // No station selected - show force reassign option
   if (!station) {
     return (
-      <Card>
-        <CardContent className="p-6 text-center">
-          <Building2 className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-          <h3 className="text-lg font-medium mb-2">Aucune station sélectionnée</h3>
-          <p className="text-muted-foreground">
-            Importez des données pour créer votre première station.
-          </p>
-        </CardContent>
-      </Card>
+      <div className="space-y-6">
+        <Card>
+          <CardContent className="p-6 text-center">
+            <Building2 className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+            <h3 className="text-lg font-medium mb-2">Aucune station sélectionnée</h3>
+            <p className="text-muted-foreground">
+              Importez des données pour créer votre première station.
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* Force Reassign - pour récupérer une station coincée dans une autre org */}
+        {organization && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <ArrowRightLeft className="h-5 w-5" />
+                Récupérer une station existante
+              </CardTitle>
+              <CardDescription>
+                Si vous avez une station qui n&apos;apparaît pas car elle est liée à une autre organisation
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Code station (ex: DIF1)"
+                  value={forceCode}
+                  onChange={(e) => setForceCode(e.target.value.toUpperCase())}
+                  disabled={isForceReassigning}
+                />
+                <Button
+                  onClick={handleForceReassign}
+                  disabled={!forceCode.trim() || isForceReassigning}
+                >
+                  {isForceReassigning ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      En cours...
+                    </>
+                  ) : (
+                    <>
+                      <ArrowRightLeft className="h-4 w-4 mr-2" />
+                      Lier à {organization.name}
+                    </>
+                  )}
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Entrez le code de votre station pour la lier à l&apos;organisation &quot;{organization.name}&quot;.
+                Vous devez être le propriétaire original de la station.
+              </p>
+            </CardContent>
+          </Card>
+        )}
+      </div>
     )
   }
 
@@ -213,6 +311,65 @@ export function StationSettings() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Migration / Organisation Link */}
+      {organization && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <ArrowRightLeft className="h-5 w-5" />
+              Organisation
+            </CardTitle>
+            <CardDescription>
+              Lien entre cette station et votre organisation
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {isLinkedToCurrentOrg ? (
+              <Alert className="border-green-500/50 bg-green-500/10">
+                <CheckCircle2 className="h-4 w-4 text-green-500" />
+                <AlertTitle className="text-green-500">Station liée</AlertTitle>
+                <AlertDescription>
+                  Cette station est liée à l&apos;organisation &quot;{organization.name}&quot;.
+                  Tous les membres de cette organisation peuvent y accéder.
+                </AlertDescription>
+              </Alert>
+            ) : needsMigration ? (
+              <div className="space-y-4">
+                <Alert>
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertTitle>Migration requise</AlertTitle>
+                  <AlertDescription>
+                    Cette station n&apos;est pas encore liée à votre organisation &quot;{organization.name}&quot;.
+                    Cliquez sur le bouton ci-dessous pour la lier.
+                  </AlertDescription>
+                </Alert>
+                <Button onClick={handleMigrate} disabled={isMigrating}>
+                  {isMigrating ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Migration en cours...
+                    </>
+                  ) : (
+                    <>
+                      <ArrowRightLeft className="h-4 w-4 mr-2" />
+                      Lier à {organization.name}
+                    </>
+                  )}
+                </Button>
+              </div>
+            ) : (
+              <Alert>
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Autre organisation</AlertTitle>
+                <AlertDescription>
+                  Cette station appartient à une autre organisation.
+                </AlertDescription>
+              </Alert>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Station ID (for debugging/support) */}
       <Card>

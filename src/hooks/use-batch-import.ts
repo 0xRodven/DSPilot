@@ -2,8 +2,8 @@
 
 import { useState, useCallback, useRef } from "react"
 import { useMutation } from "convex/react"
-import { api } from "../../convex/_generated/api"
-import type { Id } from "../../convex/_generated/dataModel"
+import { api } from "@convex/_generated/api"
+import type { Id } from "@convex/_generated/dataModel"
 import { parseHtmlFile, calculateFleetAverages } from "@/lib/parser"
 import type { ParsedReport } from "@/lib/parser/types"
 import type {

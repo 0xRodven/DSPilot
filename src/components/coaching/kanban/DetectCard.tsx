@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge"
 import { TrendingUp, TrendingDown, Plus, Package, AlertTriangle, MapPin } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { getTierBgColor } from "@/lib/utils/tier"
-import type { Id } from "../../../../convex/_generated/dataModel"
+import type { Id } from "@convex/_generated/dataModel"
 
 interface DetectCardData {
   id: string

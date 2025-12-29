@@ -1,7 +1,7 @@
 // Types pour l'import batch de fichiers HTML
 
 import type { ParsedReport } from "@/lib/parser/types"
-import type { Id } from "../../../convex/_generated/dataModel"
+import type { Id } from "@convex/_generated/dataModel"
 
 /** Statut d'un item dans la queue d'import */
 export type ImportQueueStatus =

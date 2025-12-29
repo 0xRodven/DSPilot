@@ -1,19 +1,20 @@
 "use client"
 
 // Composant qui initialise les filtres sur la dernière semaine avec données
-// S'exécute une seule fois au premier chargement du dashboard
+// Redirige automatiquement si l'URL contient la semaine actuelle (default nuqs)
+// mais que des données plus anciennes existent
 
 import { useEffect, useRef } from "react"
 import { useQuery } from "convex/react"
-import { useRouter, useSearchParams } from "next/navigation"
-import { api } from "../../../convex/_generated/api"
+import { useRouter, useSearchParams, usePathname } from "next/navigation"
+import { getISOWeek, getISOWeekYear } from "date-fns"
+import { api } from "@convex/_generated/api"
 import { useDashboardStore } from "@/lib/store"
-import { serializeWeek } from "@/lib/filters/parsers"
-
-const INIT_FLAG_KEY = "dspilot-filter-initialized"
+import { serializeWeek, parseWeekString } from "@/lib/filters/parsers"
 
 export function FilterInitializer() {
   const router = useRouter()
+  const pathname = usePathname()
   const searchParams = useSearchParams()
   const { selectedStation } = useDashboardStore()
   const hasInitialized = useRef(false)
@@ -31,39 +32,51 @@ export function FilterInitializer() {
   )
 
   useEffect(() => {
-    // Only run once
+    // Only run once per mount
     if (hasInitialized.current) return
 
-    // Wait for data
+    // Wait for data to load
     if (latestWeek === undefined || !station) return
 
-    // Check if URL already has explicit week parameter
-    const hasExplicitWeek = searchParams.has("week")
-
-    // Check if we've already initialized this session
-    const alreadyInitialized = sessionStorage.getItem(INIT_FLAG_KEY)
-
-    // If no explicit week in URL and not yet initialized, redirect to latest week
-    if (!hasExplicitWeek && !alreadyInitialized && latestWeek) {
+    // No data available - nothing to redirect to
+    if (!latestWeek) {
       hasInitialized.current = true
-      sessionStorage.setItem(INIT_FLAG_KEY, "true")
+      return
+    }
 
-      // Build new URL with latest week
+    // Current week (what nuqs defaults to)
+    const now = new Date()
+    const currentWeek = { year: getISOWeekYear(now), week: getISOWeek(now) }
+
+    // Week from URL
+    const urlWeekStr = searchParams.get("week")
+    const urlWeek = urlWeekStr ? parseWeekString(urlWeekStr) : null
+
+    // Check if URL has the current week (nuqs default)
+    const isCurrentWeekInUrl = urlWeek &&
+      urlWeek.year === currentWeek.year &&
+      urlWeek.week === currentWeek.week
+
+    // Check if we have older data (latest data is before current week)
+    const hasOlderData =
+      latestWeek.year < currentWeek.year ||
+      (latestWeek.year === currentWeek.year && latestWeek.week < currentWeek.week)
+
+    // If URL shows current week but we have older data, redirect to latest data
+    if (isCurrentWeekInUrl && hasOlderData) {
+      hasInitialized.current = true
+
+      // Build new URL preserving other params
       const newParams = new URLSearchParams(searchParams.toString())
       newParams.set("period", "week")
       newParams.set("week", serializeWeek({ year: latestWeek.year, week: latestWeek.week }))
 
-      // Navigate to the new URL
-      const currentPath = window.location.pathname
-      router.replace(`${currentPath}?${newParams.toString()}`)
+      router.replace(`${pathname}?${newParams.toString()}`)
     } else {
-      // Mark as initialized even if we didn't redirect
+      // User explicitly chose a week or current week has data - don't redirect
       hasInitialized.current = true
-      if (!alreadyInitialized) {
-        sessionStorage.setItem(INIT_FLAG_KEY, "true")
-      }
     }
-  }, [latestWeek, station, searchParams, router])
+  }, [latestWeek, station, searchParams, router, pathname])
 
   // This component renders nothing
   return null

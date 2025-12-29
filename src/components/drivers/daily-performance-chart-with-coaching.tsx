@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react"
 import { useQuery } from "convex/react"
-import { api } from "../../../convex/_generated/api"
+import { api } from "@convex/_generated/api"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -19,7 +19,7 @@ import {
 import { CoachingActionDetailModal } from "@/components/coaching/coaching-action-detail-modal"
 import { subDays, format } from "date-fns"
 import { fr } from "date-fns/locale"
-import type { Id } from "../../../convex/_generated/dataModel"
+import type { Id } from "@convex/_generated/dataModel"
 import type { CoachingActionType, CoachingStatus } from "@/lib/utils/status"
 import { MessageSquare, AlertTriangle, BookOpen, Ban } from "lucide-react"
 

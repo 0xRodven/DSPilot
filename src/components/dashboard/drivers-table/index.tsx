@@ -3,7 +3,7 @@
 import { useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { useQuery } from "convex/react"
-import { api } from "../../../../convex/_generated/api"
+import { api } from "@convex/_generated/api"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useDashboardStore } from "@/lib/store"

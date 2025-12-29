@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react"
 import { useQuery, useMutation } from "convex/react"
-import { api } from "../../../convex/_generated/api"
+import { api } from "@convex/_generated/api"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -19,7 +19,7 @@ import type { CoachingActionType } from "@/lib/utils/status"
 import { withToast } from "@/lib/utils/mutation"
 import { generateCoachingMessage, type ActionType } from "@/lib/coaching/coaching-message-generator"
 import { toast } from "sonner"
-import type { Id } from "../../../convex/_generated/dataModel"
+import type { Id } from "@convex/_generated/dataModel"
 import { format, addWeeks, addMonths, getWeek, getYear } from "date-fns"
 import { fr } from "date-fns/locale"
 
