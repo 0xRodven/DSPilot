@@ -1,11 +1,16 @@
 // convex/lib/permissions.ts
 // Helpers pour la gestion des permissions RBAC avec Clerk Organizations
+//
+// IMPORTANT: Clerk Free Plan ne supporte que les rôles built-in:
+// - org:admin (Owner/Admin de l'organisation)
+// - org:member (Membre standard)
+// Les rôles custom (org:manager, org:viewer) ne sont PAS disponibles en production.
 
 import type { QueryCtx, MutationCtx } from "../_generated/server";
 import type { Id } from "../_generated/dataModel";
 
-// Types de rôles Clerk Organizations
-export type OrgRole = "org:admin" | "org:manager" | "org:viewer";
+// Types de rôles Clerk Organizations (built-in uniquement - Free Plan compatible)
+export type OrgRole = "org:admin" | "org:member";
 
 // Type pour les infos utilisateur extraites du JWT
 export type UserContext = {
@@ -78,7 +83,8 @@ export async function canAccessStation(
 
 /**
  * Vérifie si l'utilisateur peut écrire (importer, créer coaching, etc.)
- * Seuls Owner et Manager peuvent écrire
+ * Tous les membres de l'org peuvent écrire (admin et member)
+ * Clerk Free Plan: pas de rôles custom, donc tous les membres ont les mêmes droits
  */
 export async function canWrite(ctx: QueryCtx | MutationCtx): Promise<boolean> {
   const { orgRole } = await getUserContext(ctx);
@@ -86,7 +92,8 @@ export async function canWrite(ctx: QueryCtx | MutationCtx): Promise<boolean> {
   // Mode legacy sans org : autoriser (backward compat)
   if (!orgRole) return true;
 
-  return orgRole === "org:admin" || orgRole === "org:manager";
+  // Tous les membres de l'org peuvent écrire
+  return orgRole === "org:admin" || orgRole === "org:member";
 }
 
 /**
@@ -104,26 +111,17 @@ export async function canWriteStation(
 }
 
 /**
- * Vérifie si l'utilisateur peut inviter un autre utilisateur avec un rôle donné
- * - Owner peut inviter tout le monde
- * - Manager peut inviter seulement des Viewers
- * - Viewer ne peut inviter personne
+ * Vérifie si l'utilisateur peut inviter un autre utilisateur
+ * Clerk Free Plan: seul l'admin peut inviter des membres
+ * Les invitations se font via Clerk OrganizationProfile, pas via Convex
  */
-export async function canInvite(
-  ctx: QueryCtx | MutationCtx,
-  targetRole: "manager" | "viewer"
-): Promise<boolean> {
+export async function canInvite(ctx: QueryCtx | MutationCtx): Promise<boolean> {
   const { orgRole } = await getUserContext(ctx);
 
   if (!orgRole) return false;
 
-  // Owner peut inviter tout le monde
-  if (orgRole === "org:admin") return true;
-
-  // Manager peut inviter seulement des viewers
-  if (orgRole === "org:manager" && targetRole === "viewer") return true;
-
-  return false;
+  // Seul l'admin peut inviter
+  return orgRole === "org:admin";
 }
 
 /**

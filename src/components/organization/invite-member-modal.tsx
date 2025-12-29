@@ -25,7 +25,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-type InviteRole = "org:admin" | "org:manager" | "org:viewer";
+// Clerk Free Plan: uniquement les rôles built-in org:admin et org:member
+type InviteRole = "org:admin" | "org:member";
 
 interface InviteMemberModalProps {
   trigger?: React.ReactNode;
@@ -34,24 +35,21 @@ interface InviteMemberModalProps {
 
 export function InviteMemberModal({
   trigger,
-  allowedRoles = ["org:admin", "org:manager", "org:viewer"],
+  allowedRoles = ["org:admin", "org:member"],
 }: InviteMemberModalProps) {
   const { organization, isLoaded } = useOrganization();
   const { orgRole } = useAuth();
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState("");
-  const [role, setRole] = useState<InviteRole>("org:viewer");
+  const [role, setRole] = useState<InviteRole>("org:member");
   const [isLoading, setIsLoading] = useState(false);
 
-  // Filtrer les rôles selon les permissions de l'utilisateur
+  // Seuls les admins peuvent inviter (Clerk Free Plan limitation)
   const getAvailableRoles = (): InviteRole[] => {
     if (orgRole === "org:admin") {
       return allowedRoles;
     }
-    if (orgRole === "org:manager") {
-      // Les managers peuvent seulement inviter des viewers
-      return allowedRoles.filter((r) => r === "org:viewer");
-    }
+    // Les membres ne peuvent pas inviter
     return [];
   };
 
@@ -59,16 +57,12 @@ export function InviteMemberModal({
 
   const roleLabels: Record<InviteRole, { label: string; description: string }> = {
     "org:admin": {
-      label: "Owner",
+      label: "Admin",
       description: "Tous les droits, peut gérer les membres",
     },
-    "org:manager": {
-      label: "Manager",
-      description: "Lecture + écriture sur stations attribuées",
-    },
-    "org:viewer": {
-      label: "Viewer",
-      description: "Lecture seule sur stations attribuées",
+    "org:member": {
+      label: "Membre",
+      description: "Accès complet aux données de la station",
     },
   };
 
@@ -84,7 +78,7 @@ export function InviteMemberModal({
 
       toast.success(`Invitation envoyée à ${email}`);
       setEmail("");
-      setRole("org:viewer");
+      setRole("org:member");
       setOpen(false);
     } catch (error) {
       console.error("Erreur lors de l'invitation:", error);
