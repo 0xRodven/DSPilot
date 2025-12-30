@@ -88,10 +88,6 @@ export function SearchDialog() {
   // Query station for current org (1 Org = 1 Station architecture)
   const station = useQuery(api.stations.getStationForCurrentOrg)
 
-  // DEBUG
-  console.log("[SearchDialog] station:", station)
-  console.log("[SearchDialog] debouncedSearch:", debouncedSearch)
-
   // Search drivers query
   const drivers = useQuery(
     api.drivers.searchDriversByName,
@@ -99,9 +95,6 @@ export function SearchDialog() {
       ? { stationId: station._id, name: debouncedSearch, limit: 5 }
       : "skip"
   )
-
-  // DEBUG
-  console.log("[SearchDialog] drivers result:", drivers)
 
   // Filter error types based on search
   const filteredErrors = React.useMemo(() => {
@@ -112,6 +105,15 @@ export function SearchDialog() {
         e.code.toLowerCase().includes(searchLower) ||
         e.label.toLowerCase().includes(searchLower) ||
         e.category.toLowerCase().includes(searchLower)
+    )
+  }, [debouncedSearch])
+
+  // Filter quick actions based on search
+  const filteredQuickActions = React.useMemo(() => {
+    if (!debouncedSearch) return quickActions
+    const searchLower = debouncedSearch.toLowerCase()
+    return quickActions.filter((a) =>
+      a.label.toLowerCase().includes(searchLower)
     )
   }, [debouncedSearch])
 
@@ -157,18 +159,31 @@ export function SearchDialog() {
     }
   }, [open])
 
-  // Group navigation items
+  // Group and filter navigation items
   const navGroups = React.useMemo(() => {
     const groups = new Map<string, typeof navigationItems>()
+    const searchLower = debouncedSearch.toLowerCase()
+
     for (const item of navigationItems) {
+      // Filter by search term if searching
+      if (searchLower && !item.label.toLowerCase().includes(searchLower)) {
+        continue
+      }
       const existing = groups.get(item.group) || []
       groups.set(item.group, [...existing, item])
     }
     return groups
-  }, [])
+  }, [debouncedSearch])
 
   const isSearching = debouncedSearch.length >= 2
   const isLoadingDrivers = isSearching && station && drivers === undefined
+
+  // Check if there are any results to show
+  const hasNavResults = navGroups.size > 0
+  const hasDriverResults = drivers && drivers.length > 0
+  const hasErrorResults = filteredErrors.length > 0
+  const hasQuickActionResults = filteredQuickActions.length > 0
+  const hasAnyResults = hasNavResults || hasDriverResults || hasErrorResults || hasQuickActionResults
 
   return (
     <>
@@ -184,16 +199,26 @@ export function SearchDialog() {
         </kbd>
       </Button>
 
-      <CommandDialog open={open} onOpenChange={setOpen}>
+      <CommandDialog open={open} onOpenChange={setOpen} shouldFilter={false}>
         <CommandInput
           placeholder="Rechercher pages, conducteurs, erreurs..."
           value={search}
           onValueChange={setSearch}
         />
         <CommandList>
-          <CommandEmpty>
-            {isLoadingDrivers ? "Recherche en cours..." : "Aucun résultat trouvé."}
-          </CommandEmpty>
+          {/* Empty state - only show when searching and no results */}
+          {isSearching && !isLoadingDrivers && !hasAnyResults && (
+            <div className="py-6 text-center text-sm text-muted-foreground">
+              Aucun résultat trouvé.
+            </div>
+          )}
+
+          {/* Loading state */}
+          {isLoadingDrivers && (
+            <div className="py-6 text-center text-sm text-muted-foreground">
+              Recherche en cours...
+            </div>
+          )}
 
           {/* Navigation Groups */}
           {Array.from(navGroups).map(([group, items], index) => (
@@ -259,19 +284,23 @@ export function SearchDialog() {
           )}
 
           {/* Quick Actions */}
-          <CommandSeparator />
-          <CommandGroup heading="Actions rapides">
-            {quickActions.map((action) => (
-              <CommandItem
-                key={action.id}
-                className="!py-1.5"
-                onSelect={() => handleQuickAction(action)}
-              >
-                <action.icon className="mr-2 h-4 w-4" />
-                <span>{action.label}</span>
-              </CommandItem>
-            ))}
-          </CommandGroup>
+          {filteredQuickActions.length > 0 && (
+            <>
+              <CommandSeparator />
+              <CommandGroup heading="Actions rapides">
+                {filteredQuickActions.map((action) => (
+                  <CommandItem
+                    key={action.id}
+                    className="!py-1.5"
+                    onSelect={() => handleQuickAction(action)}
+                  >
+                    <action.icon className="mr-2 h-4 w-4" />
+                    <span>{action.label}</span>
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </>
+          )}
         </CommandList>
       </CommandDialog>
     </>

@@ -888,6 +888,9 @@ export const searchDriversByName = query({
     const searchTerm = args.name.toLowerCase().trim();
     const limit = args.limit || 5;
 
+    console.log("[searchDriversByName] stationId:", args.stationId);
+    console.log("[searchDriversByName] searchTerm:", searchTerm);
+
     // Get all active drivers for station
     const allDrivers = await ctx.db
       .query("drivers")
@@ -896,10 +899,17 @@ export const searchDriversByName = query({
       )
       .collect();
 
+    console.log("[searchDriversByName] allDrivers count:", allDrivers.length);
+    if (allDrivers.length > 0) {
+      console.log("[searchDriversByName] first driver name:", allDrivers[0].name);
+    }
+
     // Filter by name (case-insensitive partial match)
     const matches = allDrivers
       .filter((d) => d.name.toLowerCase().includes(searchTerm))
       .slice(0, limit);
+
+    console.log("[searchDriversByName] matches count:", matches.length);
 
     return matches.map((d) => ({
       _id: d._id,
