@@ -10,6 +10,7 @@ import {
   SidebarFooter,
   SidebarHeader,
   SidebarMenu,
+  SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { sidebarItems } from "@/navigation/sidebar/sidebar-items";
