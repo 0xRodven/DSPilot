@@ -1,10 +1,10 @@
 "use client"
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { StationSettings } from "@/components/settings/station-settings"
+import { OrganizationSettings } from "@/components/settings/organization-settings"
 import { AccountSettings } from "@/components/settings/account-settings"
 import { SubscriptionSettings } from "@/components/settings/subscription-settings"
-import { TeamSettings } from "@/components/settings/team-settings"
+import { WhatsappSettings } from "@/components/settings/whatsapp-settings"
 
 export default function SettingsPage() {
   return (
@@ -16,24 +16,24 @@ export default function SettingsPage() {
         </div>
 
         {/* Tabs */}
-        <Tabs defaultValue="station" className="w-full">
-          <TabsList className="mb-6 grid w-full max-w-lg grid-cols-4">
-            <TabsTrigger value="station">Station</TabsTrigger>
-            <TabsTrigger value="equipe">Équipe</TabsTrigger>
+        <Tabs defaultValue="organisation" className="w-full">
+          <TabsList className="mb-6 grid w-full max-w-xl grid-cols-4">
+            <TabsTrigger value="organisation">Organisation</TabsTrigger>
             <TabsTrigger value="compte">Compte</TabsTrigger>
+            <TabsTrigger value="whatsapp">WhatsApp</TabsTrigger>
             <TabsTrigger value="abonnement">Abonnement</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="station">
-            <StationSettings />
-          </TabsContent>
-
-          <TabsContent value="equipe">
-            <TeamSettings />
+          <TabsContent value="organisation">
+            <OrganizationSettings />
           </TabsContent>
 
           <TabsContent value="compte">
             <AccountSettings />
+          </TabsContent>
+
+          <TabsContent value="whatsapp">
+            <WhatsappSettings />
           </TabsContent>
 
           <TabsContent value="abonnement">

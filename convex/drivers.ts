@@ -500,6 +500,8 @@ export const getDriverWithFullHistory = query({
         latestWeek: null,
         selectedWeek: null,
         totalWeeksInHistory: 0,
+        phoneNumber: driver.phoneNumber ?? null,
+        whatsappOptIn: driver.whatsappOptIn ?? false,
       };
     }
 
@@ -760,6 +762,8 @@ export const getDriverWithFullHistory = query({
       latestWeek: { year: latestYear, week: latestWeek },
       selectedWeek: { year: targetYear, week: targetWeek },
       totalWeeksInHistory: weeklyHistory.length,
+      phoneNumber: driver.phoneNumber ?? null,
+      whatsappOptIn: driver.whatsappOptIn ?? false,
     };
   },
 });

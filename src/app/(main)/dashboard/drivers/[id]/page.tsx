@@ -202,8 +202,8 @@ export default function DriverDetailPage({ params }: DriverDetailPageProps) {
     return <LoadingSkeleton />
   }
 
-  // Not found state
-  if (driverDetail === null) {
+  // Not found state (driver or station)
+  if (driverDetail === null || station === null) {
     return <NotFoundState />
   }
 
@@ -246,7 +246,14 @@ export default function DriverDetailPage({ params }: DriverDetailPageProps) {
 
         {/* Driver Header */}
         <div className="mb-6">
-          <DriverHeader driver={driver} onPlanCoaching={() => setCoachingModalOpen(true)} />
+          <DriverHeader
+            driver={driver}
+            driverId={id as Id<"drivers">}
+            stationId={station._id}
+            year={globalWeek.year}
+            week={globalWeek.week}
+            onPlanCoaching={() => setCoachingModalOpen(true)}
+          />
         </div>
 
         {/* No data warning for selected week */}

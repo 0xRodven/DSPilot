@@ -12,6 +12,7 @@ import type * as admin from "../admin.js";
 import type * as agent from "../agent.js";
 import type * as chat from "../chat.js";
 import type * as coaching from "../coaching.js";
+import type * as crons from "../crons.js";
 import type * as drivers from "../drivers.js";
 import type * as embeddings from "../embeddings.js";
 import type * as imports from "../imports.js";
@@ -22,6 +23,8 @@ import type * as seed from "../seed.js";
 import type * as seed_seedCoaching from "../seed/seedCoaching.js";
 import type * as stations from "../stations.js";
 import type * as stats from "../stats.js";
+import type * as whatsapp from "../whatsapp.js";
+import type * as whatsappCron from "../whatsappCron.js";
 
 import type {
   ApiFromModules,
@@ -34,6 +37,7 @@ declare const fullApi: ApiFromModules<{
   agent: typeof agent;
   chat: typeof chat;
   coaching: typeof coaching;
+  crons: typeof crons;
   drivers: typeof drivers;
   embeddings: typeof embeddings;
   imports: typeof imports;
@@ -44,6 +48,8 @@ declare const fullApi: ApiFromModules<{
   "seed/seedCoaching": typeof seed_seedCoaching;
   stations: typeof stations;
   stats: typeof stats;
+  whatsapp: typeof whatsapp;
+  whatsappCron: typeof whatsappCron;
 }>;
 
 /**

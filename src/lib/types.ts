@@ -31,6 +31,9 @@ export interface DriverDetail extends Driver {
   iadcTrend?: number       // IADC% difference vs previous week
   deliveriesTrend?: number // Deliveries count difference vs previous week
   errorsTrend?: number     // Errors count difference vs previous week
+  // WhatsApp
+  phoneNumber?: string | null
+  whatsappOptIn?: boolean
 }
 
 export interface DailyPerformance {

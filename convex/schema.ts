@@ -66,6 +66,8 @@ export default defineSchema({
     name: v.string(),
     isActive: v.boolean(),
     firstSeenWeek: v.optional(v.string()), // "2025-32" pour activeSince
+    phoneNumber: v.optional(v.string()), // Format E.164: +33612345678
+    whatsappOptIn: v.optional(v.boolean()), // Consentement explicite WhatsApp
     createdAt: v.number(),
     updatedAt: v.number(),
   })
@@ -243,5 +245,41 @@ export default defineSchema({
   })
     .index("by_station", ["stationId"])
     .index("by_station_week", ["stationId", "year", "week"])
+    .index("by_status", ["status"]),
+
+  // WhatsApp settings per station
+  whatsappSettings: defineTable({
+    stationId: v.id("stations"),
+    enabled: v.boolean(),
+    sendDay: v.number(), // 0-6 (dimanche-samedi)
+    sendHour: v.number(), // 0-23
+    timezone: v.string(), // "Europe/Paris"
+    updatedBy: v.string(), // Clerk user ID
+    updatedAt: v.number(),
+  }).index("by_station", ["stationId"]),
+
+  // WhatsApp messages audit trail
+  whatsappMessages: defineTable({
+    stationId: v.id("stations"),
+    driverId: v.id("drivers"),
+    year: v.number(),
+    week: v.number(),
+    phoneNumber: v.string(),
+    messageContent: v.string(),
+    messageSid: v.optional(v.string()), // Twilio message SID
+    status: v.union(
+      v.literal("pending"),
+      v.literal("sent"),
+      v.literal("delivered"),
+      v.literal("failed"),
+      v.literal("undelivered")
+    ),
+    errorMessage: v.optional(v.string()),
+    sentAt: v.optional(v.number()),
+    deliveredAt: v.optional(v.number()),
+    createdAt: v.number(),
+  })
+    .index("by_station_week", ["stationId", "year", "week"])
+    .index("by_driver", ["driverId"])
     .index("by_status", ["status"]),
 });
