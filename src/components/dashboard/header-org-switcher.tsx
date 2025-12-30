@@ -23,9 +23,18 @@ export function HeaderOrgSwitcher() {
           organizationSwitcherTriggerIcon: "text-muted-foreground",
           // Dropdown styling
           organizationSwitcherPopoverCard: "bg-popover border border-border shadow-lg",
-          organizationSwitcherPopoverActionButton: "text-foreground hover:bg-accent",
+          organizationSwitcherPopoverActions: "border-t border-border",
+          organizationSwitcherPopoverActionButton:
+            "text-foreground hover:bg-accent [&>span]:text-foreground [&_svg]:text-foreground",
+          organizationSwitcherPopoverActionButtonText: "text-foreground",
+          organizationSwitcherPopoverActionButtonIcon: "text-foreground",
+          organizationSwitcherPopoverActionButtonIconBox:
+            "text-foreground bg-muted [&_svg]:text-foreground",
           organizationPreview: "hover:bg-accent",
           organizationPreviewTextContainer: "[&_*]:text-foreground",
+          // Manage org button (gear icon)
+          organizationSwitcherPreviewButton:
+            "text-muted-foreground hover:text-foreground hover:bg-accent [&_svg]:text-current",
         },
       }}
     />

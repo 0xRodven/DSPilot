@@ -1,7 +1,6 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
 import { useShallow } from "zustand/react/shallow";
 import { UserButton } from "@clerk/nextjs";
 
@@ -11,7 +10,6 @@ import {
   SidebarFooter,
   SidebarHeader,
   SidebarMenu,
-  SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { sidebarItems } from "@/navigation/sidebar/sidebar-items";
@@ -36,20 +34,18 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton asChild>
-              <Link prefetch={false} href="/dashboard" className="flex items-center gap-2">
-                <Image
-                  src="/logo/DSPilot_Icon.png"
-                  alt="DSPilot"
-                  width={32}
-                  height={32}
-                  className="shrink-0"
-                />
-                <span className="font-semibold text-xl mt-1.5 group-data-[collapsible=icon]:hidden">
-                  DSPilot
-                </span>
-              </Link>
-            </SidebarMenuButton>
+            <div className="flex items-center gap-2 px-2 py-1.5">
+              <Image
+                src="/logo/DSPilot_Icon.png"
+                alt="DSPilot"
+                width={32}
+                height={32}
+                className="shrink-0"
+              />
+              <span className="font-semibold text-xl mt-1.5 group-data-[collapsible=icon]:hidden">
+                DSPilot
+              </span>
+            </div>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>

@@ -37,8 +37,16 @@ export const clerkAppearance: Appearance = {
     // Organization switcher popover
     organizationSwitcherPopoverCard: "bg-popover border border-border shadow-lg",
     organizationSwitcherPopoverActions: "border-t border-border",
+    organizationSwitcherPopoverActionButton: "text-foreground hover:bg-accent [&_svg]:text-foreground",
+    organizationSwitcherPopoverActionButtonText: "text-foreground",
+    organizationSwitcherPopoverActionButtonIcon: "text-foreground",
+    organizationSwitcherPopoverActionButtonIconBox: "text-foreground [&_svg]:text-foreground",
     organizationPreview: "hover:bg-accent",
     organizationPreviewTextContainer: "text-foreground",
+    organizationPreviewSecondaryIdentifier: "text-muted-foreground",
+
+    // Manage organization button
+    organizationSwitcherPreviewButton: "text-foreground hover:bg-accent [&_svg]:text-muted-foreground",
 
     // User button
     userButtonPopoverCard: "bg-popover border border-border shadow-lg",

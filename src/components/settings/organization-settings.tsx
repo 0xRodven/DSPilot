@@ -55,42 +55,32 @@ export function OrganizationSettings() {
         </CardContent>
       </Card>
 
-      {/* Gestion Équipe via Clerk */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Équipe</CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          <OrganizationProfile
-            appearance={{
-              elements: {
-                rootBox: "w-full",
-                cardBox: "shadow-none border-0 bg-card",
-                card: "bg-card",
-                navbar: "hidden",
-                pageScrollBox: "p-4 bg-card",
-                headerTitle: "hidden",
-                headerSubtitle: "hidden",
-                // Table & member list styling
-                tableHead: "text-muted-foreground border-b border-border bg-muted/30",
-                tableBodyRow: "border-b border-border hover:bg-accent/50",
-                // Form elements
-                formButtonPrimary: "bg-primary text-primary-foreground hover:bg-primary/90",
-                formFieldInput: "bg-background border-input text-foreground",
-                formFieldLabel: "text-foreground",
-                // Badges
-                badge: "bg-muted text-muted-foreground",
-                // Profile section
-                profileSectionContent: "bg-card [&_*]:text-foreground",
-                profileSectionPrimaryButton: "bg-primary text-primary-foreground hover:bg-primary/90",
-                // Members section
-                membersPageInviteButton: "bg-primary text-primary-foreground hover:bg-primary/90",
-              },
-            }}
-            routing="hash"
-          />
-        </CardContent>
-      </Card>
+      {/* Gestion Équipe via Clerk - Full width */}
+      <OrganizationProfile
+        appearance={{
+          elements: {
+            rootBox: "w-full",
+            cardBox: "shadow-none border border-border rounded-lg bg-card",
+            card: "bg-card",
+            pageScrollBox: "p-4 bg-card",
+            // Table & member list styling
+            tableHead: "text-muted-foreground border-b border-border bg-muted/30",
+            tableBodyRow: "border-b border-border hover:bg-accent/50",
+            // Form elements
+            formButtonPrimary: "bg-primary text-primary-foreground hover:bg-primary/90",
+            formFieldInput: "bg-background border-input text-foreground",
+            formFieldLabel: "text-foreground",
+            // Badges
+            badge: "bg-muted text-muted-foreground",
+            // Profile section
+            profileSectionContent: "bg-card [&_*]:text-foreground",
+            profileSectionPrimaryButton: "bg-primary text-primary-foreground hover:bg-primary/90",
+            // Members section
+            membersPageInviteButton: "bg-primary text-primary-foreground hover:bg-primary/90",
+          },
+        }}
+        routing="hash"
+      />
     </div>
   )
 }
