@@ -1,3 +1,7 @@
+// TODO: Refactor to use Convex for real calendar data instead of mocks
+// This file contains template mock data that should be replaced with actual
+// coaching calendar events from the database
+
 import { COLORS } from "@/components/full-calendar/constants";
 import type { IEvent, IUser } from "@/components/full-calendar/interfaces";
 
