@@ -18,6 +18,7 @@ import type * as embeddings from "../embeddings.js";
 import type * as imports from "../imports.js";
 import type * as lib_permissions from "../lib/permissions.js";
 import type * as lib_timeQuery from "../lib/timeQuery.js";
+import type * as lib_utils from "../lib/utils.js";
 import type * as rag from "../rag.js";
 import type * as seed from "../seed.js";
 import type * as seed_seedCoaching from "../seed/seedCoaching.js";
@@ -43,6 +44,7 @@ declare const fullApi: ApiFromModules<{
   imports: typeof imports;
   "lib/permissions": typeof lib_permissions;
   "lib/timeQuery": typeof lib_timeQuery;
+  "lib/utils": typeof lib_utils;
   rag: typeof rag;
   seed: typeof seed;
   "seed/seedCoaching": typeof seed_seedCoaching;

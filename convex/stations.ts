@@ -7,6 +7,7 @@ import {
   requireWriteAccess,
   requireOwner,
 } from "./lib/permissions";
+import { slugify } from "./lib/utils";
 
 /**
  * Récupère ou crée une station par son code
@@ -173,7 +174,10 @@ export const getOrCreateStationForCurrentOrg = mutation({
 
     // Créer une nouvelle station pour cette org
     const stationName = args.orgName || `Station ${orgId.substring(4, 12)}`;
-    const stationCode = orgId.substring(4, 14).toUpperCase().replace(/[^A-Z0-9]/g, "");
+    // Code = nom de l'org slugifié, ou fallback sur l'ancien format
+    const stationCode = args.orgName
+      ? slugify(args.orgName)
+      : orgId.substring(4, 14).toUpperCase().replace(/[^A-Z0-9]/g, "");
 
     const stationId = await ctx.db.insert("stations", {
       code: stationCode,
@@ -467,6 +471,57 @@ export const migrateStationsToOrganization = mutation({
         skipped.push(`${station.name} (${station.code}) - déjà dans cette org`);
       } else {
         skipped.push(`${station.name} (${station.code}) - appartient à une autre org`);
+      }
+    }
+
+    return {
+      migrated,
+      skipped,
+      totalMigrated: migrated.length,
+      totalSkipped: skipped.length,
+    };
+  },
+});
+
+/**
+ * Migration: Met à jour les codes stations pour utiliser le format slugifié
+ * Les stations avec un code cryptique (sans tiret) seront mises à jour
+ * pour utiliser le nom slugifié
+ */
+export const migrateStationCodes = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const { orgRole } = await getUserContext(ctx);
+
+    if (orgRole !== "org:admin") {
+      throw new Error("Seul le Owner (org:admin) peut migrer les codes stations");
+    }
+
+    const stations = await ctx.db.query("stations").collect();
+
+    const migrated: string[] = [];
+    const skipped: string[] = [];
+
+    for (const station of stations) {
+      // Si le code ne contient pas de tiret et qu'on a un name valide
+      // alors c'est probablement un ancien code cryptique
+      if (station.name && !station.code.includes("-")) {
+        const newCode = slugify(station.name);
+
+        // Vérifier que le nouveau code n'existe pas déjà
+        const existing = await ctx.db
+          .query("stations")
+          .withIndex("by_code", (q) => q.eq("code", newCode))
+          .first();
+
+        if (!existing || existing._id === station._id) {
+          await ctx.db.patch(station._id, { code: newCode });
+          migrated.push(`${station.name}: ${station.code} → ${newCode}`);
+        } else {
+          skipped.push(`${station.name}: code "${newCode}" déjà utilisé`);
+        }
+      } else {
+        skipped.push(`${station.name}: déjà au bon format (${station.code})`);
       }
     }
 
