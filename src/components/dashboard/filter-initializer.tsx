@@ -9,21 +9,16 @@ import { useQuery } from "convex/react"
 import { useRouter, useSearchParams, usePathname } from "next/navigation"
 import { getISOWeek, getISOWeekYear } from "date-fns"
 import { api } from "@convex/_generated/api"
-import { useDashboardStore } from "@/lib/store"
 import { serializeWeek, parseWeekString } from "@/lib/filters/parsers"
 
 export function FilterInitializer() {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
-  const { selectedStation } = useDashboardStore()
   const hasInitialized = useRef(false)
 
-  // Get station from Convex
-  const station = useQuery(
-    api.stations.getStationByCode,
-    selectedStation.code ? { code: selectedStation.code } : "skip"
-  )
+  // Get station for current org (1 org = 1 station architecture)
+  const station = useQuery(api.stations.getStationForCurrentOrg)
 
   // Get latest week with data
   const latestWeek = useQuery(
@@ -44,26 +39,27 @@ export function FilterInitializer() {
       return
     }
 
-    // Current week (what nuqs defaults to)
+    // Current week (what nuqs defaults to when no param)
     const now = new Date()
     const currentWeek = { year: getISOWeekYear(now), week: getISOWeek(now) }
 
-    // Week from URL
+    // Week from URL (null if not present)
     const urlWeekStr = searchParams.get("week")
     const urlWeek = urlWeekStr ? parseWeekString(urlWeekStr) : null
 
-    // Check if URL has the current week (nuqs default)
-    const isCurrentWeekInUrl = urlWeek &&
+    // If no week param, nuqs will default to current week - treat same as current week
+    const isDefaultWeek = !urlWeek || (
       urlWeek.year === currentWeek.year &&
       urlWeek.week === currentWeek.week
+    )
 
-    // Check if we have older data (latest data is before current week)
-    const hasOlderData =
-      latestWeek.year < currentWeek.year ||
-      (latestWeek.year === currentWeek.year && latestWeek.week < currentWeek.week)
+    // Check if we have data that differs from current week
+    const latestIsDifferent =
+      latestWeek.year !== currentWeek.year ||
+      latestWeek.week !== currentWeek.week
 
-    // If URL shows current week but we have older data, redirect to latest data
-    if (isCurrentWeekInUrl && hasOlderData) {
+    // If using default week but we have data from a different week, redirect to latest data
+    if (isDefaultWeek && latestIsDifferent) {
       hasInitialized.current = true
 
       // Build new URL preserving other params
@@ -73,7 +69,7 @@ export function FilterInitializer() {
 
       router.replace(`${pathname}?${newParams.toString()}`)
     } else {
-      // User explicitly chose a week or current week has data - don't redirect
+      // User explicitly chose a specific week OR latest data is current week - don't redirect
       hasInitialized.current = true
     }
   }, [latestWeek, station, searchParams, router, pathname])

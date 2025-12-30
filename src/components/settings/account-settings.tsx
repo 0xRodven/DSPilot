@@ -21,11 +21,21 @@ export function AccountSettings() {
             appearance={{
               elements: {
                 rootBox: "w-full",
-                cardBox: "shadow-none border-0",
+                cardBox: "shadow-none border-0 bg-card",
+                card: "bg-card",
                 navbar: "hidden",
-                pageScrollBox: "p-4",
+                pageScrollBox: "p-4 bg-card",
                 headerTitle: "hidden",
                 headerSubtitle: "hidden",
+                // Profile section
+                profileSectionContent: "bg-card [&_*]:text-foreground",
+                profileSectionPrimaryButton: "bg-primary text-primary-foreground hover:bg-primary/90",
+                // Form elements
+                formButtonPrimary: "bg-primary text-primary-foreground hover:bg-primary/90",
+                formFieldInput: "bg-background border-input text-foreground",
+                formFieldLabel: "text-foreground",
+                // Badges
+                badge: "bg-muted text-muted-foreground",
               },
             }}
             routing="hash"

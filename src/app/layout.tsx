@@ -8,11 +8,11 @@ import { NuqsAdapter } from "nuqs/adapters/next/app";
 import type { Metadata } from "next";
 
 import { Toaster } from "@/components/ui/sonner";
-import { APP_CONFIG } from "@/config/app-config";
 import { PREFERENCE_DEFAULTS } from "@/lib/preferences/preferences-config";
 import { ThemeBootScript } from "@/scripts/theme-boot";
 import { PreferencesStoreProvider } from "@/stores/preferences/preferences-provider";
 import { ConvexClientProvider } from "@/providers/convex-client-provider";
+import { clerkAppearance } from "@/lib/clerk-appearance";
 
 import "./globals.css";
 
@@ -27,7 +27,7 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
   const { theme_mode, theme_preset, content_layout, navbar_style, sidebar_variant, sidebar_collapsible } =
     PREFERENCE_DEFAULTS;
   return (
-    <ClerkProvider localization={frFR}>
+    <ClerkProvider localization={frFR} appearance={clerkAppearance}>
       <html
         lang="fr"
         className={theme_mode}

@@ -17,10 +17,15 @@ export function HeaderOrgSwitcher() {
         elements: {
           rootBox: "w-[140px] md:w-[200px]",
           organizationSwitcherTrigger:
-            "w-full h-9 px-3 border border-border rounded-md bg-card text-card-foreground hover:bg-accent hover:text-accent-foreground",
-          organizationPreviewMainIdentifier: "truncate font-medium text-sm",
+            "w-full h-9 px-3 border border-input rounded-md bg-background hover:bg-accent transition-colors",
+          organizationPreviewMainIdentifier: "truncate font-medium text-sm text-foreground",
           organizationPreviewSecondaryIdentifier: "hidden",
           organizationSwitcherTriggerIcon: "text-muted-foreground",
+          // Dropdown styling
+          organizationSwitcherPopoverCard: "bg-popover border border-border shadow-lg",
+          organizationSwitcherPopoverActionButton: "text-foreground hover:bg-accent",
+          organizationPreview: "hover:bg-accent",
+          organizationPreviewTextContainer: "[&_*]:text-foreground",
         },
       }}
     />
