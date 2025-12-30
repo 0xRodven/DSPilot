@@ -588,7 +588,7 @@ export function NewActionModal({ open, onOpenChange, prefillSuggestion, stationI
                   modifiersClassNames={{
                     hasFollowUp: "relative after:absolute after:bottom-1 after:left-1/2 after:-translate-x-1/2 after:h-1 after:w-1 after:rounded-full after:bg-orange-400",
                   }}
-                  className="rounded-md"
+                  className="rounded-md bg-transparent text-white [&_*]:text-inherit"
                 />
                 {datesWithFollowUps.length > 0 && (
                   <div className="mt-2 flex items-center gap-2 border-t border-zinc-700 pt-2 text-xs text-zinc-400">
