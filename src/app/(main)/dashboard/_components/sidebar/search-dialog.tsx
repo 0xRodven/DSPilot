@@ -30,7 +30,6 @@ import {
   CommandSeparator,
 } from "@/components/ui/command"
 import { Badge } from "@/components/ui/badge"
-import { useDashboardStore } from "@/lib/store"
 
 // Navigation items based on sidebar-items.ts
 const navigationItems = [
@@ -67,7 +66,6 @@ export function SearchDialog() {
   const [search, setSearch] = React.useState("")
   const [debouncedSearch, setDebouncedSearch] = React.useState("")
   const router = useRouter()
-  const { selectedStation } = useDashboardStore()
 
   // Debounce search input
   React.useEffect(() => {
@@ -87,11 +85,8 @@ export function SearchDialog() {
     return () => document.removeEventListener("keydown", down)
   }, [])
 
-  // Query station to get stationId
-  const station = useQuery(
-    api.stations.getStationByCode,
-    selectedStation?.code ? { code: selectedStation.code } : "skip"
-  )
+  // Query station for current org (1 Org = 1 Station architecture)
+  const station = useQuery(api.stations.getStationForCurrentOrg)
 
   // Search drivers query
   const drivers = useQuery(
