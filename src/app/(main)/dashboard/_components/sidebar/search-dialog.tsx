@@ -88,6 +88,10 @@ export function SearchDialog() {
   // Query station for current org (1 Org = 1 Station architecture)
   const station = useQuery(api.stations.getStationForCurrentOrg)
 
+  // DEBUG
+  console.log("[SearchDialog] station:", station)
+  console.log("[SearchDialog] debouncedSearch:", debouncedSearch)
+
   // Search drivers query
   const drivers = useQuery(
     api.drivers.searchDriversByName,
@@ -95,6 +99,9 @@ export function SearchDialog() {
       ? { stationId: station._id, name: debouncedSearch, limit: 5 }
       : "skip"
   )
+
+  // DEBUG
+  console.log("[SearchDialog] drivers result:", drivers)
 
   // Filter error types based on search
   const filteredErrors = React.useMemo(() => {

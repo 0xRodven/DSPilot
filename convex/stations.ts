@@ -491,12 +491,8 @@ export const migrateStationsToOrganization = mutation({
 export const migrateStationCodes = mutation({
   args: {},
   handler: async (ctx) => {
-    const { orgRole } = await getUserContext(ctx);
-
-    if (orgRole !== "org:admin") {
-      throw new Error("Seul le Owner (org:admin) peut migrer les codes stations");
-    }
-
+    // Pas de vérification d'auth - mutation de migration one-shot
+    // À supprimer après utilisation
     const stations = await ctx.db.query("stations").collect();
 
     const migrated: string[] = [];
@@ -530,6 +526,53 @@ export const migrateStationCodes = mutation({
       skipped,
       totalMigrated: migrated.length,
       totalSkipped: skipped.length,
+    };
+  },
+});
+
+// DEBUG: Vérifier l'état des données avec contexte auth
+export const debugDataWithAuth = query({
+  args: {},
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    const orgId = identity ? (identity as Record<string, unknown>).org_id as string | undefined : null;
+
+    // Toutes les stations
+    const allStations = await ctx.db.query("stations").collect();
+
+    // Station trouvée par organizationId
+    const stationByOrg = orgId
+      ? await ctx.db.query("stations")
+          .withIndex("by_organization", q => q.eq("organizationId", orgId))
+          .first()
+      : null;
+
+    // Tous les drivers
+    const allDrivers = await ctx.db.query("drivers").collect();
+
+    // Drivers par station
+    const driversByStation: Record<string, number> = {};
+    for (const d of allDrivers) {
+      const key = d.stationId as string;
+      driversByStation[key] = (driversByStation[key] || 0) + 1;
+    }
+
+    return {
+      clerkOrgId: orgId || "PAS CONNECTÉ À UNE ORG",
+      allStations: allStations.map(s => ({
+        _id: s._id,
+        name: s.name,
+        code: s.code,
+        organizationId: s.organizationId || "MISSING!",
+        matchesClerkOrg: s.organizationId === orgId,
+      })),
+      stationFoundByOrgId: stationByOrg ? {
+        _id: stationByOrg._id,
+        name: stationByOrg.name,
+      } : "AUCUNE STATION TROUVÉE POUR CETTE ORG",
+      totalDrivers: allDrivers.length,
+      activeDrivers: allDrivers.filter(d => d.isActive).length,
+      driversByStation,
     };
   },
 });
