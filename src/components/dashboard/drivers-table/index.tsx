@@ -49,6 +49,7 @@ export function DriversTable() {
       amazonId: d.amazonId,
       dwcPercent: d.dwcPercent,
       iadcPercent: d.iadcPercent,
+      totalDeliveries: d.totalDeliveries,
       daysActive: d.daysActive,
       tier: d.tier,
     }))
