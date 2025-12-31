@@ -192,30 +192,31 @@ function formatDate(date: Date): string {
 }
 
 /**
- * Retourne les dates de début (lundi) et fin (dimanche) pour une semaine ISO donnée
- * Gère correctement les cas aux frontières d'année (ex: semaine 1 de 2026 = 29 déc 2025 - 4 jan 2026)
+ * Retourne les dates de début (dimanche) et fin (samedi) pour une semaine Amazon donnée
+ * Amazon utilise des semaines Dimanche→Samedi (pas ISO Lundi→Dimanche)
+ * Gère correctement les cas aux frontières d'année
  */
 export function getWeekDateRange(year: number, week: number): { start: string; end: string } {
-  // Trouver le jeudi de la semaine 1 de l'année (toujours entre le 1er et 7 janvier)
-  // Le jeudi est utilisé car il est toujours dans la bonne année ISO
-  const jan4 = new Date(Date.UTC(year, 0, 4))
-  const dayOfWeek = jan4.getUTCDay() || 7 // 1=lundi, 7=dimanche
+  // Amazon weeks: Dimanche → Samedi
+  // Trouver le 1er janvier
+  const jan1 = new Date(Date.UTC(year, 0, 1))
+  const jan1Day = jan1.getUTCDay() // 0=dimanche, 6=samedi
 
-  // Lundi de la semaine 1
-  const week1Monday = new Date(jan4)
-  week1Monday.setUTCDate(jan4.getUTCDate() - (dayOfWeek - 1))
-
-  // Lundi de la semaine demandée
-  const targetMonday = new Date(week1Monday)
-  targetMonday.setUTCDate(week1Monday.getUTCDate() + (week - 1) * 7)
+  // Dimanche de la semaine 1 (peut être en décembre de l'année précédente)
+  const week1Sunday = new Date(jan1)
+  week1Sunday.setUTCDate(jan1.getUTCDate() - jan1Day)
 
   // Dimanche de la semaine demandée
-  const targetSunday = new Date(targetMonday)
-  targetSunday.setUTCDate(targetMonday.getUTCDate() + 6)
+  const targetSunday = new Date(week1Sunday)
+  targetSunday.setUTCDate(week1Sunday.getUTCDate() + (week - 1) * 7)
+
+  // Samedi de la semaine demandée
+  const targetSaturday = new Date(targetSunday)
+  targetSaturday.setUTCDate(targetSunday.getUTCDate() + 6)
 
   return {
-    start: formatDate(targetMonday),
-    end: formatDate(targetSunday),
+    start: formatDate(targetSunday),
+    end: formatDate(targetSaturday),
   }
 }
 
