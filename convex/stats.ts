@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
-import { getWeeksInRange } from "./lib/timeQuery";
+import { getWeeksInRange, getWeekDateRange } from "./lib/timeQuery";
 import {
   requireWriteAccess,
   canAccessStation,
@@ -529,12 +529,15 @@ export const getDashboardDrivers = query({
         if (!driver) return null;
 
         // Get daily stats for this driver/week to calculate actual days worked
-        const dailyStats = await ctx.db
+        // Utilise la range de dates au lieu de year/week pour gérer les frontières ISO
+        const { start: weekStart, end: weekEnd } = getWeekDateRange(args.year, args.week);
+        const allDailyStats = await ctx.db
           .query("driverDailyStats")
-          .withIndex("by_driver_week", (q) =>
-            q.eq("driverId", stat.driverId).eq("year", args.year).eq("week", args.week)
-          )
+          .withIndex("by_driver_date", (q) => q.eq("driverId", stat.driverId))
           .collect();
+        const dailyStats = allDailyStats.filter(
+          (d) => d.date >= weekStart && d.date <= weekEnd
+        );
 
         // Calculate actual days with activity
         const daysActive = dailyStats.filter((d) => {

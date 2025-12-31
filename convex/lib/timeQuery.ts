@@ -191,6 +191,34 @@ function formatDate(date: Date): string {
   return date.toISOString().split("T")[0]
 }
 
+/**
+ * Retourne les dates de début (lundi) et fin (dimanche) pour une semaine ISO donnée
+ * Gère correctement les cas aux frontières d'année (ex: semaine 1 de 2026 = 29 déc 2025 - 4 jan 2026)
+ */
+export function getWeekDateRange(year: number, week: number): { start: string; end: string } {
+  // Trouver le jeudi de la semaine 1 de l'année (toujours entre le 1er et 7 janvier)
+  // Le jeudi est utilisé car il est toujours dans la bonne année ISO
+  const jan4 = new Date(Date.UTC(year, 0, 4))
+  const dayOfWeek = jan4.getUTCDay() || 7 // 1=lundi, 7=dimanche
+
+  // Lundi de la semaine 1
+  const week1Monday = new Date(jan4)
+  week1Monday.setUTCDate(jan4.getUTCDate() - (dayOfWeek - 1))
+
+  // Lundi de la semaine demandée
+  const targetMonday = new Date(week1Monday)
+  targetMonday.setUTCDate(week1Monday.getUTCDate() + (week - 1) * 7)
+
+  // Dimanche de la semaine demandée
+  const targetSunday = new Date(targetMonday)
+  targetSunday.setUTCDate(targetMonday.getUTCDate() + 6)
+
+  return {
+    start: formatDate(targetMonday),
+    end: formatDate(targetSunday),
+  }
+}
+
 // ============================================================================
 // AGGREGATION HELPERS
 // ============================================================================
