@@ -13,6 +13,7 @@ export interface DashboardDriver {
   amazonId: string
   dwcPercent: number
   iadcPercent: number
+  totalDeliveries: number
   daysActive: number
   tier: "fantastic" | "great" | "fair" | "poor"
 }
@@ -101,6 +102,26 @@ export const createColumns = ({
     cell: ({ row }) => (
       <div className="text-right font-medium text-card-foreground tabular-nums">
         {row.getValue("iadcPercent")}%
+      </div>
+    ),
+  },
+  {
+    accessorKey: "totalDeliveries",
+    header: ({ column }) => (
+      <div className="text-right">
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          className="h-8 px-2"
+        >
+          Colis
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      </div>
+    ),
+    cell: ({ row }) => (
+      <div className="text-right font-medium text-card-foreground tabular-nums">
+        {row.getValue("totalDeliveries")}
       </div>
     ),
   },

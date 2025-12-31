@@ -573,6 +573,7 @@ export const getDashboardDrivers = query({
           amazonId: driver.amazonId,
           dwcPercent,
           iadcPercent,
+          totalDeliveries: dwcTotal,
           daysActive,
           tier,
           trend, // null if no previous week data
@@ -1236,6 +1237,7 @@ export const getDashboardDriversDaily = query({
           amazonId: driver.amazonId,
           dwcPercent,
           iadcPercent,
+          totalDeliveries: dwcTotal,
           daysActive: 1, // Single day
           tier,
           trend,
@@ -1626,6 +1628,7 @@ export const getDashboardDriversRange = query({
           amazonId: driver.amazonId,
           dwcPercent,
           iadcPercent,
+          totalDeliveries: dwcTotal,
           daysActive: stats.length,
           tier,
           trend,
