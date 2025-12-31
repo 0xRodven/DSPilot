@@ -47,6 +47,29 @@
   --radius-2xl: calc(var(--radius) + 8px);
   --radius-3xl: calc(var(--radius) + 12px);
   --radius-4xl: calc(var(--radius) + 16px);
+
+  /* Linkify animations */
+  --animate-border-beam: border-beam calc(var(--duration)*1s) infinite linear;
+
+  @keyframes border-beam {
+    100% {
+      offset-distance: 100%;
+    }
+  }
+
+  @keyframes image-glow {
+    0% {
+      opacity: 0;
+      animation-timing-function: cubic-bezier(0.74, 0.25, 0.76, 1);
+    }
+    10% {
+      opacity: 0.5;
+      animation-timing-function: cubic-bezier(0.12, 0.01, 0.08, 0.99);
+    }
+    100% {
+      opacity: 0.7;
+    }
+  }
 }
 
 /* Default theme styles (used when no data-theme-preset is set or when 'default' is selected).
@@ -170,4 +193,14 @@ html {
 
 .disable-transitions * {
   transition: none !important;
+}
+
+/* Linkify gradient background */
+.gradient {
+  background-image: linear-gradient(
+    to bottom,
+    transparent,
+    rgba(59, 130, 246, 0.1) 50%,
+    transparent
+  );
 }

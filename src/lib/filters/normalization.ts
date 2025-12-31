@@ -123,7 +123,7 @@ export function formatTimeDisplay(
 // NAVIGATION HELPERS
 // ============================================================================
 
-import { addDays, addWeeks, getWeek, getYear } from "date-fns"
+import { addDays, addWeeks, getWeek, getWeekYear, getYear } from "date-fns"
 
 /**
  * Calcule la nouvelle période après navigation
@@ -152,7 +152,7 @@ export function navigateTime(
       const weekOptions = { weekStartsOn: 1 as const, firstWeekContainsDate: 4 as const }
       return {
         week: {
-          year: getYear(newDate),
+          year: getWeekYear(newDate, weekOptions),
           week: getWeek(newDate, weekOptions),
         },
       }

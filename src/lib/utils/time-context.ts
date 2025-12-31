@@ -16,6 +16,7 @@ import {
   startOfYear,
   getWeek,
   getYear,
+  getWeekYear,
   setWeek,
   setYear,
   isSameDay,
@@ -163,7 +164,7 @@ export function navigateTimeContext(
       const weekOptions = { weekStartsOn: 1 as const, firstWeekContainsDate: 4 as const }
       return {
         type: "week",
-        year: getYear(newDate),
+        year: getWeekYear(newDate, weekOptions),
         week: getWeek(newDate, weekOptions),
       }
     }
