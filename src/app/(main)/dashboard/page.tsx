@@ -7,6 +7,7 @@ import { TierDistribution } from "@/components/dashboard/tier-distribution"
 import { TopDrivers } from "@/components/dashboard/top-drivers"
 import { TopErrors } from "@/components/dashboard/top-errors"
 import { DriversTable } from "@/components/dashboard/drivers-table"
+import { ExportButton } from "@/components/dashboard/export-button"
 
 export default function DashboardPage() {
   const { displayLabel } = useFilters()
@@ -17,9 +18,12 @@ export default function DashboardPage() {
     <main className="min-h-[calc(100vh-3.5rem)] md:min-h-[calc(100vh-4rem)] animate-in fade-in duration-300">
       <div className="p-4 md:p-6">
         {/* Page title */}
-        <div className="mb-4 md:mb-6">
-          <h1 className="text-xl md:text-2xl font-bold text-foreground">Dashboard</h1>
-          <p className="text-xs md:text-sm capitalize text-muted-foreground">{subtitle}</p>
+        <div className="mb-4 md:mb-6 flex items-center justify-between">
+          <div>
+            <h1 className="text-xl md:text-2xl font-bold text-foreground">Dashboard</h1>
+            <p className="text-xs md:text-sm capitalize text-muted-foreground">{subtitle}</p>
+          </div>
+          <ExportButton />
         </div>
 
         {/* KPI Cards */}
