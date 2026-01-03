@@ -142,8 +142,10 @@ export function Hero() {
               <ArrowRight className="size-4" />
             </Link>
           </Button>
-          <Button size="lg" variant="outline" asChild>
-            <Link href="#features">Voir les fonctionnalités</Link>
+          <Button size="lg" variant="secondary" asChild className="gap-2 bg-slate-800 hover:bg-slate-700 text-white border-slate-700">
+            <Link href="/demo">
+              Voir la démo
+            </Link>
           </Button>
         </div>
       </AnimationContainer>

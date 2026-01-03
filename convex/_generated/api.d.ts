@@ -14,6 +14,7 @@ import type * as alerts from "../alerts.js";
 import type * as chat from "../chat.js";
 import type * as coaching from "../coaching.js";
 import type * as crons from "../crons.js";
+import type * as demo from "../demo.js";
 import type * as drivers from "../drivers.js";
 import type * as embeddings from "../embeddings.js";
 import type * as imports from "../imports.js";
@@ -41,6 +42,7 @@ declare const fullApi: ApiFromModules<{
   chat: typeof chat;
   coaching: typeof coaching;
   crons: typeof crons;
+  demo: typeof demo;
   drivers: typeof drivers;
   embeddings: typeof embeddings;
   imports: typeof imports;
