@@ -120,9 +120,9 @@ export function DataTable({ columns, data, periodLabel, onRowClick }: DataTableP
         </Button>
       </div>
 
-      {/* Table */}
-      <div className="rounded-md border">
-        <Table>
+      {/* Table with horizontal scroll on mobile */}
+      <div className="rounded-md border overflow-x-auto">
+        <Table className="min-w-[600px]">
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id} className="border-border hover:bg-transparent">
@@ -167,26 +167,27 @@ export function DataTable({ columns, data, periodLabel, onRowClick }: DataTableP
       </div>
 
       {/* Pagination */}
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">
-          Affichage{" "}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-sm text-muted-foreground text-center sm:text-left">
           {table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1}-
           {Math.min(
             (table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize,
             table.getFilteredRowModel().rows.length
           )}{" "}
-          sur {table.getFilteredRowModel().rows.length} drivers
+          sur {table.getFilteredRowModel().rows.length}
         </p>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center justify-center gap-2">
           <Button
             variant="outline"
             size="sm"
             onClick={() => table.previousPage()}
             disabled={!table.getCanPreviousPage()}
+            className="px-2 sm:px-3"
           >
-            Précédent
+            <span className="hidden sm:inline">Précédent</span>
+            <span className="sm:hidden">←</span>
           </Button>
-          <div className="flex items-center gap-1">
+          <div className="hidden sm:flex items-center gap-1">
             {Array.from({ length: Math.min(5, table.getPageCount()) }, (_, i) => {
               const pageIndex = table.getState().pagination.pageIndex
               const pageCount = table.getPageCount()
@@ -215,13 +216,18 @@ export function DataTable({ columns, data, periodLabel, onRowClick }: DataTableP
               )
             })}
           </div>
+          <span className="sm:hidden text-sm text-muted-foreground">
+            {table.getState().pagination.pageIndex + 1} / {table.getPageCount()}
+          </span>
           <Button
             variant="outline"
             size="sm"
             onClick={() => table.nextPage()}
             disabled={!table.getCanNextPage()}
+            className="px-2 sm:px-3"
           >
-            Suivant
+            <span className="hidden sm:inline">Suivant</span>
+            <span className="sm:hidden">→</span>
           </Button>
         </div>
       </div>

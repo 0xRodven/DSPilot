@@ -38,11 +38,12 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
         >
           <header
             className={cn(
-              "flex h-12 shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12",
+              "flex flex-col md:flex-row min-h-12 shrink-0 items-stretch md:items-center gap-2 border-b transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:min-h-12",
               "[html[data-navbar-style=sticky]_&]:sticky [html[data-navbar-style=sticky]_&]:top-0 [html[data-navbar-style=sticky]_&]:z-50 [html[data-navbar-style=sticky]_&]:overflow-hidden [html[data-navbar-style=sticky]_&]:rounded-t-[inherit] [html[data-navbar-style=sticky]_&]:bg-background/50 [html[data-navbar-style=sticky]_&]:backdrop-blur-md",
             )}
           >
-            <div className="flex w-full items-center justify-between px-4 lg:px-6">
+            {/* Desktop: single row layout */}
+            <div className="hidden md:flex w-full items-center justify-between px-4 lg:px-6 h-12">
               {/* Left section */}
               <div className="flex items-center gap-1 lg:gap-2">
                 <SidebarTrigger className="-ml-1" />
@@ -69,6 +70,34 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
                     },
                   }}
                 />
+              </div>
+            </div>
+
+            {/* Mobile: two row layout */}
+            <div className="flex md:hidden flex-col gap-2 px-3 py-2">
+              {/* Row 1: Sidebar trigger, search, user controls */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <SidebarTrigger className="-ml-1" />
+                  <SearchDialog />
+                </div>
+                <div className="flex items-center gap-1">
+                  <AlertsDropdown />
+                  <ThemeSwitcher />
+                  <UserButton
+                    afterSignOutUrl="/"
+                    appearance={{
+                      elements: {
+                        avatarBox: "h-7 w-7",
+                      },
+                    }}
+                  />
+                </div>
+              </div>
+              {/* Row 2: Station and period picker */}
+              <div className="flex items-center gap-2">
+                <HeaderOrgSwitcher />
+                <PeriodPicker />
               </div>
             </div>
           </header>
