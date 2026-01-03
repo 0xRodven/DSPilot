@@ -258,6 +258,41 @@ export default defineSchema({
     updatedAt: v.number(),
   }).index("by_station", ["stationId"]),
 
+  // Alerts for KPI drops and other notifications
+  alerts: defineTable({
+    stationId: v.id("stations"),
+    driverId: v.optional(v.id("drivers")), // Optional: driver-specific alerts
+    type: v.union(
+      v.literal("dwc_drop"), // DWC dropped > 5%
+      v.literal("dwc_critical"), // DWC under 90%
+      v.literal("coaching_pending"), // Coaching > 14 days pending
+      v.literal("new_driver"), // New driver needs attention
+      v.literal("tier_downgrade") // Driver dropped tier
+    ),
+    severity: v.union(
+      v.literal("warning"),
+      v.literal("critical")
+    ),
+    title: v.string(),
+    message: v.string(),
+    // Context data
+    currentValue: v.optional(v.number()),
+    previousValue: v.optional(v.number()),
+    threshold: v.optional(v.number()),
+    year: v.number(),
+    week: v.number(),
+    // Status
+    isRead: v.boolean(),
+    isDismissed: v.boolean(),
+    dismissedBy: v.optional(v.string()),
+    dismissedAt: v.optional(v.number()),
+    createdAt: v.number(),
+  })
+    .index("by_station", ["stationId"])
+    .index("by_station_unread", ["stationId", "isRead"])
+    .index("by_station_week", ["stationId", "year", "week"])
+    .index("by_driver", ["driverId"]),
+
   // WhatsApp messages audit trail
   whatsappMessages: defineTable({
     stationId: v.id("stations"),

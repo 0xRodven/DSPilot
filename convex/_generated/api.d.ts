@@ -10,6 +10,7 @@
 
 import type * as admin from "../admin.js";
 import type * as agent from "../agent.js";
+import type * as alerts from "../alerts.js";
 import type * as chat from "../chat.js";
 import type * as coaching from "../coaching.js";
 import type * as crons from "../crons.js";
@@ -36,6 +37,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   admin: typeof admin;
   agent: typeof agent;
+  alerts: typeof alerts;
   chat: typeof chat;
   coaching: typeof coaching;
   crons: typeof crons;

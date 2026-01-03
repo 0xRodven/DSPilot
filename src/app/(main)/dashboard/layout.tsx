@@ -16,6 +16,7 @@ import { ThemeSwitcher } from "./_components/sidebar/theme-switcher";
 import { DashboardProviders } from "@/components/dashboard/dashboard-providers";
 import { HeaderOrgSwitcher } from "@/components/dashboard/header-org-switcher";
 import { PeriodPicker } from "@/components/dashboard/period-picker";
+import { AlertsDropdown } from "@/components/alerts/alerts-dropdown";
 
 export default async function Layout({ children }: Readonly<{ children: ReactNode }>) {
   const cookieStore = await cookies();
@@ -57,6 +58,7 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
 
               {/* Right section */}
               <div className="flex items-center gap-2">
+                <AlertsDropdown />
                 <LayoutControls />
                 <ThemeSwitcher />
                 <UserButton

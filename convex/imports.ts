@@ -1,5 +1,6 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { mutation, query, internalMutation } from "./_generated/server";
+import { internal } from "./_generated/api";
 import {
   requireWriteAccess,
   canAccessStation,
@@ -90,6 +91,12 @@ export const completeImport = mutation({
     warnings: v.optional(v.array(v.string())),
   },
   handler: async (ctx, args) => {
+    // Get the import to retrieve stationId, year, week
+    const imp = await ctx.db.get(args.importId);
+    if (!imp) {
+      throw new Error("Import not found");
+    }
+
     const hasWarnings = args.warnings && args.warnings.length > 0;
 
     await ctx.db.patch(args.importId, {
@@ -103,6 +110,13 @@ export const completeImport = mutation({
       tierDistribution: args.tierDistribution,
       warnings: args.warnings,
       completedAt: Date.now(),
+    });
+
+    // Generate alerts after successful import
+    await ctx.scheduler.runAfter(0, internal.alerts.generateAlertsInternal, {
+      stationId: imp.stationId,
+      year: imp.year,
+      week: imp.week,
     });
   },
 });
