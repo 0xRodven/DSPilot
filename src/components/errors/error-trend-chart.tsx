@@ -21,7 +21,7 @@ const lineConfigs = [
   { key: "photoDefect", label: "Photo Defect", color: "#eab308", defaultChecked: true },
   { key: "noPhoto", label: "No Photo", color: "#22c55e", defaultChecked: false },
   { key: "otpMiss", label: "OTP Miss", color: "#3b82f6", defaultChecked: false },
-  { key: "failedAttempts", label: "Failed Attempts", color: "#8b5cf6", defaultChecked: false },
+  { key: "failedAttempts", label: "MS - Tentatives échouées", color: "#8b5cf6", defaultChecked: false },
 ]
 
 export function ErrorTrendChart({ data }: ErrorTrendChartProps) {

@@ -32,7 +32,7 @@ const metricOptions = [
   { value: "unattended", label: "Unattended" },
   { value: "safe-place", label: "Safe Place" },
   { value: "iadc-other", label: "IADC Autre" },
-  { value: "failed-attempts", label: "Tentatives échouées" },
+  { value: "failed-attempts", label: "MS - Tentatives échouées" },
 ]
 
 const tierLabels = {

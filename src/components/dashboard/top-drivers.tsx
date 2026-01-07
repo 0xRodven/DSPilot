@@ -14,13 +14,14 @@ import { useDashboardStore } from "@/lib/store"
 import { useFilters } from "@/lib/filters"
 import { useRouter } from "next/navigation"
 
-type MetricType = "dwc" | "iadc" | "volume"
+type MetricType = "dwc" | "iadc" | "volume" | "photoDefects"
 type ViewType = "top" | "bottom"
 
 const metricLabels: Record<MetricType, string> = {
   dwc: "DWC %",
   iadc: "IADC %",
   volume: "Jours actifs",
+  photoDefects: "Défauts photo",
 }
 
 const rankEmojis = ["🥇", "🥈", "🥉", "4.", "5."]
@@ -33,8 +34,11 @@ export function TopDrivers() {
   const [metric, setMetric] = useState<MetricType>("dwc")
   const [view, setView] = useState<ViewType>("top")
 
-  // Get station from Convex
-  const station = useQuery(api.stations.getStationByCode, { code: selectedStation.code })
+  // Get station from Convex - skip if no code yet (prevents race condition on navigation)
+  const station = useQuery(
+    api.stations.getStationByCode,
+    selectedStation.code ? { code: selectedStation.code } : "skip"
+  )
 
   // Get drivers from Convex - choose query based on mode
   const driversWeekly = useQuery(
@@ -69,8 +73,12 @@ export function TopDrivers() {
               return driver.iadcPercent
             case "volume":
               return driver.daysActive
+            case "photoDefects":
+              return driver.photoDefects ?? 0
           }
         }
+        // For photoDefects, "top" means most errors (descending), "bottom" means least errors
+        // Default "top" view for photoDefects shows drivers with most errors (need attention)
         return view === "top" ? getValue(b) - getValue(a) : getValue(a) - getValue(b)
       })
       .slice(0, 5)
@@ -84,6 +92,8 @@ export function TopDrivers() {
         return `${driver.iadcPercent}%`
       case "volume":
         return `${driver.daysActive} jours`
+      case "photoDefects":
+        return `${driver.photoDefects ?? 0}`
     }
   }
 

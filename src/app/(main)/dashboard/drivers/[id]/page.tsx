@@ -178,8 +178,11 @@ export default function DriverDetailPage({ params }: DriverDetailPageProps) {
   const { week: globalWeek } = useFilters()
   const buildHref = useBuildFilteredHref()
 
-  // Get station from Convex
-  const station = useQuery(api.stations.getStationByCode, { code: selectedStation.code })
+  // Get station from Convex - skip if no code yet (prevents race condition on navigation)
+  const station = useQuery(
+    api.stations.getStationByCode,
+    selectedStation.code ? { code: selectedStation.code } : "skip"
+  )
 
   // Get driver detail with GLOBAL week filter (linked to header selector)
   const driverDetail = useQuery(api.drivers.getDriverWithFullHistory, {

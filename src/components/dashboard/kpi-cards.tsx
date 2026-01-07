@@ -4,8 +4,8 @@ import { Card, CardAction, CardDescription, CardFooter, CardHeader, CardTitle } 
 import { Badge } from "@/components/ui/badge"
 import { KPICardSkeleton } from "@/components/ui/skeletons"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { getTier, getTierBgColor } from "@/lib/utils/tier"
-import { TrendingUp, TrendingDown, Users, AlertTriangle, HelpCircle } from "lucide-react"
+import { getTier, getIadcTier, getTierBgColor } from "@/lib/utils/tier"
+import { TrendingUp, TrendingDown, Users, AlertTriangle, HelpCircle, Package, PackageX } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useQuery } from "convex/react"
 import { api } from "@convex/_generated/api"
@@ -25,8 +25,11 @@ export function KPICards() {
   const { selectedStation } = useDashboardStore()
   const { period, year, weekNum, date, normalizedTime } = useFilters()
 
-  // Get station from Convex
-  const station = useQuery(api.stations.getStationByCode, { code: selectedStation.code })
+  // Get station from Convex - skip if no code yet (prevents race condition on navigation)
+  const station = useQuery(
+    api.stations.getStationByCode,
+    selectedStation.code ? { code: selectedStation.code } : "skip"
+  )
 
   // Get KPIs from Convex - choose query based on mode
   const kpisWeekly = useQuery(
@@ -51,8 +54,8 @@ export function KPICards() {
   // Loading state
   if (!station || kpis === undefined) {
     return (
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {[...Array(4)].map((_, i) => (
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-6">
+        {[...Array(6)].map((_, i) => (
           <KPICardSkeleton key={i} />
         ))}
       </div>
@@ -82,11 +85,11 @@ export function KPICards() {
       : `vs S${"prevWeek" in kpis ? kpis.prevWeek : weekNum - 1}`
 
   const dwcTier = getTier(kpis.avgDwc)
-  const iadcTier = getTier(kpis.avgIadc)
+  const iadcTier = getIadcTier(kpis.avgIadc)
 
   return (
     <TooltipProvider delayDuration={300}>
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card *:data-[slot=card]:shadow-xs dark:*:data-[slot=card]:bg-card">
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-6 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card *:data-[slot=card]:shadow-xs dark:*:data-[slot=card]:bg-card">
         {/* DWC Card */}
         <Card className="@container/card">
           <CardHeader>
@@ -97,7 +100,7 @@ export function KPICards() {
                   <HelpCircle className="h-3 w-3 text-muted-foreground/60 cursor-help" />
                 </TooltipTrigger>
                 <TooltipContent side="top" className="max-w-xs">
-                  <p className="text-xs">Delivered With Customer - Taux de livraisons conformes avec interaction client (photo, signature, OTP). Objectif : ≥98.5% (Fantastic)</p>
+                  <p className="text-xs">Delivered With Customer - Taux de livraisons conformes avec interaction client (photo, signature, OTP). Objectif : ≥95% (Fantastic)</p>
                 </TooltipContent>
               </Tooltip>
             </CardDescription>
@@ -129,7 +132,7 @@ export function KPICards() {
                   <HelpCircle className="h-3 w-3 text-muted-foreground/60 cursor-help" />
                 </TooltipTrigger>
                 <TooltipContent side="top" className="max-w-xs">
-                  <p className="text-xs">In Absence Delivery Compliance - Taux de livraisons conformes en l'absence du client (boîte aux lettres, lieu sûr). Objectif : ≥95%</p>
+                  <p className="text-xs">In Absence Delivery Compliance - Taux de livraisons conformes en l'absence du client (boîte aux lettres, lieu sûr). Objectif : ≥70% (Fantastic)</p>
                 </TooltipContent>
               </Tooltip>
             </CardDescription>
@@ -148,6 +151,62 @@ export function KPICards() {
               </span>
             </div>
             <div className="text-muted-foreground">{comparisonLabel}</div>
+          </CardFooter>
+        </Card>
+
+        {/* Colis Livrés Card */}
+        <Card className="@container/card">
+          <CardHeader>
+            <CardDescription className="flex items-center gap-1">
+              <span>Colis livrés</span>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <HelpCircle className="h-3 w-3 text-muted-foreground/60 cursor-help" />
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-xs">
+                  <p className="text-xs">Nombre total de colis traités sur la période (conformes + non-conformes)</p>
+                </TooltipContent>
+              </Tooltip>
+            </CardDescription>
+            <CardTitle className="@[250px]/card:text-3xl text-2xl tabular-nums">
+              {"totalDeliveries" in kpis ? kpis.totalDeliveries.toLocaleString("fr-FR") : "—"}
+            </CardTitle>
+            <CardAction>
+              <Package className="h-5 w-5 text-muted-foreground" />
+            </CardAction>
+          </CardHeader>
+          <CardFooter className="flex-col items-start gap-1.5 text-sm">
+            <div className="flex gap-2 font-medium text-muted-foreground">
+              {period === "day" ? "ce jour" : period === "range" ? "sur la période" : "cette semaine"}
+            </div>
+          </CardFooter>
+        </Card>
+
+        {/* DNR Card */}
+        <Card className="@container/card">
+          <CardHeader>
+            <CardDescription className="flex items-center gap-1">
+              <span>DNR</span>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <HelpCircle className="h-3 w-3 text-muted-foreground/60 cursor-help" />
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-xs">
+                  <p className="text-xs">Delivery Non-conformités à Risque - Livraisons avec erreurs impactant le score DWC</p>
+                </TooltipContent>
+              </Tooltip>
+            </CardDescription>
+            <CardTitle className="@[250px]/card:text-3xl text-2xl tabular-nums">
+              {"dnrMisses" in kpis ? kpis.dnrMisses.toLocaleString("fr-FR") : "—"}
+            </CardTitle>
+            <CardAction>
+              <PackageX className="h-5 w-5 text-amber-400" />
+            </CardAction>
+          </CardHeader>
+          <CardFooter className="flex-col items-start gap-1.5 text-sm">
+            <div className="flex gap-2 font-medium text-muted-foreground">
+              {period === "day" ? "ce jour" : period === "range" ? "sur la période" : "cette semaine"}
+            </div>
           </CardFooter>
         </Card>
 
@@ -190,7 +249,7 @@ export function KPICards() {
                   <HelpCircle className="h-3 w-3 text-muted-foreground/60 cursor-help" />
                 </TooltipTrigger>
                 <TooltipContent side="top" className="max-w-xs">
-                  <p className="text-xs">Drivers avec un score DWC inférieur à 90% nécessitant un coaching ou une attention particulière</p>
+                  <p className="text-xs">Drivers avec un score DWC inférieur à 88% nécessitant un coaching ou une attention particulière</p>
                 </TooltipContent>
               </Tooltip>
             </CardDescription>

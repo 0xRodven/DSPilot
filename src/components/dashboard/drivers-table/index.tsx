@@ -17,8 +17,11 @@ export function DriversTable() {
   const { period, year, weekNum, date, displayLabel, normalizedTime } = useFilters()
   const buildHref = useBuildFilteredHref()
 
-  // Get station from Convex
-  const station = useQuery(api.stations.getStationByCode, { code: selectedStation.code })
+  // Get station from Convex - skip if no code yet (prevents race condition on navigation)
+  const station = useQuery(
+    api.stations.getStationByCode,
+    selectedStation.code ? { code: selectedStation.code } : "skip"
+  )
 
   // Get drivers from Convex - choose query based on mode
   const driversWeekly = useQuery(

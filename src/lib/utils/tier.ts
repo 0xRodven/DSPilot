@@ -2,10 +2,19 @@
 
 export type Tier = "fantastic" | "great" | "fair" | "poor"
 
+// DWC Tier Classification (Updated thresholds)
 export const getTier = (dwcPercent: number): Tier => {
-  if (dwcPercent >= 98.5) return "fantastic"
-  if (dwcPercent >= 96) return "great"
-  if (dwcPercent >= 90) return "fair"
+  if (dwcPercent >= 95) return "fantastic"
+  if (dwcPercent >= 90) return "great"
+  if (dwcPercent >= 88) return "fair"
+  return "poor"
+}
+
+// IADC Tier Classification (New)
+export const getIadcTier = (iadcPercent: number): Tier => {
+  if (iadcPercent >= 70) return "fantastic"
+  if (iadcPercent >= 60) return "great"
+  if (iadcPercent >= 50) return "fair"
   return "poor"
 }
 
@@ -48,10 +57,19 @@ export const getTierBorderColor = (tier: Tier) => {
   }
 }
 
+// DWC Thresholds
 export const tierThresholds = {
-  fantastic: 98.5,
-  great: 96,
-  fair: 90,
+  fantastic: 95,
+  great: 90,
+  fair: 88,
+  poor: 0,
+} as const
+
+// IADC Thresholds
+export const iadcThresholds = {
+  fantastic: 70,
+  great: 60,
+  fair: 50,
   poor: 0,
 } as const
 
@@ -63,8 +81,15 @@ export const tierLabels: Record<Tier, string> = {
 }
 
 export const tierDescriptions: Record<Tier, string> = {
-  fantastic: "DWC ≥ 98.5% — Performance excellente",
-  great: "DWC ≥ 96% — Très bonne performance",
-  fair: "DWC ≥ 90% — Performance acceptable",
-  poor: "DWC < 90% — Performance à améliorer",
+  fantastic: "DWC ≥ 95% — Performance excellente",
+  great: "DWC ≥ 90% — Très bonne performance",
+  fair: "DWC ≥ 88% — Performance acceptable",
+  poor: "DWC < 88% — Performance à améliorer",
+}
+
+export const iadcTierDescriptions: Record<Tier, string> = {
+  fantastic: "IADC ≥ 70% — Performance excellente",
+  great: "IADC ≥ 60% — Très bonne performance",
+  fair: "IADC ≥ 50% — Performance acceptable",
+  poor: "IADC < 50% — Performance à améliorer",
 }

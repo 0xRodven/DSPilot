@@ -244,7 +244,31 @@ function formatChange(value?: number) {
   return `${sign}${value.toFixed(1)}%`
 }
 
-export function WeeklyRecapDocument({ data }: { data: WeeklyRecapData }) {
+/**
+ * Blur a name for privacy (e.g., "Jean Dupont" -> "J*** D***")
+ */
+function blurName(name: string): string {
+  return name
+    .split(" ")
+    .map((part) => (part.length > 0 ? `${part[0]}***` : ""))
+    .join(" ")
+}
+
+interface WeeklyRecapDocumentProps {
+  data: WeeklyRecapData
+  /** If true, driver names will be blurred for privacy (RECAP LIVREURS version) */
+  blurDriverNames?: boolean
+}
+
+export function WeeklyRecapDocument({ data, blurDriverNames = false }: WeeklyRecapDocumentProps) {
+  // Apply name blurring if needed
+  const processedData = blurDriverNames
+    ? {
+        ...data,
+        topDrivers: data.topDrivers.map((d) => ({ ...d, name: blurName(d.name) })),
+        bottomDrivers: data.bottomDrivers.map((d) => ({ ...d, name: blurName(d.name) })),
+      }
+    : data
   return (
     <Document>
       <Page size="A4" style={styles.page}>
@@ -252,13 +276,14 @@ export function WeeklyRecapDocument({ data }: { data: WeeklyRecapData }) {
         <View style={styles.header}>
           <Text style={styles.logo}>DSPilot</Text>
           <Text style={styles.subtitle}>
-            Récapitulatif Hebdomadaire - {data.stationName} ({data.stationCode})
+            Récapitulatif Hebdomadaire - {processedData.stationName} ({processedData.stationCode})
+            {blurDriverNames ? " • Version Livreurs" : ""}
           </Text>
         </View>
 
         {/* Title */}
         <Text style={styles.title}>
-          Semaine {data.week} • {data.year}
+          Semaine {processedData.week} • {processedData.year}
         </Text>
 
         {/* KPIs Section */}
@@ -267,38 +292,38 @@ export function WeeklyRecapDocument({ data }: { data: WeeklyRecapData }) {
           <View style={styles.kpiRow}>
             <View style={styles.kpiCard}>
               <Text style={styles.kpiLabel}>Score DWC</Text>
-              <Text style={styles.kpiValue}>{formatPercent(data.kpis.avgDwc)}</Text>
-              {data.kpis.dwcChange !== undefined && (
-                <Text style={[styles.kpiChange, data.kpis.dwcChange >= 0 ? styles.positive : styles.negative]}>
-                  {formatChange(data.kpis.dwcChange)} vs sem. préc.
+              <Text style={styles.kpiValue}>{formatPercent(processedData.kpis.avgDwc)}</Text>
+              {processedData.kpis.dwcChange !== undefined && (
+                <Text style={[styles.kpiChange, processedData.kpis.dwcChange >= 0 ? styles.positive : styles.negative]}>
+                  {formatChange(processedData.kpis.dwcChange)} vs sem. préc.
                 </Text>
               )}
             </View>
             <View style={styles.kpiCard}>
               <Text style={styles.kpiLabel}>Score IADC</Text>
-              <Text style={styles.kpiValue}>{formatPercent(data.kpis.avgIadc)}</Text>
-              {data.kpis.iadcChange !== undefined && (
-                <Text style={[styles.kpiChange, data.kpis.iadcChange >= 0 ? styles.positive : styles.negative]}>
-                  {formatChange(data.kpis.iadcChange)} vs sem. préc.
+              <Text style={styles.kpiValue}>{formatPercent(processedData.kpis.avgIadc)}</Text>
+              {processedData.kpis.iadcChange !== undefined && (
+                <Text style={[styles.kpiChange, processedData.kpis.iadcChange >= 0 ? styles.positive : styles.negative]}>
+                  {formatChange(processedData.kpis.iadcChange)} vs sem. préc.
                 </Text>
               )}
             </View>
             <View style={styles.kpiCard}>
               <Text style={styles.kpiLabel}>Livreurs Actifs</Text>
-              <Text style={styles.kpiValue}>{data.kpis.activeDrivers}</Text>
+              <Text style={styles.kpiValue}>{processedData.kpis.activeDrivers}</Text>
               <Text style={[styles.kpiChange, { color: "#64748b" }]}>
-                sur {data.kpis.totalDrivers} total
+                sur {processedData.kpis.totalDrivers} total
               </Text>
             </View>
             <View style={styles.kpiCard}>
               <Text style={styles.kpiLabel}>Taux Fantastic</Text>
               <Text style={styles.kpiValue}>
-                {data.kpis.activeDrivers > 0
-                  ? Math.round((data.tierDistribution.fantastic / data.kpis.activeDrivers) * 100)
+                {processedData.kpis.activeDrivers > 0
+                  ? Math.round((processedData.tierDistribution.fantastic / processedData.kpis.activeDrivers) * 100)
                   : 0}%
               </Text>
               <Text style={[styles.kpiChange, { color: "#64748b" }]}>
-                {data.tierDistribution.fantastic} livreurs
+                {processedData.tierDistribution.fantastic} livreurs
               </Text>
             </View>
           </View>
@@ -310,27 +335,27 @@ export function WeeklyRecapDocument({ data }: { data: WeeklyRecapData }) {
           <View style={styles.distributionRow}>
             <View style={styles.distributionItem}>
               <Text style={[styles.distributionCount, { color: "#10b981" }]}>
-                {data.tierDistribution.fantastic}
+                {processedData.tierDistribution.fantastic}
               </Text>
-              <Text style={styles.distributionLabel}>Fantastic (≥98.5%)</Text>
+              <Text style={styles.distributionLabel}>Fantastic (≥95%)</Text>
             </View>
             <View style={styles.distributionItem}>
               <Text style={[styles.distributionCount, { color: "#3b82f6" }]}>
-                {data.tierDistribution.great}
+                {processedData.tierDistribution.great}
               </Text>
-              <Text style={styles.distributionLabel}>Great (≥96%)</Text>
+              <Text style={styles.distributionLabel}>Great (≥90%)</Text>
             </View>
             <View style={styles.distributionItem}>
               <Text style={[styles.distributionCount, { color: "#f59e0b" }]}>
-                {data.tierDistribution.fair}
+                {processedData.tierDistribution.fair}
               </Text>
-              <Text style={styles.distributionLabel}>Fair (≥90%)</Text>
+              <Text style={styles.distributionLabel}>Fair (≥88%)</Text>
             </View>
             <View style={styles.distributionItem}>
               <Text style={[styles.distributionCount, { color: "#ef4444" }]}>
-                {data.tierDistribution.poor}
+                {processedData.tierDistribution.poor}
               </Text>
-              <Text style={styles.distributionLabel}>Poor (&lt;90%)</Text>
+              <Text style={styles.distributionLabel}>Poor (&lt;88%)</Text>
             </View>
           </View>
         </View>
@@ -347,7 +372,7 @@ export function WeeklyRecapDocument({ data }: { data: WeeklyRecapData }) {
               <Text style={[styles.tableHeaderCell, styles.col5]}>Jours</Text>
               <Text style={[styles.tableHeaderCell, styles.col6]}>Tier</Text>
             </View>
-            {data.topDrivers.map((driver, index) => (
+            {processedData.topDrivers.map((driver, index) => (
               <View key={index} style={styles.tableRow}>
                 <Text style={[styles.tableCell, styles.col1]}>{driver.rank}</Text>
                 <Text style={[styles.tableCell, styles.col2]}>{driver.name}</Text>
@@ -369,7 +394,7 @@ export function WeeklyRecapDocument({ data }: { data: WeeklyRecapData }) {
         </View>
 
         {/* Bottom 5 (Need attention) */}
-        {data.bottomDrivers.length > 0 && (
+        {processedData.bottomDrivers.length > 0 && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Livreurs à Coacher</Text>
             <View style={styles.table}>
@@ -381,7 +406,7 @@ export function WeeklyRecapDocument({ data }: { data: WeeklyRecapData }) {
                 <Text style={[styles.tableHeaderCell, styles.col5]}>Jours</Text>
                 <Text style={[styles.tableHeaderCell, styles.col6]}>Tier</Text>
               </View>
-              {data.bottomDrivers.map((driver, index) => (
+              {processedData.bottomDrivers.map((driver, index) => (
                 <View key={index} style={styles.tableRow}>
                   <Text style={[styles.tableCell, styles.col1]}>{driver.rank}</Text>
                   <Text style={[styles.tableCell, styles.col2]}>{driver.name}</Text>
@@ -405,7 +430,7 @@ export function WeeklyRecapDocument({ data }: { data: WeeklyRecapData }) {
 
         {/* Footer */}
         <View style={styles.footer}>
-          <Text>Généré le {data.generatedAt}</Text>
+          <Text>Généré le {processedData.generatedAt}</Text>
           <Text>DSPilot - dspilot.fr</Text>
         </View>
       </Page>

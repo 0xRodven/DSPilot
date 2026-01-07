@@ -40,8 +40,11 @@ export function TierDistribution() {
   const { selectedStation } = useDashboardStore()
   const { period, year, weekNum, date, displayLabel, normalizedTime } = useFilters()
 
-  // Get station from Convex
-  const station = useQuery(api.stations.getStationByCode, { code: selectedStation.code })
+  // Get station from Convex - skip if no code yet (prevents race condition on navigation)
+  const station = useQuery(
+    api.stations.getStationByCode,
+    selectedStation.code ? { code: selectedStation.code } : "skip"
+  )
 
   // Get KPIs from Convex - choose query based on mode
   const kpisWeekly = useQuery(

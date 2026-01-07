@@ -20,8 +20,11 @@ export default function ErrorsPage() {
   const [activeTab, setActiveTab] = useState<ErrorCategory>("dwc")
   const [errorTypeFilter, setErrorTypeFilter] = useState("all")
 
-  // Get station from Convex
-  const station = useQuery(api.stations.getStationByCode, { code: selectedStation.code })
+  // Get station from Convex - skip if no code yet (prevents race condition on navigation)
+  const station = useQuery(
+    api.stations.getStationByCode,
+    selectedStation.code ? { code: selectedStation.code } : "skip"
+  )
 
   // Get error data from Convex
   const errorsData = useQuery(

@@ -17,8 +17,11 @@ export function TopErrors() {
   const { selectedStation } = useDashboardStore()
   const { year, weekNum, displayLabel } = useFilters()
 
-  // Get station from Convex
-  const station = useQuery(api.stations.getStationByCode, { code: selectedStation.code })
+  // Get station from Convex - skip if no code yet (prevents race condition on navigation)
+  const station = useQuery(
+    api.stations.getStationByCode,
+    selectedStation.code ? { code: selectedStation.code } : "skip"
+  )
 
   // Get error breakdown from Convex
   const errorBreakdown = useQuery(
@@ -93,7 +96,7 @@ export function TopErrors() {
     if (falseScans && falseScans.total > 0) {
       allErrors.push({
         id: "false-scans",
-        name: "Tentatives échouées",
+        name: "MS - Tentatives échouées",
         count: falseScans.total,
         trend: falseScans.trend ?? null,
       })

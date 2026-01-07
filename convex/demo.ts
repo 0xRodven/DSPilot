@@ -1,6 +1,7 @@
 import { v } from "convex/values"
 import { mutation, query, internalMutation } from "./_generated/server"
 import { format, subDays, getYear, getISOWeek } from "date-fns"
+import { getUserContext } from "./lib/permissions"
 
 // Demo station code - identifiable
 const DEMO_STATION_CODE = "DEMO1"
@@ -58,7 +59,10 @@ export const setupDemoData = mutation({
     const now = Date.now()
     const today = new Date()
 
-    // Check if demo station already exists
+    // Get the current organization ID from Clerk
+    const { orgId } = await getUserContext(ctx, false)
+
+    // Check if demo station already exists for this org
     let station = await ctx.db
       .query("stations")
       .withIndex("by_code", (q) => q.eq("code", DEMO_STATION_CODE))
@@ -67,17 +71,19 @@ export const setupDemoData = mutation({
     // If exists, clear all related data first
     if (station) {
       await clearDemoDataInternal(ctx, station._id)
-      // Update owner if needed
+      // Update owner and organizationId if needed
       await ctx.db.patch(station._id, {
         ownerId: userId,
+        organizationId: orgId ?? undefined,
       })
     } else {
-      // Create new demo station
+      // Create new demo station linked to the current org
       station = {
         _id: await ctx.db.insert("stations", {
           code: DEMO_STATION_CODE,
           name: DEMO_STATION_NAME,
           region: "Île-de-France",
+          organizationId: orgId ?? undefined,
           ownerId: userId,
           plan: "pro",
           createdAt: now,
@@ -85,6 +91,7 @@ export const setupDemoData = mutation({
         code: DEMO_STATION_CODE,
         name: DEMO_STATION_NAME,
         region: "Île-de-France",
+        organizationId: orgId ?? undefined,
         ownerId: userId,
         plan: "pro" as const,
         createdAt: now,

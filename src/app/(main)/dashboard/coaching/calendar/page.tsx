@@ -34,8 +34,11 @@ export default function CoachingCalendarPage() {
   const { selectedStation } = useDashboardStore()
   const [currentMonth, setCurrentMonth] = useState(new Date())
 
-  // Get station
-  const station = useQuery(api.stations.getStationByCode, { code: selectedStation.code })
+  // Get station - skip if no code yet (prevents race condition on navigation)
+  const station = useQuery(
+    api.stations.getStationByCode,
+    selectedStation.code ? { code: selectedStation.code } : "skip"
+  )
 
   // Calculate date range for fetching events (3 months: prev, current, next)
   const dateRange = useMemo(() => {

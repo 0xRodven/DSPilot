@@ -9,8 +9,9 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
-  LineChart,
+  ComposedChart,
   Line,
+  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -30,13 +31,18 @@ export function PerformanceChart() {
   const { selectedStation } = useDashboardStore()
   const [showDwc, setShowDwc] = useState(true)
   const [showIadc, setShowIadc] = useState(true)
+  const [showColis, setShowColis] = useState(false)
+  const [showDnr, setShowDnr] = useState(false)
   const [showRefLines, setShowRefLines] = useState({ 95: true, 90: true, 85: true })
   const [period, setPeriod] = useState<"4W" | "8W" | "12W">("8W")
 
   const weeksCount = period === "4W" ? 4 : period === "8W" ? 8 : 12
 
-  // Get station from Convex
-  const station = useQuery(api.stations.getStationByCode, { code: selectedStation.code })
+  // Get station from Convex - skip if no code yet (prevents race condition on navigation)
+  const station = useQuery(
+    api.stations.getStationByCode,
+    selectedStation.code ? { code: selectedStation.code } : "skip"
+  )
 
   const performanceData = useQuery(
     api.stats.getPerformanceEvolution,
@@ -122,7 +128,7 @@ export function PerformanceChart() {
         {/* Controls row */}
         <div className="mt-4 flex flex-wrap items-center gap-6">
           {/* Metric toggles */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 flex-wrap">
             <label className="flex cursor-pointer items-center gap-2">
               <Checkbox
                 checked={showDwc}
@@ -138,6 +144,23 @@ export function PerformanceChart() {
                 className="border-amber-400 data-[state=checked]:bg-amber-500"
               />
               <span className="text-sm font-medium text-amber-400">IADC</span>
+            </label>
+            <span className="text-muted-foreground">|</span>
+            <label className="flex cursor-pointer items-center gap-2">
+              <Checkbox
+                checked={showColis}
+                onCheckedChange={(checked) => setShowColis(checked === true)}
+                className="border-emerald-400 data-[state=checked]:bg-emerald-500"
+              />
+              <span className="text-sm font-medium text-emerald-400">Colis</span>
+            </label>
+            <label className="flex cursor-pointer items-center gap-2">
+              <Checkbox
+                checked={showDnr}
+                onCheckedChange={(checked) => setShowDnr(checked === true)}
+                className="border-red-400 data-[state=checked]:bg-red-500"
+              />
+              <span className="text-sm font-medium text-red-400">DNR</span>
             </label>
           </div>
 
@@ -165,16 +188,32 @@ export function PerformanceChart() {
       <CardContent>
         <div className="h-[350px] w-full">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={data} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
+            <ComposedChart data={data} margin={{ top: 20, right: 60, left: 0, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
               <XAxis dataKey="week" stroke="#666" fontSize={12} tickLine={false} />
+
+              {/* Left Y-axis for percentages */}
               <YAxis
+                yAxisId="left"
                 domain={[55, 100]}
                 stroke="#666"
                 fontSize={12}
                 tickLine={false}
                 tickFormatter={(value) => `${value}%`}
               />
+
+              {/* Right Y-axis for volumes (only shown when Colis or DNR is active) */}
+              {(showColis || showDnr) && (
+                <YAxis
+                  yAxisId="right"
+                  orientation="right"
+                  stroke="#666"
+                  fontSize={12}
+                  tickLine={false}
+                  tickFormatter={(value) => value.toLocaleString("fr-FR")}
+                />
+              )}
+
               <Tooltip
                 contentStyle={{
                   backgroundColor: "rgba(24, 24, 27, 0.95)",
@@ -182,7 +221,12 @@ export function PerformanceChart() {
                   borderRadius: "8px",
                   color: "#fff",
                 }}
-                formatter={(value: number) => [`${value}%`]}
+                formatter={(value: number, name: string) => {
+                  if (name === "Colis" || name === "DNR") {
+                    return [value.toLocaleString("fr-FR"), name]
+                  }
+                  return [`${value}%`, name]
+                }}
               />
 
               {/* Reference lines */}
@@ -191,6 +235,7 @@ export function PerformanceChart() {
                   showRefLines[line.value as keyof typeof showRefLines] && (
                     <ReferenceLine
                       key={line.value}
+                      yAxisId="left"
                       y={line.value}
                       stroke={line.color}
                       strokeDasharray="5 5"
@@ -199,9 +244,30 @@ export function PerformanceChart() {
                   ),
               )}
 
+              {/* Volume bars */}
+              {showColis && (
+                <Bar
+                  yAxisId="right"
+                  dataKey="totalDeliveries"
+                  fill="#34d399"
+                  fillOpacity={0.3}
+                  name="Colis"
+                />
+              )}
+              {showDnr && (
+                <Bar
+                  yAxisId="right"
+                  dataKey="dnrMisses"
+                  fill="#f87171"
+                  fillOpacity={0.3}
+                  name="DNR"
+                />
+              )}
+
               {/* Data lines */}
               {showDwc && (
                 <Line
+                  yAxisId="left"
                   type="monotone"
                   dataKey="dwc"
                   stroke="#60a5fa"
@@ -213,6 +279,7 @@ export function PerformanceChart() {
               )}
               {showIadc && (
                 <Line
+                  yAxisId="left"
                   type="monotone"
                   dataKey="iadc"
                   stroke="#fbbf24"
@@ -227,7 +294,7 @@ export function PerformanceChart() {
                 wrapperStyle={{ paddingTop: "20px" }}
                 formatter={(value) => <span className="text-sm text-foreground">{value}</span>}
               />
-            </LineChart>
+            </ComposedChart>
           </ResponsiveContainer>
         </div>
       </CardContent>

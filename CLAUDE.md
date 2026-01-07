@@ -1,5 +1,36 @@
 # CLAUDE.md - Règles du Projet DSPilot
 
+---
+
+# IMPORTANT - WORKFLOW OBLIGATOIRE
+
+## TU DOIS Utiliser les Slash Commands
+
+**AVANT de coder quoi que ce soit**, utilise la commande appropriée :
+
+| Type de tâche | Commande | Quand |
+|---------------|----------|-------|
+| Feature moyenne/complexe | `/apex` | **OBLIGATOIRE** - Planifie avant de coder |
+| Bug simple, tâche rapide | `/one-shot` | **OBLIGATOIRE** - Exécution directe |
+| Tests | `/test-smoke` | Avant de valider un changement |
+| Debug | `/debug` | Quand quelque chose ne marche pas |
+
+## JAMAIS Coder Directement
+
+Si tu te surprends à écrire du code sans avoir d'abord utilisé `/apex` ou `/one-shot` :
+1. **ARRÊTE-TOI immédiatement**
+2. Utilise la commande appropriée
+3. Puis continue avec le workflow structuré
+
+## Pourquoi C'est Important
+
+- `/apex` crée un plan, pose des questions, évite les erreurs
+- `/one-shot` exécute rapidement sans over-engineering
+- Le "context drift" fait oublier les instructions au fil du temps
+- Ces commandes garantissent la qualité et la cohérence
+
+---
+
 ## Contexte
 
 DSPilot est une plateforme SaaS de gestion des performances livreurs Amazon (DWC/IADC).
@@ -336,3 +367,98 @@ tests/
 - Pas de CI/CD automatisé (tests manuels via `claude --chrome`)
 - Chrome uniquement (pas Brave/Arc)
 - Consomme du contexte Claude
+
+---
+
+## Claude Code Automation System
+
+DSPilot est équipé d'un système d'automatisation complet basé sur le workflow de Boris Cherny et Ralph Wiggum.
+
+### Skills Disponibles
+
+| Skill | Description | Usage |
+|-------|-------------|-------|
+| `convex-enterprise` | Mutations avec org isolation, audit logging | Backend Convex |
+| `next-components` | React 19, Next.js 16, shadcn/ui patterns | Frontend UI |
+| `stripe-billing` | Paiements, subscriptions, webhooks | Billing |
+| `amazon-parser` | Parse HTML DWC/IADC reports | Import data |
+| `tier-calculator` | Classification DWC/IADC, couleurs tiers | Performance |
+| `coaching-workflow` | Pipeline coaching, escalation | Coaching |
+| `weekly-recap` | Recaps hebdo, PDF, WhatsApp | Reports |
+| `whatsapp-integration` | Twilio, opt-in, scheduling | Notifications |
+| `kpi-alerts` | Alertes DWC drop, tier downgrade | Monitoring |
+| `data-import` | Validation import, lifecycle | Data management |
+
+### Agents Personnalisés
+
+| Agent | Purpose | Model |
+|-------|---------|-------|
+| `feature-builder` | Nouvelles features (Boris workflow) | Opus 4.5 |
+| `bug-fixer` | Debug systématique | Opus 4.5 |
+| `test-runner` | Tests Chrome extension | Opus 4.5 |
+| `data-validator` | Validation schema/data | Opus 4.5 |
+| `ui-polisher` | Polish UI, Tailwind, a11y | Opus 4.5 |
+
+### Nouvelles Commandes
+
+| Commande | Description |
+|----------|-------------|
+| `/import-verify` | Valider un import Amazon |
+| `/coach [driver]` | Analyser et suggérer coaching |
+| `/weekly-report` | Générer rapport hebdo |
+| `/deploy` | Déploiement sécurisé |
+
+### Hooks de Vérification
+
+| Hook | Trigger | Action |
+|------|---------|--------|
+| `PostToolUse/format-and-lint.sh` | Après Edit/Write | Auto-format, ESLint fix |
+| `PreToolUse/block-dangerous.sh` | Avant toute action | Block convex/_generated, .env |
+| `Stop/verify-build.sh` | Avant completion | Type check, lint obligatoires |
+
+### Workflow Boris Cherny
+
+1. **Plan Mode** (Shift+Tab x2): Analyse read-only, pas de modifications
+2. **Auto-Accept Mode** (Shift+Tab x1): Implémentation sans prompts
+3. **Verification**: Build, lint, type check obligatoires
+
+### Ralph Wiggum (Boucles Autonomes)
+
+Templates disponibles dans `.claude/prompts/`:
+- `PROMPT-feature.md` - Implémentation feature
+- `PROMPT-bugfix.md` - Fix de bug
+- `PROMPT-import.md` - Import data
+- `PROMPT-coaching.md` - Actions coaching
+
+**Circuit Breakers**:
+- Max 50 iterations
+- Stop après 3 erreurs consécutives
+- Pause après 20 fichiers modifiés
+
+### Emergency Patterns
+
+```bash
+# Si build échoue
+npx tsc --noEmit    # Errors TypeScript
+npm run lint        # Errors ESLint
+
+# Si Convex erreurs
+npx convex dev      # Restart dev server
+npx convex codegen  # Regenerate types
+
+# Si tests échouent
+/test-smoke         # Quick health check
+/debug              # Mode debug
+```
+
+### Structure .claude/
+
+```
+.claude/
+├── skills/         # 10 skills (expertise métier)
+├── commands/       # 15 commandes slash
+├── agents/         # 5 agents personnalisés
+├── hooks/          # 3 hooks vérification
+├── prompts/        # 4 templates Ralph Wiggum
+└── tasks/          # Tâches structurées
+```

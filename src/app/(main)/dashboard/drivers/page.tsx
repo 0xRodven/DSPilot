@@ -21,8 +21,11 @@ export default function DriversPage() {
 
   const [selectedTier, setSelectedTier] = useState("all")
 
-  // Get station from Convex
-  const station = useQuery(api.stations.getStationByCode, { code: selectedStation.code })
+  // Get station from Convex - skip if no code yet (prevents race condition on navigation)
+  const station = useQuery(
+    api.stations.getStationByCode,
+    selectedStation.code ? { code: selectedStation.code } : "skip"
+  )
 
   // Get KPIs - choose query based on period mode
   const kpisWeekly = useQuery(

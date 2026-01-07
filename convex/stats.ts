@@ -478,6 +478,9 @@ export const getDashboardKPIs = query({
       alerts,
       tierDistribution: currentStats.tierDistribution,
       prevWeek,
+      // New fields for KPI cards
+      totalDeliveries: dwcTotal,
+      dnrMisses: currentStats.dwcMisses,
     };
   },
 });
@@ -551,11 +554,11 @@ export const getDashboardDrivers = query({
         const iadcTotal = stat.iadcCompliant + stat.iadcNonCompliant;
         const iadcPercent = iadcTotal > 0 ? Math.round((stat.iadcCompliant / iadcTotal) * 1000) / 10 : 0;
 
-        // Determine tier
+        // Determine tier (updated thresholds: 95/90/88)
         let tier: "fantastic" | "great" | "fair" | "poor";
-        if (dwcPercent >= 98.5) tier = "fantastic";
-        else if (dwcPercent >= 96) tier = "great";
-        else if (dwcPercent >= 90) tier = "fair";
+        if (dwcPercent >= 95) tier = "fantastic";
+        else if (dwcPercent >= 90) tier = "great";
+        else if (dwcPercent >= 88) tier = "fair";
         else tier = "poor";
 
         // Calculate trend from previous week
@@ -577,6 +580,7 @@ export const getDashboardDrivers = query({
           daysActive,
           tier,
           trend, // null if no previous week data
+          photoDefects: stat.dwcBreakdown?.photoDefect ?? 0,
         };
       })
     );
@@ -756,13 +760,13 @@ export const getErrorBreakdown = query({
       },
       {
         id: "false-scans" as const,
-        name: "False Scans / Tentatives échouées",
+        name: "MS - Tentatives échouées",
         total: failedAttempts,
         trend: faTrend,
         trendPercent: faTrendPercent,
         subcategories: [
           {
-            name: "Failed Attempts",
+            name: "MS - Failed Attempts",
             count: failedAttempts,
             percentage: 100,
             trend: faTrend,
@@ -973,6 +977,9 @@ export const getPerformanceEvolution = query({
         dwc: dwcPercent,
         iadc: iadcPercent,
         activeDrivers: stat.activeDrivers,
+        // New fields for Performance Evolution chart
+        totalDeliveries: dwcTotal,
+        dnrMisses: stat.dwcMisses,
       };
     });
   },
@@ -1156,6 +1163,9 @@ export const getDashboardKPIsDaily = query({
       alerts,
       tierDistribution: tiers,
       prevDate,
+      // New fields for KPI cards
+      totalDeliveries: dwcTotal,
+      dnrMisses: dwcMisses,
     };
   },
 });
@@ -1213,11 +1223,11 @@ export const getDashboardDriversDaily = query({
         const iadcTotal = stat.iadcCompliant + stat.iadcNonCompliant;
         const iadcPercent = iadcTotal > 0 ? Math.round((stat.iadcCompliant / iadcTotal) * 1000) / 10 : 0;
 
-        // Determine tier
+        // Determine tier (updated thresholds: 95/90/88)
         let tier: "fantastic" | "great" | "fair" | "poor";
-        if (dwcPercent >= 98.5) tier = "fantastic";
-        else if (dwcPercent >= 96) tier = "great";
-        else if (dwcPercent >= 90) tier = "fair";
+        if (dwcPercent >= 95) tier = "fantastic";
+        else if (dwcPercent >= 90) tier = "great";
+        else if (dwcPercent >= 88) tier = "fair";
         else tier = "poor";
 
         // Calculate trend from previous day
@@ -1241,6 +1251,7 @@ export const getDashboardDriversDaily = query({
           daysActive: 1, // Single day
           tier,
           trend,
+          photoDefects: stat.dwcBreakdown?.photoDefect ?? 0,
         };
       })
     );
@@ -1521,6 +1532,9 @@ export const getDashboardKPIsRange = query({
       alerts,
       tierDistribution,
       periodWeeks: weeklyStats.length,
+      // New fields for KPI cards
+      totalDeliveries: dwcTotal,
+      dnrMisses: totals.dwcMisses,
     };
   },
 });
@@ -1598,11 +1612,11 @@ export const getDashboardDriversRange = query({
             ? Math.round((totals.iadcCompliant / iadcTotal) * 1000) / 10
             : 0;
 
-        // Tier depuis % agrégé
+        // Tier depuis % agrégé (updated thresholds: 95/90/88)
         let tier: "fantastic" | "great" | "fair" | "poor";
-        if (dwcPercent >= 98.5) tier = "fantastic";
-        else if (dwcPercent >= 96) tier = "great";
-        else if (dwcPercent >= 90) tier = "fair";
+        if (dwcPercent >= 95) tier = "fantastic";
+        else if (dwcPercent >= 90) tier = "great";
+        else if (dwcPercent >= 88) tier = "fair";
         else tier = "poor";
 
         // Trend = dernier jour - premier jour
@@ -1622,6 +1636,12 @@ export const getDashboardDriversRange = query({
 
         const trend = Math.round((lastPercent - firstPercent) * 10) / 10;
 
+        // Sum photo defects from all stats
+        const photoDefects = stats.reduce(
+          (sum, s) => sum + (s.dwcBreakdown?.photoDefect ?? 0),
+          0
+        );
+
         return {
           id: driver._id,
           name: driver.name,
@@ -1632,6 +1652,7 @@ export const getDashboardDriversRange = query({
           daysActive: stats.length,
           tier,
           trend,
+          photoDefects,
         };
       })
     );

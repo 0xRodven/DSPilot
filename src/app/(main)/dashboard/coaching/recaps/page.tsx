@@ -19,8 +19,11 @@ export default function RecapsPage() {
   const { selectedStation } = useDashboardStore()
   const { year, weekNum } = useFilters()
 
-  // Get station from Convex
-  const station = useQuery(api.stations.getStationByCode, { code: selectedStation.code })
+  // Get station from Convex - skip if no code yet (prevents race condition on navigation)
+  const station = useQuery(
+    api.stations.getStationByCode,
+    selectedStation.code ? { code: selectedStation.code } : "skip"
+  )
 
   // Get weekly comparison data
   const comparisons = useQuery(

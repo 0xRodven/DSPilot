@@ -10,7 +10,8 @@ export const ERROR_DESCRIPTIONS: Record<string, string> = {
   "Photo Defect": "La photo de preuve de livraison n'est pas conforme : floue, mal cadrée, ou ne montre pas clairement le colis",
   "No Photo": "Aucune photo de preuve de livraison n'a été prise alors qu'elle était requise",
   "OTP Miss": "Le code de vérification (One-Time Password) n'a pas été correctement obtenu ou vérifié auprès du client",
-  "Failed Attempts": "Tentatives de livraison échouées - Le driver n'a pas pu effectuer la livraison",
+  "Failed Attempts": "MS - Tentatives échouées - Le driver n'a pas pu effectuer la livraison (problème système ou client absent)",
+  "MS - Failed Attempts": "MS - Tentatives échouées - Le driver n'a pas pu effectuer la livraison (problème système ou client absent)",
 
   // IADC (In Absence of Customer) errors
   "IADC": "In Absence of Customer - Erreurs lors des livraisons en l'absence du client (boîte aux lettres, voisin, lieu sûr)",
