@@ -1,0 +1,183 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx create-next-app@latest . --typescript --tailwind --eslint --app --src-dir --import-alias \"@/*\" --use-npm)",
+      "Bash(npx shadcn@latest init:*)",
+      "Bash(npx shadcn@latest add https://tweakcn.com/r/themes/cmj7jwvpp000c04le7wh648q3)",
+      "Bash(lsof:*)",
+      "Bash(xargs kill -9)",
+      "Bash(npm run dev:*)",
+      "Bash(npm install)",
+      "Bash(npm install:*)",
+      "Bash(npx convex dev)",
+      "Bash(npx shadcn@latest add \"https://v0.app/chat/b/b_mSjBPSPGPFW?token=eyJhbGciOiJkaXIiLCJlbmMiOiJBMjU2R0NNIn0..3FeGzf0IVct17oA9.3XpzHjpOEoZknlMLwr6Pf_hdEeFosX7Dhg66fD1ZdLpdRiVFiA0-UsoU1IA.xPNWFGJCf71uVOVUt3i1mw\")",
+      "Bash(yes:*)",
+      "Bash(npx convex:*)",
+      "Bash(cat:*)",
+      "Bash(find:*)",
+      "Bash(kill:*)",
+      "Bash(curl:*)",
+      "Bash(npx ui-thing@latest add:*)",
+      "Bash(npx shadcn@latest add:*)",
+      "Bash(rm:*)",
+      "Bash(npm run build:*)",
+      "Bash(node /tmp/test-parser.mjs:*)",
+      "Bash(grep:*)",
+      "mcp__supabase__execute_sql",
+      "WebSearch",
+      "WebFetch(domain:shadcnstudio.com)",
+      "mcp__ide__getDiagnostics",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(gh repo create:*)",
+      "Bash(brew install:*)",
+      "Bash(gh auth login:*)",
+      "Bash(ls:*)",
+      "Bash(git push)",
+      "Bash(gh repo view:*)",
+      "Bash(gh repo sync:*)",
+      "Bash(git push:*)",
+      "Bash(gh auth:*)",
+      "Bash(wc:*)",
+      "mcp__vercel__deploy_to_vercel",
+      "Bash(vercel deploy:*)",
+      "Bash(vercel env add:*)",
+      "Bash(vercel:*)",
+      "mcp__vercel__list_deployments",
+      "Bash(git config:*)",
+      "mcp__vercel__get_deployment",
+      "Bash(head:*)",
+      "Bash(python3:*)",
+      "Bash(unzip:*)",
+      "Bash(xargs sed:*)",
+      "Skill(apex)",
+      "Bash(during the previous render\" error. The client is now initialized\nsynchronously at module level instead of with useState/useEffect.\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(npx tsc:*)",
+      "Bash(npm run lint:*)",
+      "WebFetch(domain:docs.testsprite.com)",
+      "Bash(node --version:*)",
+      "Bash(nvm install:*)",
+      "Bash(nvm use:*)",
+      "Bash(claude mcp add TestSprite --env API_KEY=sk-user-kRoMVZXzGFiZXhtuVWBH2h4q8bpdxzrTllKEFZnTv_bpusrvI4vz4clA1wYjRhDCDwDsjFv2WJe_ARX6QKZHlFPz0w9TefDPt46p7he-wNiKqNWN4qM-ixyLXeotg5zJtTM -- npx @testsprite/testsprite-mcp@latest)",
+      "Bash(claude mcp list:*)",
+      "mcp__TestSprite__testsprite_bootstrap_tests",
+      "mcp__TestSprite__testsprite_generate_code_summary",
+      "Bash(mkdir:*)",
+      "mcp__TestSprite__testsprite_generate_standardized_prd",
+      "Bash(claude mcp remove:*)",
+      "Bash(claude mcp add TestSprite --env API_KEY=sk-user-lggwFAyeHcKrThCmUU7KC4kDDlZZi-50VtTDrcPhFIojJsS_Zzd3iINxub8OSilSotglEHTl7Wjrmgc8J62cA6U8mKDaR9RDf3ammCDZFK33Adh6avC4o5OulRY8Yfr9300 -- npx @testsprite/testsprite-mcp@latest)",
+      "mcp__TestSprite__testsprite_generate_frontend_test_plan",
+      "Bash(/usr/local/opt/node@22/bin/node --version)",
+      "Bash(claude mcp add TestSprite --env API_KEY=sk-user-lggwFAyeHcKrThCmUU7KC4kDDlZZi-50VtTDrcPhFIojJsS_Zzd3iINxub8OSilSotglEHTl7Wjrmgc8J62cA6U8mKDaR9RDf3ammCDZFK33Adh6avC4o5OulRY8Yfr9300 -- /usr/local/opt/node@22/bin/npx @testsprite/testsprite-mcp@latest)",
+      "mcp__TestSprite__testsprite_generate_code_and_execute",
+      "Bash(node:*)",
+      "mcp__TestSprite__testsprite_rerun_tests",
+      "Bash(npm init:*)",
+      "Bash(npx playwright install chromium)",
+      "Bash(npx playwright test:*)",
+      "Bash(npm run test:unit:*)",
+      "Bash(npx playwright:*)",
+      "Bash(sort:*)",
+      "WebFetch(domain:playwright.dev)",
+      "Bash(xargs:*)",
+      "Bash(pgrep:*)",
+      "Bash(pkill:*)",
+      "WebFetch(domain:claude.com)",
+      "WebFetch(domain:medium.com)",
+      "Bash(package.json )",
+      "Bash(package-lock.json )",
+      "Bash(src/lib/filters/ )",
+      "Bash(src/lib/types/ )",
+      "Bash(src/lib/utils/time-context.ts )",
+      "Bash(src/lib/store.ts )",
+      "Bash(src/app/layout.tsx )",
+      "Bash(src/components/dashboard/period-picker.tsx )",
+      "Bash(src/components/dashboard/kpi-cards.tsx )",
+      "Bash(src/components/dashboard/tier-distribution.tsx )",
+      "Bash(src/components/dashboard/top-drivers.tsx )",
+      "Bash(src/components/dashboard/top-errors.tsx )",
+      "Bash(src/components/dashboard/drivers-table.tsx )",
+      "Bash(src/app/dashboard/page.tsx )",
+      "Bash(src/app/dashboard/drivers/page.tsx )",
+      "Bash(src/app/dashboard/drivers/[id]/page.tsx )",
+      "Bash(src/app/dashboard/errors/page.tsx )",
+      "Bash(src/app/dashboard/coaching/page.tsx )",
+      "Bash(src/app/dashboard/coaching/recaps/page.tsx)",
+      "Bash(npx eslint:*)",
+      "mcp__context7__resolve-library-id",
+      "mcp__context7__get-library-docs",
+      "WebFetch(domain:next-shadcn-admin-dashboard.vercel.app)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:api.github.com)",
+      "Bash(git restore:*)",
+      "WebFetch(domain:developers.respond.io)",
+      "Bash(echo:*)",
+      "Bash(CONVEX_DEPLOYMENT=prod:zany-kiwi-681 npx convex deploy:*)",
+      "Bash(npx vercel list:*)",
+      "Bash(CONVEX_DEPLOYMENT=prod:zany-kiwi-681 npx convex run:*)",
+      "Bash(xxd:*)",
+      "WebFetch(domain:ui.convertfa.st)",
+      "Bash(file:*)",
+      "Bash(npx convertfast-ui@latest init)",
+      "Bash(npx convertfast-ui@latest page create:*)",
+      "Bash(npx convertfast-ui@latest page landing add navbar:*)",
+      "Bash(npx convertfast-ui@latest page landing add footer)",
+      "WebFetch(domain:www.launchui.dev)",
+      "WebFetch(domain:launch-ui.com)",
+      "WebFetch(domain:skillsmp.com)",
+      "WebFetch(domain:anandchowdhary.com)",
+      "WebFetch(domain:paddo.dev)",
+      "WebFetch(domain:looking4offswitch.github.io)",
+      "WebFetch(domain:leehanchung.github.io)",
+      "WebFetch(domain:apidog.com)",
+      "WebFetch(domain:blog.sivaramp.com)",
+      "WebFetch(domain:mikeyobrien.github.io)",
+      "WebFetch(domain:ghuntley.com)",
+      "WebFetch(domain:jpcaparas.medium.com)",
+      "Bash(chmod:*)",
+      "Bash(npx biome:*)",
+      "WebFetch(domain:alexop.dev)",
+      "Bash(git check-ignore:*)"
+    ]
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "supabase"
+  ],
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/UserPromptSubmit/remind-workflow.sh"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/PreToolUse/block-dangerous.sh"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/PostToolUse/format-and-lint.sh"
+          }
+        ]
+      }
+    ]
+  }
+}

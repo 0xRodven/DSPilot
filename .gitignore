@@ -19,7 +19,10 @@
 # misc
 .DS_Store
 *.pem
+
+# Shell scripts (except Claude hooks)
 *.sh
+!.claude/hooks/**/*.sh
 
 # debug
 npm-debug.log*
