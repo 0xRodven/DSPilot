@@ -26,10 +26,13 @@ export default function StatsPage() {
   const { organization } = useOrganization();
   const { selectedStation } = useDashboardStore();
 
+  // Check if station is properly selected (not empty string)
+  const hasValidStation = selectedStation?.id && selectedStation.id.length > 0;
+
   // Query for existing stats
   const statsData = useQuery(
     api.stationDeliveryStats.getDeliveryStatsByStation,
-    selectedStation?.id ? { stationId: selectedStation.id as Id<"stations"> } : "skip"
+    hasValidStation ? { stationId: selectedStation.id as Id<"stations"> } : "skip"
   );
 
   // Mutations
@@ -74,7 +77,7 @@ export default function StatsPage() {
   }, [selectedStation, deleteAll]);
 
   // Loading state
-  if (!selectedStation || statsData === undefined) {
+  if (!hasValidStation || statsData === undefined) {
     return (
       <div className="flex flex-col gap-6 p-6">
         <Skeleton className="h-10 w-64" />
