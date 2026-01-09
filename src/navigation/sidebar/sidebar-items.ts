@@ -1,5 +1,6 @@
 import {
   AlertTriangle,
+  BarChart3,
   Calendar,
   ClipboardList,
   GraduationCap,
@@ -36,63 +37,78 @@ export interface NavGroup {
   items: NavMainItem[];
 }
 
-export const sidebarItems: NavGroup[] = [
-  {
-    id: 1,
-    label: "Principal",
-    items: [
-      {
-        title: "Dashboard",
-        url: "/dashboard",
-        icon: LayoutDashboard,
-      },
-      {
-        title: "Drivers",
-        url: "/dashboard/drivers",
-        icon: Users,
-      },
-      {
-        title: "Erreurs",
-        url: "/dashboard/errors",
-        icon: AlertTriangle,
-      },
-      {
-        title: "Import",
-        url: "/dashboard/import",
-        icon: Upload,
-      },
-    ],
-  },
-  {
-    id: 2,
-    label: "Coaching",
-    items: [
-      {
-        title: "Planification",
-        url: "/dashboard/coaching",
-        icon: ClipboardList,
-      },
-      {
-        title: "Calendrier",
-        url: "/dashboard/coaching/calendar",
-        icon: Calendar,
-      },
-      {
-        title: "Recapitulatifs",
-        url: "/dashboard/coaching/recaps",
-        icon: MessageSquare,
-      },
-    ],
-  },
-  {
-    id: 3,
-    label: "Configuration",
-    items: [
-      {
-        title: "Parametres",
-        url: "/dashboard/settings",
-        icon: Settings,
-      },
-    ],
-  },
-];
+/**
+ * Generate sidebar items with dynamic organization name for Stats page
+ */
+export function getSidebarItems(orgName?: string): NavGroup[] {
+  const statsTitle = orgName ? `${orgName} Stats` : "Stats";
+
+  return [
+    {
+      id: 1,
+      label: "Principal",
+      items: [
+        {
+          title: "Dashboard",
+          url: "/dashboard",
+          icon: LayoutDashboard,
+        },
+        {
+          title: statsTitle,
+          url: "/dashboard/stats",
+          icon: BarChart3,
+        },
+        {
+          title: "Drivers",
+          url: "/dashboard/drivers",
+          icon: Users,
+        },
+        {
+          title: "Erreurs",
+          url: "/dashboard/errors",
+          icon: AlertTriangle,
+        },
+        {
+          title: "Import",
+          url: "/dashboard/import",
+          icon: Upload,
+        },
+      ],
+    },
+    {
+      id: 2,
+      label: "Coaching",
+      items: [
+        {
+          title: "Planification",
+          url: "/dashboard/coaching",
+          icon: ClipboardList,
+        },
+        {
+          title: "Calendrier",
+          url: "/dashboard/coaching/calendar",
+          icon: Calendar,
+        },
+        {
+          title: "Recapitulatifs",
+          url: "/dashboard/coaching/recaps",
+          icon: MessageSquare,
+        },
+      ],
+    },
+    {
+      id: 3,
+      label: "Configuration",
+      items: [
+        {
+          title: "Parametres",
+          url: "/dashboard/settings",
+          icon: Settings,
+        },
+      ],
+    },
+  ];
+}
+
+// Backward compatibility export
+export const sidebarItems = getSidebarItems();

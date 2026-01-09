@@ -164,6 +164,21 @@ export default defineSchema({
     .index("by_station", ["stationId"])
     .index("by_station_week", ["stationId", "year", "week"]),
 
+  // Station delivery overview stats (from CSV import)
+  stationDeliveryStats: defineTable({
+    stationId: v.id("stations"),
+    metricName: v.string(), // "Colis livrés", "DNR", etc.
+    year: v.number(),
+    week: v.number(),
+    value: v.string(), // "24 436" (formatted)
+    numericValue: v.optional(v.number()), // 24436 (parsed)
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_station", ["stationId"])
+    .index("by_station_week", ["stationId", "year", "week"])
+    .index("by_station_metric_week", ["stationId", "metricName", "year", "week"]),
+
   // Coaching actions for drivers
   coachingActions: defineTable({
     driverId: v.id("drivers"),
