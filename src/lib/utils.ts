@@ -40,3 +40,12 @@ export function formatCurrency(
 
   return new Intl.NumberFormat(locale, formatOptions).format(amount);
 }
+
+/**
+ * Validate Convex ID format (base32 encoded, ~27 chars)
+ * Convex IDs are lowercase alphanumeric strings, typically 20-30 chars
+ */
+export function isValidConvexId(id: string | undefined | null): boolean {
+  if (!id || typeof id !== "string") return false;
+  return id.length >= 20 && /^[a-z0-9]+$/.test(id);
+}

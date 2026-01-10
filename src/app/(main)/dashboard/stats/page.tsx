@@ -8,6 +8,7 @@ import { useDashboardStore } from "@/lib/store";
 import { BarChart3, Database, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import type { Id } from "@convex/_generated/dataModel";
+import { isValidConvexId } from "@/lib/utils";
 
 import { StatsDropzone } from "@/components/stats/stats-dropzone";
 import { StatsTable } from "@/components/stats/stats-table";
@@ -26,13 +27,13 @@ export default function StatsPage() {
   const { organization } = useOrganization();
   const { selectedStation } = useDashboardStore();
 
-  // Check if station is properly selected (not empty string)
-  const hasValidStation = selectedStation?.id && selectedStation.id.length > 0;
+  // Validate station ID using proper Convex ID format check
+  const hasValidStation = isValidConvexId(selectedStation?.id);
 
-  // Query for existing stats
+  // Query for existing stats - only when we have a valid station
   const statsData = useQuery(
     api.stationDeliveryStats.getDeliveryStatsByStation,
-    hasValidStation ? { stationId: selectedStation.id as Id<"stations"> } : "skip"
+    hasValidStation ? { stationId: selectedStation!.id as Id<"stations"> } : "skip"
   );
 
   // Mutations
