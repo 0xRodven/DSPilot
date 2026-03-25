@@ -2,6 +2,7 @@ import { v } from "convex/values"
 import { action, internalAction, internalQuery } from "./_generated/server"
 import { internal } from "./_generated/api"
 import type { Id } from "./_generated/dataModel"
+import { getTier } from "./lib/tier"
 import { rag } from "./rag"
 
 /**
@@ -10,16 +11,6 @@ import { rag } from "./rag"
  * Converts structured database records into semantic text for RAG search.
  * Namespace isolation: Each admin (ownerId) has their own namespace.
  */
-
-// Tier classification (matching src/lib/utils/tier.ts)
-type Tier = "fantastic" | "great" | "fair" | "poor"
-
-function getTier(dwcPercent: number): Tier {
-  if (dwcPercent >= 98.5) return "fantastic"
-  if (dwcPercent >= 96) return "great"
-  if (dwcPercent >= 90) return "fair"
-  return "poor"
-}
 
 function calcDwcPercent(compliant: number, misses: number, failed: number): number {
   const total = compliant + misses + failed

@@ -6,6 +6,7 @@ import {
   canAccessStation,
   checkStationAccess,
 } from "./lib/permissions";
+import { getTier } from "./lib/tier";
 import type { Id } from "./_generated/dataModel";
 
 const tierDistributionValidator = v.object({
@@ -396,12 +397,9 @@ export const getImportData = query({
           ? Math.round((stat.iadcCompliant / iadcTotal) * 1000) / 10
           : 0;
 
-        // Determine tier
-        let tier: string;
-        if (dwcPercent >= 98.5) tier = "Fantastic";
-        else if (dwcPercent >= 96) tier = "Great";
-        else if (dwcPercent >= 90) tier = "Fair";
-        else tier = "Poor";
+        // Determine tier from the canonical policy
+        const tierKey = getTier(dwcPercent);
+        const tier = tierKey.charAt(0).toUpperCase() + tierKey.slice(1);
 
         return {
           name: driver.name,
@@ -425,4 +423,3 @@ export const getImportData = query({
     };
   },
 });
-

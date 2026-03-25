@@ -86,10 +86,10 @@ export function DriverPerformanceChart({ driver }: DriverPerformanceChartProps) 
                     label={{ value: "90% Great", fill: "#3b82f6", fontSize: 10, position: "right" }}
                   />
                   <ReferenceLine
-                    y={85}
+                    y={88}
                     stroke="#f59e0b"
                     strokeDasharray="5 5"
-                    label={{ value: "85% Fair", fill: "#f59e0b", fontSize: 10, position: "right" }}
+                    label={{ value: "88% Fair", fill: "#f59e0b", fontSize: 10, position: "right" }}
                   />
                 </>
               )}

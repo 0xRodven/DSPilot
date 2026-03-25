@@ -2,6 +2,7 @@ import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
 import { getWeeksInRange, getWeekDateRange } from "./lib/timeQuery";
+import { getTier } from "./lib/tier";
 import {
   requireWriteAccess,
   canAccessStation,
@@ -228,14 +229,11 @@ export const updateStationWeeklyStats = mutation({
         iadcBreakdown.other += stat.iadcBreakdown.other;
       }
 
-      // Calculer le tier du driver
+      // Calculer le tier du driver depuis la politique canonique
       const total = stat.dwcCompliant + stat.dwcMisses + stat.failedAttempts;
       if (total > 0) {
         const dwcPercent = (stat.dwcCompliant / total) * 100;
-        if (dwcPercent >= 98.5) tiers.fantastic++;
-        else if (dwcPercent >= 96) tiers.great++;
-        else if (dwcPercent >= 90) tiers.fair++;
-        else tiers.poor++;
+        tiers[getTier(dwcPercent)]++;
       }
     }
 
@@ -480,7 +478,8 @@ export const getDashboardKPIs = query({
       prevWeek,
       // New fields for KPI cards
       totalDeliveries: dwcTotal,
-      dnrMisses: currentStats.dwcMisses,
+      // "Delivery Misses - DNR Risk" from the DWC/IADC export, not confirmed DNR
+      deliveryMissesRisk: currentStats.dwcMisses,
     };
   },
 });
@@ -554,12 +553,7 @@ export const getDashboardDrivers = query({
         const iadcTotal = stat.iadcCompliant + stat.iadcNonCompliant;
         const iadcPercent = iadcTotal > 0 ? Math.round((stat.iadcCompliant / iadcTotal) * 1000) / 10 : 0;
 
-        // Determine tier (updated thresholds: 95/90/88)
-        let tier: "fantastic" | "great" | "fair" | "poor";
-        if (dwcPercent >= 95) tier = "fantastic";
-        else if (dwcPercent >= 90) tier = "great";
-        else if (dwcPercent >= 88) tier = "fair";
-        else tier = "poor";
+        const tier = getTier(dwcPercent);
 
         // Calculate trend from previous week
         let trend: number | null = null;
@@ -892,11 +886,7 @@ export const getTopDriversErrors = query({
           ? Math.round((stat.dwcCompliant / dwcTotal) * 1000) / 10
           : 0;
 
-        let tier: "fantastic" | "great" | "fair" | "poor";
-        if (dwcPercent >= 98.5) tier = "fantastic";
-        else if (dwcPercent >= 96) tier = "great";
-        else if (dwcPercent >= 90) tier = "fair";
-        else tier = "poor";
+        const tier = getTier(dwcPercent);
 
         return {
           id: driver._id,
@@ -979,7 +969,8 @@ export const getPerformanceEvolution = query({
         activeDrivers: stat.activeDrivers,
         // New fields for Performance Evolution chart
         totalDeliveries: dwcTotal,
-        dnrMisses: stat.dwcMisses,
+        // "Delivery Misses - DNR Risk" from the DWC/IADC export, not confirmed DNR
+        deliveryMissesRisk: stat.dwcMisses,
       };
     });
   },
@@ -1096,14 +1087,11 @@ export const getDashboardKPIsDaily = query({
       iadcCompliant += stat.iadcCompliant;
       iadcNonCompliant += stat.iadcNonCompliant;
 
-      // Calculate tier for this driver
+      // Calculate tier for this driver from the canonical policy
       const total = stat.dwcCompliant + stat.dwcMisses + stat.failedAttempts;
       if (total > 0) {
         const dwcPercent = (stat.dwcCompliant / total) * 100;
-        if (dwcPercent >= 98.5) tiers.fantastic++;
-        else if (dwcPercent >= 96) tiers.great++;
-        else if (dwcPercent >= 90) tiers.fair++;
-        else tiers.poor++;
+        tiers[getTier(dwcPercent)]++;
       }
     }
 
@@ -1165,7 +1153,8 @@ export const getDashboardKPIsDaily = query({
       prevDate,
       // New fields for KPI cards
       totalDeliveries: dwcTotal,
-      dnrMisses: dwcMisses,
+      // "Delivery Misses - DNR Risk" from the DWC/IADC export, not confirmed DNR
+      deliveryMissesRisk: dwcMisses,
     };
   },
 });
@@ -1223,12 +1212,7 @@ export const getDashboardDriversDaily = query({
         const iadcTotal = stat.iadcCompliant + stat.iadcNonCompliant;
         const iadcPercent = iadcTotal > 0 ? Math.round((stat.iadcCompliant / iadcTotal) * 1000) / 10 : 0;
 
-        // Determine tier (updated thresholds: 95/90/88)
-        let tier: "fantastic" | "great" | "fair" | "poor";
-        if (dwcPercent >= 95) tier = "fantastic";
-        else if (dwcPercent >= 90) tier = "great";
-        else if (dwcPercent >= 88) tier = "fair";
-        else tier = "poor";
+        const tier = getTier(dwcPercent);
 
         // Calculate trend from previous day
         let trend = 0;
@@ -1343,7 +1327,7 @@ export const getWeeklyComparison = query({
         let status: "ok" | "watch" | "alert" = "ok";
         if (dwcPercent < 90 || dwcDiff < -5) {
           status = "alert";
-        } else if (dwcPercent < 96 || dwcDiff < -2) {
+        } else if (dwcPercent < 95 || dwcDiff < -2) {
           status = "watch";
         }
 
@@ -1514,11 +1498,8 @@ export const getDashboardKPIsRange = query({
         // Compter les alertes
         if (driverDwc < 90) alerts++;
 
-        // Calculer le tier du driver unique
-        if (driverDwc >= 98.5) tierDistribution.fantastic++;
-        else if (driverDwc >= 96) tierDistribution.great++;
-        else if (driverDwc >= 90) tierDistribution.fair++;
-        else tierDistribution.poor++;
+        // Calculer le tier du driver unique depuis la politique canonique
+        tierDistribution[getTier(driverDwc)]++;
       }
     }
 
@@ -1534,7 +1515,8 @@ export const getDashboardKPIsRange = query({
       periodWeeks: weeklyStats.length,
       // New fields for KPI cards
       totalDeliveries: dwcTotal,
-      dnrMisses: totals.dwcMisses,
+      // "Delivery Misses - DNR Risk" from the DWC/IADC export, not confirmed DNR
+      deliveryMissesRisk: totals.dwcMisses,
     };
   },
 });
@@ -1612,12 +1594,7 @@ export const getDashboardDriversRange = query({
             ? Math.round((totals.iadcCompliant / iadcTotal) * 1000) / 10
             : 0;
 
-        // Tier depuis % agrégé (updated thresholds: 95/90/88)
-        let tier: "fantastic" | "great" | "fair" | "poor";
-        if (dwcPercent >= 95) tier = "fantastic";
-        else if (dwcPercent >= 90) tier = "great";
-        else if (dwcPercent >= 88) tier = "fair";
-        else tier = "poor";
+        const tier = getTier(dwcPercent);
 
         // Trend = dernier jour - premier jour
         const sorted = [...stats].sort((a, b) => a.date.localeCompare(b.date));

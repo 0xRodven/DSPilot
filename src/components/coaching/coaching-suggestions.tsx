@@ -71,7 +71,7 @@ function SuggestionCard({
         {suggestion.weeksUnderThreshold && (
           <p className="flex items-center gap-1">
             <TrendingDown className="h-3 w-3" />
-            {suggestion.weeksUnderThreshold} semaines {"<"} 85%
+            {suggestion.weeksUnderThreshold} semaines {"<"} 88%
           </p>
         )}
         {suggestion.trendPercent && (

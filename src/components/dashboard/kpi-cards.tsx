@@ -182,22 +182,25 @@ export function KPICards() {
           </CardFooter>
         </Card>
 
-        {/* DNR Card */}
+        {/* DNR Risk Card */}
         <Card className="@container/card">
           <CardHeader>
             <CardDescription className="flex items-center gap-1">
-              <span>DNR</span>
+              <span>Risque DNR</span>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <HelpCircle className="h-3 w-3 text-muted-foreground/60 cursor-help" />
                 </TooltipTrigger>
                 <TooltipContent side="top" className="max-w-xs">
-                  <p className="text-xs">Delivery Non-conformités à Risque - Livraisons avec erreurs impactant le score DWC</p>
+                  <p className="text-xs">
+                    Volume &quot;Delivery Misses - DNR Risk&quot; issu du report hebdomadaire DWC/IADC.
+                    Ce n&apos;est pas le DNR confirme des rapports Associate Daily ou DNR Investigations.
+                  </p>
                 </TooltipContent>
               </Tooltip>
             </CardDescription>
             <CardTitle className="@[250px]/card:text-3xl text-2xl tabular-nums">
-              {"dnrMisses" in kpis ? kpis.dnrMisses.toLocaleString("fr-FR") : "—"}
+              {"deliveryMissesRisk" in kpis ? kpis.deliveryMissesRisk.toLocaleString("fr-FR") : "—"}
             </CardTitle>
             <CardAction>
               <PackageX className="h-5 w-5 text-amber-400" />
@@ -249,7 +252,9 @@ export function KPICards() {
                   <HelpCircle className="h-3 w-3 text-muted-foreground/60 cursor-help" />
                 </TooltipTrigger>
                 <TooltipContent side="top" className="max-w-xs">
-                  <p className="text-xs">Drivers avec un score DWC inférieur à 88% nécessitant un coaching ou une attention particulière</p>
+                  <p className="text-xs">
+                    Drivers avec un score DWC inférieur à 90%, ou en zone de sous-performance a surveiller.
+                  </p>
                 </TooltipContent>
               </Tooltip>
             </CardDescription>

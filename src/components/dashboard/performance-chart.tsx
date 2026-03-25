@@ -24,7 +24,7 @@ import {
 const referenceLines = [
   { value: 95, label: "95% Fantastic", color: "#34d399" },
   { value: 90, label: "90% Great", color: "#60a5fa" },
-  { value: 85, label: "85% Fair", color: "#fbbf24" },
+  { value: 88, label: "88% Fair", color: "#fbbf24" },
 ]
 
 export function PerformanceChart() {
@@ -33,7 +33,7 @@ export function PerformanceChart() {
   const [showIadc, setShowIadc] = useState(true)
   const [showColis, setShowColis] = useState(false)
   const [showDnr, setShowDnr] = useState(false)
-  const [showRefLines, setShowRefLines] = useState({ 95: true, 90: true, 85: true })
+  const [showRefLines, setShowRefLines] = useState({ 95: true, 90: true, 88: true })
   const [period, setPeriod] = useState<"4W" | "8W" | "12W">("8W")
 
   const weeksCount = period === "4W" ? 4 : period === "8W" ? 8 : 12
@@ -160,7 +160,7 @@ export function PerformanceChart() {
                 onCheckedChange={(checked) => setShowDnr(checked === true)}
                 className="border-red-400 data-[state=checked]:bg-red-500"
               />
-              <span className="text-sm font-medium text-red-400">DNR</span>
+              <span className="text-sm font-medium text-red-400">Risque DNR</span>
             </label>
           </div>
 
@@ -202,7 +202,7 @@ export function PerformanceChart() {
                 tickFormatter={(value) => `${value}%`}
               />
 
-              {/* Right Y-axis for volumes (only shown when Colis or DNR is active) */}
+              {/* Right Y-axis for volumes (only shown when Colis or Risque DNR is active) */}
               {(showColis || showDnr) && (
                 <YAxis
                   yAxisId="right"
@@ -222,7 +222,7 @@ export function PerformanceChart() {
                   color: "#fff",
                 }}
                 formatter={(value: number, name: string) => {
-                  if (name === "Colis" || name === "DNR") {
+                  if (name === "Colis" || name === "Risque DNR") {
                     return [value.toLocaleString("fr-FR"), name]
                   }
                   return [`${value}%`, name]
@@ -257,10 +257,10 @@ export function PerformanceChart() {
               {showDnr && (
                 <Bar
                   yAxisId="right"
-                  dataKey="dnrMisses"
+                  dataKey="deliveryMissesRisk"
                   fill="#f87171"
                   fillOpacity={0.3}
-                  name="DNR"
+                  name="Risque DNR"
                 />
               )}
 

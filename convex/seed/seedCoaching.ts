@@ -38,7 +38,7 @@ export const seedCoachingData = mutation({
     const week = 7 * day;
     const createdBy = args.createdBy || "seed-script";
 
-    // 1. Get drivers with DWC < 96% (poor/fair performers)
+    // 1. Get drivers with DWC < 95% (poor/fair performers)
     const allStats = await ctx.db
       .query("driverWeeklyStats")
       .withIndex("by_station", (q) => q.eq("stationId", args.stationId))
@@ -53,12 +53,12 @@ export const seedCoachingData = mutation({
       }
     }
 
-    // Filter to drivers with DWC < 96%
+    // Filter to drivers with DWC < 95%
     const targetDrivers: { driverId: Id<"drivers">; dwc: number }[] = [];
     for (const [driverId, stat] of driverStatsMap) {
       const total = stat.dwcCompliant + stat.dwcMisses + stat.failedAttempts;
       const dwc = total > 0 ? Math.round((stat.dwcCompliant / total) * 1000) / 10 : 0;
-      if (dwc < 96) {
+      if (dwc < 95) {
         targetDrivers.push({ driverId: driverId as Id<"drivers">, dwc });
       }
     }
@@ -70,7 +70,7 @@ export const seedCoachingData = mutation({
     if (selectedDrivers.length === 0) {
       return {
         success: false,
-        message: "Aucun driver avec DWC < 96% trouvé. Importez d'abord des données.",
+        message: "Aucun driver avec DWC < 95% trouvé. Importez d'abord des données.",
         created: 0,
       };
     }

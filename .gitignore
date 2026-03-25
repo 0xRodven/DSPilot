@@ -19,10 +19,15 @@
 # misc
 .DS_Store
 *.pem
+*.pyc
+.artifacts/
+scraper/__pycache__/
+scraper/data/
 
 # Shell scripts (except Claude hooks)
 *.sh
 !.claude/hooks/**/*.sh
+!scripts/amazon-core-sync.sh
 
 # debug
 npm-debug.log*

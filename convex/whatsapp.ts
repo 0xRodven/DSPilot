@@ -2,6 +2,7 @@ import { v } from "convex/values";
 import { mutation, query, internalMutation, internalQuery, action, internalAction } from "./_generated/server";
 import { internal } from "./_generated/api";
 import type { Id, Doc } from "./_generated/dataModel";
+import { getTier } from "./lib/tier";
 
 // Regex pour validation E.164
 const E164_REGEX = /^\+[1-9]\d{1,14}$/;
@@ -632,11 +633,8 @@ export const getDriverStatsForRecap = internalQuery({
     const iadcTotal = weeklyStats.iadcCompliant + weeklyStats.iadcNonCompliant;
     const iadcPercent = iadcTotal > 0 ? (weeklyStats.iadcCompliant / iadcTotal) * 100 : 0;
 
-    // Determine tier
-    let tier: "fantastic" | "great" | "fair" | "poor" = "poor";
-    if (dwcPercent >= 98.5) tier = "fantastic";
-    else if (dwcPercent >= 96) tier = "great";
-    else if (dwcPercent >= 90) tier = "fair";
+    // Determine tier from the canonical policy
+    const tier = getTier(dwcPercent);
 
     // Get previous week for trend
     const prevWeek = args.week === 1 ? 52 : args.week - 1;

@@ -25,15 +25,14 @@ export function generateWhatsAppRecap(driver: DriverWeeklyComparison, week: numb
   lines.push("")
 
   // Deliveries
-  const deliveriesEmoji = driver.diff.deliveries >= 0 ? "" : ""
   lines.push(`*${driver.current.deliveries} colis* livres (${formatDiff(driver.diff.deliveries)})`)
   lines.push("")
 
   // DWC
   let dwcEmoji = ""
-  if (driver.current.dwc >= 98.5) {
+  if (driver.current.dwc >= 95) {
     dwcEmoji = ""
-  } else if (driver.current.dwc >= 96) {
+  } else if (driver.current.dwc >= 90) {
     dwcEmoji = ""
   } else if (driver.diff.dwc < -2) {
     dwcEmoji = ""
@@ -58,7 +57,7 @@ export function generateWhatsAppRecap(driver: DriverWeeklyComparison, week: numb
 
 function getPersonalizedMessage(driver: DriverWeeklyComparison): string {
   // Excellent week
-  if (driver.current.dwc >= 98.5 && driver.current.iadc >= 99) {
+  if (driver.current.dwc >= 95 && driver.current.iadc >= 99) {
     return " Excellente semaine, continue comme ca !"
   }
 
@@ -68,7 +67,7 @@ function getPersonalizedMessage(driver: DriverWeeklyComparison): string {
   }
 
   // Good week
-  if (driver.current.dwc >= 96) {
+  if (driver.current.dwc >= 90) {
     return " Bonne semaine, reste focus !"
   }
 

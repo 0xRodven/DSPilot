@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { Id } from "./_generated/dataModel";
+import { getTier } from "./lib/tier";
 
 /**
  * Récupère ou crée un driver par son Amazon ID
@@ -304,12 +305,8 @@ export const getDriverDetail = query({
       trend = Math.round((dwcPercent - prevDwcPercent) * 10) / 10;
     }
 
-    // Determine tier
-    let tier: "fantastic" | "great" | "fair" | "poor";
-    if (dwcPercent >= 98.5) tier = "fantastic";
-    else if (dwcPercent >= 96) tier = "great";
-    else if (dwcPercent >= 90) tier = "fair";
-    else tier = "poor";
+    // Determine tier from the canonical policy
+    const tier = getTier(dwcPercent);
 
     // Calculate rank among station drivers
     const driversWithDwc = allStationDriverStats.map((stat) => {
@@ -334,9 +331,9 @@ export const getDriverDetail = query({
 
       let status: "excellent" | "tres-bon" | "bon" | "moyen" | "non-travaille" = "non-travaille";
       if (dailyDwcPercent !== null) {
-        if (dailyDwcPercent >= 98.5) status = "excellent";
-        else if (dailyDwcPercent >= 96) status = "tres-bon";
-        else if (dailyDwcPercent >= 90) status = "bon";
+        if (dailyDwcPercent >= 95) status = "excellent";
+        else if (dailyDwcPercent >= 90) status = "tres-bon";
+        else if (dailyDwcPercent >= 88) status = "bon";
         else status = "moyen";
       }
 
@@ -406,12 +403,12 @@ export const getDriverDetail = query({
       };
     }).reverse(); // Chronological order
 
-    // Calculate streak (consecutive weeks >= 96%)
+    // Calculate streak (consecutive weeks >= 95%)
     let streak = 0;
     for (const week of weeklyHistory) {
       const total = week.dwcCompliant + week.dwcMisses + week.failedAttempts;
       const pct = total > 0 ? (week.dwcCompliant / total) * 100 : 0;
-      if (pct >= 96) {
+      if (pct >= 95) {
         streak++;
       } else {
         break;
@@ -616,12 +613,8 @@ export const getDriverWithFullHistory = query({
       errorsTrend = totalErrors - prevErrors;
     }
 
-    // Determine tier
-    let tier: "fantastic" | "great" | "fair" | "poor";
-    if (dwcPercent >= 98.5) tier = "fantastic";
-    else if (dwcPercent >= 96) tier = "great";
-    else if (dwcPercent >= 90) tier = "fair";
-    else tier = "poor";
+    // Determine tier from the canonical policy
+    const tier = getTier(dwcPercent);
 
     // Calculate rank (returns null if driver not found in week's data)
     const driversWithDwc = allStationDriverStats.map((stat) => {
@@ -648,9 +641,9 @@ export const getDriverWithFullHistory = query({
 
       let status: "excellent" | "tres-bon" | "bon" | "moyen" | "non-travaille" = "non-travaille";
       if (dailyDwcPercent !== null) {
-        if (dailyDwcPercent >= 98.5) status = "excellent";
-        else if (dailyDwcPercent >= 96) status = "tres-bon";
-        else if (dailyDwcPercent >= 90) status = "bon";
+        if (dailyDwcPercent >= 95) status = "excellent";
+        else if (dailyDwcPercent >= 90) status = "tres-bon";
+        else if (dailyDwcPercent >= 88) status = "bon";
         else status = "moyen";
       }
 
@@ -725,7 +718,7 @@ export const getDriverWithFullHistory = query({
     for (const week of weeklyHistory) {
       const total = week.dwcCompliant + week.dwcMisses + week.failedAttempts;
       const pct = total > 0 ? (week.dwcCompliant / total) * 100 : 0;
-      if (pct >= 96) streak++;
+      if (pct >= 95) streak++;
       else break;
     }
 

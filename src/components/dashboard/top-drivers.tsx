@@ -24,6 +24,21 @@ const metricLabels: Record<MetricType, string> = {
   photoDefects: "Défauts photo",
 }
 
+const getCardTitle = (metric: MetricType, view: ViewType) => {
+  switch (metric) {
+    case "dwc":
+      return view === "top" ? "Top 5 DWC" : "Bottom 5 DWC"
+    case "iadc":
+      return view === "top" ? "Top 5 IADC" : "Bottom 5 IADC"
+    case "volume":
+      return view === "top" ? "Drivers les plus actifs" : "Drivers les moins actifs"
+    case "photoDefects":
+      return view === "top"
+        ? "Drivers avec le plus de défauts photo"
+        : "Drivers avec le moins de défauts photo"
+  }
+}
+
 const rankEmojis = ["🥇", "🥈", "🥉", "4.", "5."]
 
 export function TopDrivers() {
@@ -129,7 +144,9 @@ export function TopDrivers() {
     return (
       <Card className="border-border bg-card">
         <CardHeader className="pb-2">
-          <CardTitle className="text-base font-semibold text-card-foreground">Top 5 Drivers</CardTitle>
+          <CardTitle className="text-base font-semibold text-card-foreground">
+            {getCardTitle(metric, view)}
+          </CardTitle>
         </CardHeader>
         <CardContent className="pt-2 text-center py-8">
           <User className="h-8 w-8 mx-auto mb-2 text-muted-foreground/50" />
@@ -144,7 +161,7 @@ export function TopDrivers() {
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <CardTitle className="text-base font-semibold text-card-foreground">
-            {view === "top" ? "Top 5 Drivers" : "Bottom 5 Drivers"}
+            {getCardTitle(metric, view)}
           </CardTitle>
         </div>
 

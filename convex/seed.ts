@@ -96,7 +96,7 @@ export const seedTestCoachingData = mutation({
         baseDwc = 91 + Math.random() * 4
         baseIadc = 92 + Math.random() * 4
       } else {
-        // Phase 3: Great performance (95-98.5% DWC)
+        // Phase 3: Great/Fantastic performance (95-98.5% DWC)
         baseDwc = 95 + Math.random() * 3.5
         baseIadc = 95 + Math.random() * 3
       }

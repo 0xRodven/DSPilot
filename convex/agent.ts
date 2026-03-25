@@ -139,10 +139,10 @@ Livreurs: ${result.activeDrivers} actifs
 Alertes: ${result.alerts} livreur(s) sous 90% DWC
 
 Distribution des tiers:
-${tierEmoji.fantastic} Fantastic (≥98.5%): ${result.tierDistribution.fantastic}
-${tierEmoji.great} Great (≥96%): ${result.tierDistribution.great}
-${tierEmoji.fair} Fair (≥90%): ${result.tierDistribution.fair}
-${tierEmoji.poor} Poor (<90%): ${result.tierDistribution.poor}`
+${tierEmoji.fantastic} Fantastic (≥95%): ${result.tierDistribution.fantastic}
+${tierEmoji.great} Great (≥90%): ${result.tierDistribution.great}
+${tierEmoji.fair} Fair (≥88%): ${result.tierDistribution.fair}
+${tierEmoji.poor} Poor (<88%): ${result.tierDistribution.poor}`
     } catch (error) {
       return `Erreur lors de la récupération des KPIs: ${error instanceof Error ? error.message : "Erreur inconnue"}`
     }
@@ -645,7 +645,7 @@ const suggestCoaching = createTool({
       }) as CoachingSuggestion[]
 
       if (!suggestions || suggestions.length === 0) {
-        return `✅ Aucune suggestion de coaching pour la semaine ${args.week}/${args.year}. Tous les livreurs sont au-dessus du seuil (96% DWC) ou ont déjà une action en cours.`
+        return `✅ Aucune suggestion de coaching pour la semaine ${args.week}/${args.year}. Tous les livreurs sont au-dessus du seuil (95% DWC) ou ont déjà une action en cours.`
       }
 
       const limited = suggestions.slice(0, args.limit)
@@ -852,7 +852,7 @@ const systemInstructions = `Tu es l'assistant IA de DSPilot, une plateforme de g
 📚 CONTEXTE METIER:
 - DWC: % livraisons conformes
 - IADC: % conformité adresse
-- Tiers: Fantastic (≥98.5%), Great (≥96%), Fair (≥90%), Poor (<90%)
+- Tiers: Fantastic (≥95%), Great (≥90%), Fair (≥88%), Poor (<88%)
 
 💬 EXEMPLES:
 - "Mon DWC cette semaine?" → getStationKPIs avec semaine contexte

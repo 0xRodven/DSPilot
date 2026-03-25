@@ -11,6 +11,7 @@
 import type * as admin from "../admin.js";
 import type * as agent from "../agent.js";
 import type * as alerts from "../alerts.js";
+import type * as automation from "../automation.js";
 import type * as chat from "../chat.js";
 import type * as coaching from "../coaching.js";
 import type * as crons from "../crons.js";
@@ -19,6 +20,7 @@ import type * as drivers from "../drivers.js";
 import type * as embeddings from "../embeddings.js";
 import type * as imports from "../imports.js";
 import type * as lib_permissions from "../lib/permissions.js";
+import type * as lib_tier from "../lib/tier.js";
 import type * as lib_timeQuery from "../lib/timeQuery.js";
 import type * as lib_utils from "../lib/utils.js";
 import type * as rag from "../rag.js";
@@ -40,6 +42,7 @@ declare const fullApi: ApiFromModules<{
   admin: typeof admin;
   agent: typeof agent;
   alerts: typeof alerts;
+  automation: typeof automation;
   chat: typeof chat;
   coaching: typeof coaching;
   crons: typeof crons;
@@ -48,6 +51,7 @@ declare const fullApi: ApiFromModules<{
   embeddings: typeof embeddings;
   imports: typeof imports;
   "lib/permissions": typeof lib_permissions;
+  "lib/tier": typeof lib_tier;
   "lib/timeQuery": typeof lib_timeQuery;
   "lib/utils": typeof lib_utils;
   rag: typeof rag;

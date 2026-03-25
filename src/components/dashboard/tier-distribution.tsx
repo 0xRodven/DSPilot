@@ -115,8 +115,8 @@ export function TierDistribution() {
               </TooltipTrigger>
               <TooltipContent side="top" className="max-w-xs">
                 <p className="text-xs">
-                  Repartition des drivers par niveau de performance DWC : Fantastic (≥98.5%), Great
-                  (≥96%), Fair (≥90%), Poor (&lt;90%)
+                  Repartition des drivers par niveau de performance DWC derivee du score hebdomadaire :
+                  Fantastic (≥95%), Great (≥90%), Fair (≥88%), Poor (&lt;88%)
                 </p>
               </TooltipContent>
             </UITooltip>

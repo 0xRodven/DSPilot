@@ -38,7 +38,7 @@ const actionTypes: { type: CoachingActionType; label: string; icon: typeof Messa
 ]
 
 const reasonSuggestions = [
-  "DWC sous 85% - 3 semaines consécutives",
+  "DWC sous 88% - 3 semaines consécutives",
   "Contact Miss répétitifs",
   "Tendance négative sur 4 semaines",
   "Photo Defect fréquents",

@@ -130,16 +130,16 @@ export function generateCoachingMessage(data: CoachingActionData): string {
 }
 
 export function generateQuickMessage(driverName: string, dwcPercent: number): string {
-  if (dwcPercent >= 98.5) {
+  if (dwcPercent >= 95) {
     return ` Bravo ${driverName} ! Ton DWC de *${dwcPercent.toFixed(1)}%* est excellent. Continue comme ca !`
   }
 
-  if (dwcPercent >= 96) {
-    return ` Bien joue ${driverName} ! DWC a *${dwcPercent.toFixed(1)}%*. Tu n'es pas loin du Fantastic !`
+  if (dwcPercent >= 90) {
+    return ` Bien joue ${driverName} ! DWC a *${dwcPercent.toFixed(1)}%*. Tu es dans une bonne zone, continue pour viser le Fantastic !`
   }
 
-  if (dwcPercent >= 90) {
-    return ` ${driverName}, ton DWC est a *${dwcPercent.toFixed(1)}%*. Il faut remonter pour atteindre le Great !`
+  if (dwcPercent >= 88) {
+    return ` ${driverName}, ton DWC est a *${dwcPercent.toFixed(1)}%*. Il faut remonter pour revenir au niveau Great !`
   }
 
   return ` ${driverName}, attention ! Ton DWC est a *${dwcPercent.toFixed(1)}%*. On doit en parler rapidement.`

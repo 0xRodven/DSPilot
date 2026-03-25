@@ -5,6 +5,7 @@ import { useMutation } from "convex/react"
 import { api } from "@convex/_generated/api"
 import type { Id } from "@convex/_generated/dataModel"
 import { parseHtmlFile, calculateFleetAverages } from "@/lib/parser"
+import { getTier } from "@/lib/utils/tier"
 import type { ParsedReport } from "@/lib/parser/types"
 import type {
   ImportQueueItem,
@@ -351,10 +352,7 @@ export function useBatchImport(options: UseBatchImportOptions) {
       const total = stat.dwcCompliant + stat.dwcMisses + stat.failedAttempts
       if (total > 0) {
         const dwcPercent = (stat.dwcCompliant / total) * 100
-        if (dwcPercent >= 98.5) tierDistribution.fantastic++
-        else if (dwcPercent >= 96) tierDistribution.great++
-        else if (dwcPercent >= 90) tierDistribution.fair++
-        else tierDistribution.poor++
+        tierDistribution[getTier(dwcPercent)]++
       }
     }
 

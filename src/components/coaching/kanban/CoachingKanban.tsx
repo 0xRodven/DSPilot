@@ -55,7 +55,7 @@ export function CoachingKanban({
           <Target className="h-12 w-12 text-muted-foreground/50 mb-4" />
           <p className="text-lg font-medium text-card-foreground">Aucune tâche de coaching</p>
           <p className="text-sm text-muted-foreground mt-1">
-            Tous les drivers sont au-dessus du seuil de 96%
+            Tous les drivers sont au-dessus du seuil de 95%
           </p>
         </CardContent>
       </Card>

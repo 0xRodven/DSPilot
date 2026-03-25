@@ -326,7 +326,7 @@ export function ImportHistory({ imports, stationCode }: ImportHistoryProps) {
                                 ? "text-emerald-400"
                                 : imp.dwcScore >= 90
                                   ? "text-blue-400"
-                                  : imp.dwcScore >= 85
+                                  : imp.dwcScore >= 88
                                     ? "text-amber-400"
                                     : "text-red-400",
                             )}

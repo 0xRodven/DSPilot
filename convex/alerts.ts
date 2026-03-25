@@ -1,7 +1,7 @@
 import { v } from "convex/values"
 import { mutation, query, internalMutation } from "./_generated/server"
 import { checkStationAccess, requireWriteAccess } from "./lib/permissions"
-import type { Id } from "./_generated/dataModel"
+import { getTier } from "./lib/tier"
 
 // Alert type definitions
 export type AlertType =
@@ -309,13 +309,6 @@ export const generateAlerts = mutation({
 
       // 3. Tier downgrade
       if (prevStat && !existingTypes.has("tier_downgrade")) {
-        const getTier = (pct: number) => {
-          if (pct >= 98.5) return "fantastic"
-          if (pct >= 96) return "great"
-          if (pct >= 90) return "fair"
-          return "poor"
-        }
-
         const prevDwcTotal =
           prevStat.dwcCompliant + prevStat.dwcMisses + prevStat.failedAttempts
         const prevDwcPercent =
@@ -539,13 +532,6 @@ export const generateAlertsInternal = internalMutation({
 
       // 3. Tier downgrade
       if (prevStat && !existingTypes.has("tier_downgrade")) {
-        const getTier = (pct: number) => {
-          if (pct >= 98.5) return "fantastic"
-          if (pct >= 96) return "great"
-          if (pct >= 90) return "fair"
-          return "poor"
-        }
-
         const prevDwcTotal =
           prevStat.dwcCompliant + prevStat.dwcMisses + prevStat.failedAttempts
         const prevDwcPercent =

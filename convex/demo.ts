@@ -2,6 +2,7 @@ import { v } from "convex/values"
 import { mutation, query, internalMutation } from "./_generated/server"
 import { format, subDays, getYear, getISOWeek } from "date-fns"
 import { getUserContext } from "./lib/permissions"
+import { getTier } from "./lib/tier"
 
 // Demo station code - identifiable
 const DEMO_STATION_CODE = "DEMO1"
@@ -170,9 +171,9 @@ export const setupDemoData = mutation({
           // Base performance based on tier
           let baseDwc: number
           switch (driver.tier) {
-            case "fantastic": baseDwc = 98.5 + Math.random() * 1.5; break
-            case "great": baseDwc = 96 + Math.random() * 2.5; break
-            case "fair": baseDwc = 90 + Math.random() * 6; break
+            case "fantastic": baseDwc = 95 + Math.random() * 4.5; break
+            case "great": baseDwc = 90 + Math.random() * 5; break
+            case "fair": baseDwc = 88 + Math.random() * 2; break
             default: baseDwc = 82 + Math.random() * 8
           }
 
@@ -257,10 +258,7 @@ export const setupDemoData = mutation({
           const weekTotal = weekDwcCompliant + weekDwcMisses + weekFailedAttempts
           const weekDwcPercent = weekTotal > 0 ? (weekDwcCompliant / weekTotal) * 100 : 0
 
-          if (weekDwcPercent >= 98.5) tierCounts.fantastic++
-          else if (weekDwcPercent >= 96) tierCounts.great++
-          else if (weekDwcPercent >= 90) tierCounts.fair++
-          else tierCounts.poor++
+          tierCounts[getTier(weekDwcPercent)]++
 
           stationDwcCompliant += weekDwcCompliant
           stationDwcMisses += weekDwcMisses

@@ -2,7 +2,7 @@
 
 import { Card, CardContent } from "@/components/ui/card"
 import type { DriverDetail } from "@/lib/types"
-import { getTierColor, getTierBgColor } from "@/lib/utils/tier"
+import { getIadcTier, getTierColor, getTierBgColor } from "@/lib/utils/tier"
 import { TrendingUp, TrendingDown } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -24,14 +24,7 @@ export function DriverKpis({ driver, comparisonLabel = "vs S49" }: DriverKpisPro
     {
       label: "IADC",
       value: `${driver.iadcPercent}%`,
-      tier:
-        driver.iadcPercent >= 85
-          ? "fantastic"
-          : driver.iadcPercent >= 75
-            ? "great"
-            : driver.iadcPercent >= 65
-              ? "fair"
-              : "poor",
+      tier: getIadcTier(driver.iadcPercent),
       showTier: true,
       trend: driver.iadcTrend ?? 0,
       trendLabel: comparisonLabel,

@@ -291,19 +291,19 @@ export function DailyPerformanceChartWithCoaching({
 
             {/* Reference lines */}
             <ReferenceLine
-              y={98.5}
+              y={95}
               stroke="#10b981"
               strokeDasharray="3 3"
               opacity={0.5}
             />
             <ReferenceLine
-              y={96}
-              stroke="#22c55e"
+              y={90}
+              stroke="#3b82f6"
               strokeDasharray="3 3"
               opacity={0.3}
             />
             <ReferenceLine
-              y={90}
+              y={88}
               stroke="#f59e0b"
               strokeDasharray="3 3"
               opacity={0.3}

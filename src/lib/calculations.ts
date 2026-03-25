@@ -83,13 +83,13 @@ export const getIadcTotal = (
  * Détermine le tier depuis le DWC%
  * - Fantastic: >= 95%
  * - Great: >= 90%
- * - Fair: >= 85%
- * - Poor: < 85%
+ * - Fair: >= 88%
+ * - Poor: < 88%
  */
 export const getTier = (dwcPercent: number): Tier => {
   if (dwcPercent >= 95) return "fantastic";
   if (dwcPercent >= 90) return "great";
-  if (dwcPercent >= 85) return "fair";
+  if (dwcPercent >= 88) return "fair";
   return "poor";
 };
 
@@ -99,7 +99,7 @@ export const getTier = (dwcPercent: number): Tier => {
 export const TIER_THRESHOLDS = {
   fantastic: 95,
   great: 90,
-  fair: 85,
+  fair: 88,
   poor: 0,
 } as const;
 

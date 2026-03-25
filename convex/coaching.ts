@@ -5,6 +5,7 @@ import {
   canAccessStation,
   checkStationAccess,
 } from "./lib/permissions";
+import { getTier } from "./lib/tier";
 
 // ============================================
 // COACHING QUERIES
@@ -58,10 +59,7 @@ export const listCoachingActions = query({
           const total = latestStats.dwcCompliant + latestStats.dwcMisses + latestStats.failedAttempts;
           driverDwc = total > 0 ? Math.round((latestStats.dwcCompliant / total) * 1000) / 10 : 0;
 
-          if (driverDwc >= 98.5) driverTier = "fantastic";
-          else if (driverDwc >= 96) driverTier = "great";
-          else if (driverDwc >= 90) driverTier = "fair";
-          else driverTier = "poor";
+          driverTier = getTier(driverDwc);
         }
 
         // Calculate waiting days
@@ -289,14 +287,10 @@ export const getCoachingSuggestions = query({
         const total = stat.dwcCompliant + stat.dwcMisses + stat.failedAttempts;
         const dwcPercent = total > 0 ? Math.round((stat.dwcCompliant / total) * 1000) / 10 : 0;
 
-        // Skip if DWC is good
-        if (dwcPercent >= 96) return null;
+        // Skip if DWC is already at the target weekly threshold
+        if (dwcPercent >= 95) return null;
 
-        let tier: "fantastic" | "great" | "fair" | "poor";
-        if (dwcPercent >= 98.5) tier = "fantastic";
-        else if (dwcPercent >= 96) tier = "great";
-        else if (dwcPercent >= 90) tier = "fair";
-        else tier = "poor";
+        const tier = getTier(dwcPercent);
 
         // Find main error
         const breakdown = stat.dwcBreakdown || {
@@ -785,20 +779,13 @@ export const getKanbanData = query({
     const trendCache = new Map<string, number>();
 
     // Helper to get tier
-    const getTier = (dwcPercent: number): "fantastic" | "great" | "fair" | "poor" => {
-      if (dwcPercent >= 98.5) return "fantastic";
-      if (dwcPercent >= 96) return "great";
-      if (dwcPercent >= 90) return "fair";
-      return "poor";
-    };
-
-    // COLUMN 1: DETECT - Drivers with DWC < 96% and no pending action
+    // COLUMN 1: DETECT - Drivers with DWC < 95% and no pending action
     const detectCards = await Promise.all(
       weeklyStats
         .filter((stat) => {
           const total = stat.dwcCompliant + stat.dwcMisses + stat.failedAttempts;
           const dwcPercent = total > 0 ? (stat.dwcCompliant / total) * 100 : 0;
-          return dwcPercent < 96 && !driversWithPendingAction.has(stat.driverId);
+          return dwcPercent < 95 && !driversWithPendingAction.has(stat.driverId);
         })
         .map(async (stat) => {
           const driver = await ctx.db.get(stat.driverId);
