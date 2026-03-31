@@ -209,6 +209,61 @@ def run_ingest(output_dir, station_code, expected_amazon_station_code):
     subprocess.run(cmd, check=True, cwd=Path(__file__).resolve().parents[1])
 
 
+async def select_week_from_dropdown(page, target_week: int, target_year: int) -> bool:
+    """
+    Open the week-picker combobox and select a specific week by number.
+    The dropdown supports aria-autocomplete='list' — typing filters the options.
+    Returns True on success, False if the week was not found.
+    """
+    import re as _re
+
+    # Click the combobox input to open the dropdown
+    picker_input = await page.select('[data-testid="week-picker"] input')
+    if not picker_input:
+        log("  [dropdown] week-picker input not found")
+        return False
+
+    await picker_input.click()
+    await asyncio.sleep(1)
+
+    # Type the week number to filter options (aria-autocomplete="list")
+    await picker_input.send_keys(str(target_week))
+    await asyncio.sleep(0.8)
+
+    # Options appear in a listbox whose ID is aria-controls of the input
+    # Use role="option" as a stable selector (ID suffix is dynamic)
+    options = await page.select_all('[role="option"]')
+    if not options:
+        log(f"  [dropdown] no options visible after typing '{target_week}'")
+        # Escape and fall back to caller
+        await page.send_keys("\x1b")
+        return False
+
+    log(f"  [dropdown] {len(options)} option(s) visible")
+
+    # Match option whose text contains the target week and year
+    for opt in options:
+        try:
+            text = await opt.get_js_attributes("textContent")
+            text = (text or "").strip()
+        except Exception:
+            text = ""
+        # "Semaine 14, mars 29-avr. 4" — match week number as standalone token
+        if _re.search(rf'\b{target_week}\b', text):
+            # If year is available in text, verify it
+            year_match = _re.search(r'\b(20\d{2})\b', text)
+            if year_match and int(year_match.group(1)) != target_year:
+                continue
+            log(f"  [dropdown] selecting: {text!r}")
+            await opt.click()
+            await asyncio.sleep(4)
+            return True
+
+    log(f"  [dropdown] week {target_week}/{target_year} not found in visible options")
+    await page.send_keys("\x1b")
+    return False
+
+
 async def capture_browser_weeks(args):
     from amazon_deep_scraper import close_browser, load_cookies_and_login, looks_like_login_page, setup_browser
 
@@ -219,6 +274,15 @@ async def capture_browser_weeks(args):
         raise SystemExit(1)
 
     await navigate_with_fallback(page, REPORTS_URL)
+
+    # --- Direct week selection via dropdown ---
+    target_week = getattr(args, "target_week", None)
+    target_year = getattr(args, "target_year", None)
+    if target_week is not None and target_year is not None:
+        log(f"Selecting week {target_week}/{target_year} via dropdown")
+        ok = await select_week_from_dropdown(page, target_week, target_year)
+        if not ok:
+            log("  Dropdown selection failed — falling back to click-previous navigation")
 
     seen_week_labels = set()
     captures = []
@@ -301,6 +365,8 @@ def build_parser():
     parser.add_argument("--html-path", type=Path, help="Parse a saved supplementary_reports HTML file instead of using the browser")
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR, help="Directory where manifests and downloaded reports are stored")
     parser.add_argument("--weeks", type=int, default=1, help="Number of weeks to attempt in browser mode")
+    parser.add_argument("--target-week", type=int, default=None, help="Jump directly to this week number via dropdown (e.g. 2)")
+    parser.add_argument("--target-year", type=int, default=None, help="Year for --target-week (e.g. 2026)")
     parser.add_argument("--no-download", action="store_true", help="Do not download signed report files")
     parser.add_argument("--invoke-ingest", action="store_true", help="Call npm run amazon:ingest after downloads")
     parser.add_argument("--station-code", help="DSPilot station code required when --invoke-ingest is used")
