@@ -34,18 +34,179 @@ def env_int(name, default):
 
 DATA_DIR = Path(os.getenv("AMAZON_LOGISTICS_DATA_DIR", Path(__file__).parent / "data" / "deep"))
 COOKIES_FILE = Path(os.getenv("AMAZON_LOGISTICS_COOKIES_FILE", "/root/.secrets/amazon-logistics-cookies.json"))
+PROFILE_DIR = Path(os.getenv("AMAZON_LOGISTICS_PROFILE_DIR", Path(__file__).parent / "data" / "browser-profile"))
 BASE_URL = os.getenv("AMAZON_LOGISTICS_BASE_URL", "https://logistics.amazon.fr").rstrip("/")
 AMAZON_EMAIL = os.getenv("AMAZON_LOGISTICS_EMAIL")
 AMAZON_PASSWORD = os.getenv("AMAZON_LOGISTICS_PASSWORD")
 HEADLESS = env_flag("AMAZON_LOGISTICS_HEADLESS", True)
+BROWSER_SANDBOX = env_flag("AMAZON_LOGISTICS_SANDBOX", not (hasattr(os, "geteuid") and os.geteuid() == 0))
+COOKIE_EXPORT_ENABLED = env_flag("AMAZON_LOGISTICS_ENABLE_COOKIE_EXPORT", False)
 WEEKS_TO_SCRAPE = env_int("AMAZON_LOGISTICS_WEEKS_TO_SCRAPE", 20)
 ITINERARY_DAYS = env_int("AMAZON_LOGISTICS_ITINERARY_DAYS", 7)
+BROWSER_EXECUTABLE_PATH = os.getenv("AMAZON_LOGISTICS_BROWSER_EXECUTABLE")
 
 all_xhr = []
 
 
 def log(msg):
     print(f"[{datetime.now().strftime('%H:%M:%S')}] {msg}", flush=True)
+
+
+def looks_like_login_page(content):
+    lowered = (content or "").lower()
+    login_markers = [
+        "connexion amazon",
+        "authportal",
+        "signinsubmit",
+        "ap_email",
+        "ap_password",
+    ]
+    return any(marker in lowered for marker in login_markers)
+
+
+async def find_first(page, selectors, timeout=5):
+    for selector in selectors:
+        element = None
+        try:
+            element = await page.select(selector, timeout=timeout)
+        except Exception:
+            element = None
+        if not element:
+            try:
+                element = await page.find(selector, timeout=timeout)
+            except Exception:
+                element = None
+        if element:
+            return element
+    return None
+
+
+async def set_input_value(page, selectors, value):
+    for selector in selectors:
+        element = None
+        try:
+            element = await page.select(selector, timeout=3)
+        except Exception:
+            element = None
+        if not element:
+            continue
+
+        try:
+            await element.focus()
+        except Exception:
+            pass
+
+        result = False
+        try:
+            await element.apply(
+                """
+                (input) => {
+                  input.focus();
+                  input.removeAttribute('readonly');
+                  input.removeAttribute('disabled');
+                  input.value = '';
+                }
+                """
+            )
+            await asyncio.sleep(0.2)
+            await element.send_keys("\ue009" + "a")
+            await asyncio.sleep(0.1)
+            await element.send_keys("\ue003")
+            await asyncio.sleep(0.1)
+            for char in value:
+                await element.send_keys(char)
+                await asyncio.sleep(0.03)
+            await asyncio.sleep(0.3)
+            result = await element.apply(
+                f"""
+                (input) => {{
+                  input.dispatchEvent(new Event('input', {{ bubbles: true }}));
+                  input.dispatchEvent(new Event('change', {{ bubbles: true }}));
+                  return input.value === {json.dumps(value)};
+                }}
+                """
+            )
+        except Exception:
+            result = False
+
+        if not result:
+            try:
+                result = await element.apply(
+                    f"""
+                    (input) => {{
+                      input.focus();
+                      input.removeAttribute('readonly');
+                      input.removeAttribute('disabled');
+                      input.value = {json.dumps(value)};
+                      input.dispatchEvent(new Event('input', {{ bubbles: true }}));
+                      input.dispatchEvent(new Event('change', {{ bubbles: true }}));
+                      return input.value === {json.dumps(value)};
+                    }}
+                    """
+                )
+            except Exception:
+                result = False
+
+        if result:
+            return True
+    return False
+
+
+async def get_input_value(page, selectors):
+    for selector in selectors:
+        try:
+            element = await page.select(selector, timeout=2)
+        except Exception:
+            element = None
+        if not element:
+            continue
+        try:
+            value = await element.apply("(input) => input.value")
+        except Exception:
+            value = None
+        if value is not None:
+            return value
+    return None
+
+
+async def click_first(page, selectors, timeout=5):
+    for selector in selectors:
+        try:
+            element = await page.select(selector, timeout=timeout)
+        except Exception:
+            element = None
+        if not element:
+            continue
+        try:
+            await element.click()
+            return True
+        except Exception:
+            try:
+                await element.mouse_click()
+                return True
+            except Exception:
+                try:
+                    clicked = await element.apply(
+                        "(el) => { el.click(); return true; }",
+                    )
+                except Exception:
+                    clicked = False
+                if clicked:
+                    return True
+    return False
+
+
+async def save_login_debug(page, prefix):
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    try:
+        html = await page.get_content()
+        (DATA_DIR / f"{prefix}.html").write_text(html, encoding="utf-8")
+    except Exception as exc:
+        log(f"Failed to save {prefix}.html: {exc}")
+    try:
+        await page.save_screenshot(str(DATA_DIR / f"{prefix}.png"))
+    except Exception as exc:
+        log(f"Failed to save {prefix}.png: {exc}")
 
 
 def save(data, name, ext="json"):
@@ -60,12 +221,84 @@ def save(data, name, ext="json"):
 
 
 async def setup_browser():
+    PROFILE_DIR.mkdir(parents=True, exist_ok=True)
     browser = await uc.start(
         headless=HEADLESS,
+        user_data_dir=str(PROFILE_DIR),
+        browser_executable_path=BROWSER_EXECUTABLE_PATH or None,
+        sandbox=BROWSER_SANDBOX,
         browser_args=["--no-sandbox", "--disable-dev-shm-usage", "--disable-gpu",
                        "--window-size=1920,1080", "--lang=fr-FR"],
     )
     return browser
+
+
+async def close_browser(browser):
+    process = getattr(browser, "_process", None)
+
+    def is_running(proc):
+        poll = getattr(proc, "poll", None)
+        if callable(poll):
+            return poll() is None
+        return getattr(proc, "returncode", None) is None
+
+    try:
+        browser.stop()
+    except Exception as exc:
+        log(f"Browser stop raised: {exc}")
+
+    if not process:
+        return
+
+    deadline = asyncio.get_running_loop().time() + 10
+    while is_running(process) and asyncio.get_running_loop().time() < deadline:
+        await asyncio.sleep(0.25)
+
+    if is_running(process):
+        try:
+            process.terminate()
+        except Exception:
+            pass
+        await asyncio.sleep(1)
+
+    if is_running(process):
+        try:
+            process.kill()
+        except Exception:
+            pass
+        await asyncio.sleep(1)
+
+
+async def save_current_cookies(page):
+    if not COOKIE_EXPORT_ENABLED:
+        log("Cookie export disabled; relying on persistent browser profile")
+        return []
+
+    try:
+        result = await asyncio.wait_for(page.send(uc.cdp.network.get_all_cookies()), timeout=10)
+        amazon_cookies = [
+            {
+                "domain": c.domain,
+                "name": c.name,
+                "value": c.value,
+                "path": c.path,
+                "secure": c.secure,
+                "httpOnly": c.http_only,
+            }
+            for c in result.cookies
+            if "amazon" in c.domain
+        ]
+        COOKIES_FILE.parent.mkdir(parents=True, exist_ok=True)
+        with open(COOKIES_FILE, "w") as f:
+            json.dump(amazon_cookies, f, indent=2)
+        log(f"Fresh cookies saved ({len(amazon_cookies)})")
+        return amazon_cookies
+    except asyncio.TimeoutError:
+        log("Cookie export timed out")
+        return []
+    except Exception as e:
+        log(f"Cookie export failed: {e}")
+        return []
 
 
 async def load_cookies_and_login(browser):
@@ -83,12 +316,38 @@ async def load_cookies_and_login(browser):
 
     for c in cookies:
         try:
+            same_site = None
+            raw_same_site = c.get("sameSite")
+            if raw_same_site:
+                normalized_same_site = str(raw_same_site).strip().lower()
+                same_site_map = {
+                    "strict": uc.cdp.network.CookieSameSite.STRICT,
+                    "lax": uc.cdp.network.CookieSameSite.LAX,
+                    "none": uc.cdp.network.CookieSameSite.NONE,
+                    "no_restriction": uc.cdp.network.CookieSameSite.NONE,
+                }
+                same_site = same_site_map.get(normalized_same_site)
+
+            expires = c.get("expirationDate")
+            if expires is not None:
+                try:
+                    expires = uc.cdp.network.TimeSinceEpoch(float(expires))
+                except (TypeError, ValueError):
+                    expires = None
+
+            source_scheme = uc.cdp.network.CookieSourceScheme.SECURE if c.get("secure", True) else uc.cdp.network.CookieSourceScheme.NON_SECURE
+            domain = c["domain"].lstrip(".")
+            cookie_url = f"https://{domain}{c.get('path', '/')}"
+
             await page.send(uc.cdp.network.set_cookie(
-                name=c["name"], value=c["value"], domain=c["domain"],
+                name=c["name"], value=c["value"], url=cookie_url, domain=c["domain"],
                 path=c.get("path", "/"), secure=c.get("secure", True),
                 http_only=c.get("httpOnly", False),
+                same_site=same_site,
+                expires=expires,
+                source_scheme=source_scheme,
             ))
-        except:
+        except Exception:
             pass
 
     if cookies:
@@ -99,45 +358,76 @@ async def load_cookies_and_login(browser):
     await asyncio.sleep(5)
     content = await page.get_content()
 
-    if "Paritrans" in content or "dspconsole" in content.lower():
+    if not looks_like_login_page(content):
         log("LOGGED IN - session valid")
+        await save_current_cookies(page)
         return page
     else:
         log("Session invalid - trying login...")
         if not AMAZON_EMAIL or not AMAZON_PASSWORD:
             log("Missing AMAZON_LOGISTICS_EMAIL / AMAZON_LOGISTICS_PASSWORD")
-            await page.save_screenshot(str(DATA_DIR / "login_fail.png"))
+            await save_login_debug(page, "login_fail")
             return None
 
         try:
-            email_input = await page.find("input[name='email']", timeout=5)
-            if email_input:
-                await email_input.clear_input()
-                await email_input.send_keys(AMAZON_EMAIL)
+            email_selectors = ["#ap_email", "input[name='email']", "input[name='ap_email']"]
+            email_set = await set_input_value(page, email_selectors, AMAZON_EMAIL)
+            email_value = await get_input_value(page, email_selectors)
+            log(f"Login email field set={email_set} value_present={bool(email_value)}")
+
+            if email_set:
                 await asyncio.sleep(1)
-                btn = await page.find("#continue", timeout=3)
-                if btn:
-                    await btn.click()
+                continue_clicked = await click_first(page, ["#continue"], timeout=3)
+                log(f"Continue clicked={continue_clicked}")
+                if continue_clicked:
                     await asyncio.sleep(3)
-                pw = await page.find("input[name='password']", timeout=5)
-                if pw:
-                    await pw.clear_input()
-                    await pw.send_keys(AMAZON_PASSWORD)
+
+                password_selectors = ["#ap_password", "input[name='password']", "input[name='ap_password']"]
+                password_set = await set_input_value(page, password_selectors, AMAZON_PASSWORD)
+                password_value = await get_input_value(page, password_selectors)
+                log(f"Login password field set={password_set} value_length={len(password_value or '')}")
+                if password_set:
                     await asyncio.sleep(1)
-                    signin = await page.find("#signInSubmit", timeout=3)
-                    if signin:
-                        await signin.click()
-                        await asyncio.sleep(5)
+                    await save_login_debug(page, "login_before_submit")
+                    signin_clicked = await click_first(page, ["#signInSubmit"], timeout=3)
+                    if not signin_clicked:
+                        signin_clicked = bool(
+                            await page.evaluate(
+                                """
+                                (() => {
+                                  const button = document.querySelector('#signInSubmit');
+                                  if (!button) return false;
+                                  button.click();
+                                  return true;
+                                })()
+                                """,
+                                return_by_value=True,
+                            )
+                        )
+                    log(f"Sign-in clicked={signin_clicked}")
+                    if not signin_clicked:
+                        await page.evaluate(
+                            """
+                            (() => {
+                              const form = document.querySelector('form');
+                              if (form) form.submit();
+                            })()
+                            """
+                        )
+                    await asyncio.sleep(8)
         except Exception as e:
             log(f"Login error: {e}")
 
+        await page.get(f"{BASE_URL}/dspconsole")
+        await asyncio.sleep(5)
         content = await page.get_content()
-        if "dspconsole" in content.lower():
+        if not looks_like_login_page(content):
             log("Login successful")
+            await save_current_cookies(page)
             return page
         else:
             log("LOGIN FAILED")
-            await page.save_screenshot(str(DATA_DIR / "login_fail.png"))
+            await save_login_debug(page, "login_fail")
             return None
 
 
@@ -310,7 +600,7 @@ async def main():
     browser = await setup_browser()
     page = await load_cookies_and_login(browser)
     if not page:
-        browser.stop()
+        await close_browser(browser)
         return
 
     await enable_xhr_capture(page)
@@ -588,15 +878,7 @@ async def main():
 
     # Fresh cookies
     try:
-        result = await page.send(uc.cdp.network.get_all_cookies())
-        amazon_cookies = [
-            {"domain": c.domain, "name": c.name, "value": c.value,
-             "path": c.path, "secure": c.secure, "httpOnly": c.http_only}
-            for c in result.cookies if "amazon" in c.domain
-        ]
-        COOKIES_FILE.parent.mkdir(parents=True, exist_ok=True)
-        with open(COOKIES_FILE, 'w') as f:
-            json.dump(amazon_cookies, f, indent=2)
+        amazon_cookies = await save_current_cookies(page)
         log(f"  Fresh cookies: {len(amazon_cookies)}")
     except:
         pass
@@ -635,7 +917,7 @@ async def main():
 
     log("=" * 70)
 
-    browser.stop()
+    await close_browser(browser)
 
 
 if __name__ == "__main__":

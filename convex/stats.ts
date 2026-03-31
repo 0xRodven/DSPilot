@@ -1,13 +1,10 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+
 import type { Id } from "./_generated/dataModel";
-import { getWeeksInRange, getWeekDateRange } from "./lib/timeQuery";
+import { mutation, query } from "./_generated/server";
+import { canAccessStation, checkStationAccess, requireWriteAccess } from "./lib/permissions";
 import { getTier } from "./lib/tier";
-import {
-  requireWriteAccess,
-  canAccessStation,
-  checkStationAccess,
-} from "./lib/permissions";
+import { getWeekDateRange, getWeeksInRange } from "./lib/timeQuery";
 
 // Validators réutilisables
 const dwcBreakdownValidator = v.object({
@@ -78,9 +75,7 @@ export const bulkUpsertDailyStats = mutation({
     for (const stat of args.stats) {
       const existing = await ctx.db
         .query("driverDailyStats")
-        .withIndex("by_driver_date", (q) =>
-          q.eq("driverId", stat.driverId).eq("date", stat.date)
-        )
+        .withIndex("by_driver_date", (q) => q.eq("driverId", stat.driverId).eq("date", stat.date))
         .first();
 
       if (existing) {
@@ -125,9 +120,7 @@ export const bulkUpsertWeeklyStats = mutation({
     for (const stat of args.stats) {
       const existing = await ctx.db
         .query("driverWeeklyStats")
-        .withIndex("by_driver_week", (q) =>
-          q.eq("driverId", stat.driverId).eq("year", stat.year).eq("week", stat.week)
-        )
+        .withIndex("by_driver_week", (q) => q.eq("driverId", stat.driverId).eq("year", stat.year).eq("week", stat.week))
         .first();
 
       if (existing) {
@@ -168,7 +161,7 @@ export const updateStationWeeklyStats = mutation({
     const driverStats = await ctx.db
       .query("driverWeeklyStats")
       .withIndex("by_station_week", (q) =>
-        q.eq("stationId", args.stationId).eq("year", args.year).eq("week", args.week)
+        q.eq("stationId", args.stationId).eq("year", args.year).eq("week", args.week),
       )
       .collect();
 
@@ -243,7 +236,7 @@ export const updateStationWeeklyStats = mutation({
     const existing = await ctx.db
       .query("stationWeeklyStats")
       .withIndex("by_station_week", (q) =>
-        q.eq("stationId", args.stationId).eq("year", args.year).eq("week", args.week)
+        q.eq("stationId", args.stationId).eq("year", args.year).eq("week", args.week),
       )
       .first();
 
@@ -267,12 +260,11 @@ export const updateStationWeeklyStats = mutation({
     if (existing) {
       await ctx.db.patch(existing._id, stationStats);
       return existing._id;
-    } else {
-      return await ctx.db.insert("stationWeeklyStats", {
-        ...stationStats,
-        createdAt: now,
-      });
     }
+    return await ctx.db.insert("stationWeeklyStats", {
+      ...stationStats,
+      createdAt: now,
+    });
   },
 });
 
@@ -297,7 +289,7 @@ export const getDriverDailyStats = query({
       return await ctx.db
         .query("driverDailyStats")
         .withIndex("by_driver_week", (q) =>
-          q.eq("driverId", args.driverId).eq("year", args.year!).eq("week", args.week!)
+          q.eq("driverId", args.driverId).eq("year", args.year!).eq("week", args.week!),
         )
         .collect();
     }
@@ -353,7 +345,7 @@ export const getStationWeeklyStats = query({
       return await ctx.db
         .query("stationWeeklyStats")
         .withIndex("by_station_week", (q) =>
-          q.eq("stationId", args.stationId).eq("year", args.year!).eq("week", args.week!)
+          q.eq("stationId", args.stationId).eq("year", args.year!).eq("week", args.week!),
         )
         .first();
     }
@@ -384,7 +376,7 @@ export const getStationDriversWeeklyStats = query({
     return await ctx.db
       .query("driverWeeklyStats")
       .withIndex("by_station_week", (q) =>
-        q.eq("stationId", args.stationId).eq("year", args.year).eq("week", args.week)
+        q.eq("stationId", args.stationId).eq("year", args.year).eq("week", args.week),
       )
       .collect();
   },
@@ -409,7 +401,7 @@ export const getDashboardKPIs = query({
     const currentStats = await ctx.db
       .query("stationWeeklyStats")
       .withIndex("by_station_week", (q) =>
-        q.eq("stationId", args.stationId).eq("year", args.year).eq("week", args.week)
+        q.eq("stationId", args.stationId).eq("year", args.year).eq("week", args.week),
       )
       .first();
 
@@ -418,9 +410,7 @@ export const getDashboardKPIs = query({
     const prevYear = args.week === 1 ? args.year - 1 : args.year;
     const prevStats = await ctx.db
       .query("stationWeeklyStats")
-      .withIndex("by_station_week", (q) =>
-        q.eq("stationId", args.stationId).eq("year", prevYear).eq("week", prevWeek)
-      )
+      .withIndex("by_station_week", (q) => q.eq("stationId", args.stationId).eq("year", prevYear).eq("week", prevWeek))
       .first();
 
     if (!currentStats) {
@@ -449,22 +439,13 @@ export const getDashboardKPIs = query({
       iadcTrend = Math.round((iadcPercent - prevIadcPercent) * 10) / 10;
     }
 
-    // Count alerts (drivers under 90% DWC)
-    const driverStats = await ctx.db
-      .query("driverWeeklyStats")
+    const weekAlerts = await ctx.db
+      .query("alerts")
       .withIndex("by_station_week", (q) =>
-        q.eq("stationId", args.stationId).eq("year", args.year).eq("week", args.week)
+        q.eq("stationId", args.stationId).eq("year", args.year).eq("week", args.week),
       )
       .collect();
-
-    let alerts = 0;
-    for (const stat of driverStats) {
-      const total = stat.dwcCompliant + stat.dwcMisses + stat.failedAttempts;
-      if (total > 0) {
-        const driverDwc = (stat.dwcCompliant / total) * 100;
-        if (driverDwc < 90) alerts++;
-      }
-    }
+    const alerts = weekAlerts.filter((alert) => !alert.isDismissed).length;
 
     return {
       avgDwc: Math.round(dwcPercent * 10) / 10,
@@ -507,22 +488,18 @@ export const getDashboardDrivers = query({
     const weeklyStats = await ctx.db
       .query("driverWeeklyStats")
       .withIndex("by_station_week", (q) =>
-        q.eq("stationId", args.stationId).eq("year", args.year).eq("week", args.week)
+        q.eq("stationId", args.stationId).eq("year", args.year).eq("week", args.week),
       )
       .collect();
 
     // Get previous week stats for trend calculation
     const prevWeeklyStats = await ctx.db
       .query("driverWeeklyStats")
-      .withIndex("by_station_week", (q) =>
-        q.eq("stationId", args.stationId).eq("year", prevYear).eq("week", prevWeek)
-      )
+      .withIndex("by_station_week", (q) => q.eq("stationId", args.stationId).eq("year", prevYear).eq("week", prevWeek))
       .collect();
 
     // Create a map for quick lookup of previous week stats by driver
-    const prevStatsMap = new Map(
-      prevWeeklyStats.map((stat) => [stat.driverId.toString(), stat])
-    );
+    const prevStatsMap = new Map(prevWeeklyStats.map((stat) => [stat.driverId.toString(), stat]));
 
     // Get driver info for each stat
     const driversWithStats = await Promise.all(
@@ -537,9 +514,7 @@ export const getDashboardDrivers = query({
           .query("driverDailyStats")
           .withIndex("by_driver_date", (q) => q.eq("driverId", stat.driverId))
           .collect();
-        const dailyStats = allDailyStats.filter(
-          (d) => d.date >= weekStart && d.date <= weekEnd
-        );
+        const dailyStats = allDailyStats.filter((d) => d.date >= weekStart && d.date <= weekEnd);
 
         // Calculate actual days with activity
         const daysActive = dailyStats.filter((d) => {
@@ -576,7 +551,7 @@ export const getDashboardDrivers = query({
           trend, // null if no previous week data
           photoDefects: stat.dwcBreakdown?.photoDefect ?? 0,
         };
-      })
+      }),
     );
 
     return driversWithStats.filter((d) => d !== null);
@@ -602,7 +577,7 @@ export const getErrorBreakdown = query({
     const currentStats = await ctx.db
       .query("stationWeeklyStats")
       .withIndex("by_station_week", (q) =>
-        q.eq("stationId", args.stationId).eq("year", args.year).eq("week", args.week)
+        q.eq("stationId", args.stationId).eq("year", args.year).eq("week", args.week),
       )
       .first();
 
@@ -611,9 +586,7 @@ export const getErrorBreakdown = query({
     const prevYear = args.week === 1 ? args.year - 1 : args.year;
     const prevStats = await ctx.db
       .query("stationWeeklyStats")
-      .withIndex("by_station_week", (q) =>
-        q.eq("stationId", args.stationId).eq("year", prevYear).eq("week", prevWeek)
-      )
+      .withIndex("by_station_week", (q) => q.eq("stationId", args.stationId).eq("year", prevYear).eq("week", prevWeek))
       .first();
 
     const dwcBreakdown = currentStats?.dwcBreakdown || {
@@ -647,36 +620,37 @@ export const getErrorBreakdown = query({
     };
 
     // Calculate DWC errors total
-    const dwcTotal = dwcBreakdown.contactMiss + dwcBreakdown.photoDefect +
-      dwcBreakdown.noPhoto + dwcBreakdown.otpMiss + dwcBreakdown.other;
-    const prevDwcTotal = prevDwcBreakdown.contactMiss + prevDwcBreakdown.photoDefect +
-      prevDwcBreakdown.noPhoto + prevDwcBreakdown.otpMiss + prevDwcBreakdown.other;
+    const dwcTotal =
+      dwcBreakdown.contactMiss +
+      dwcBreakdown.photoDefect +
+      dwcBreakdown.noPhoto +
+      dwcBreakdown.otpMiss +
+      dwcBreakdown.other;
+    const prevDwcTotal =
+      prevDwcBreakdown.contactMiss +
+      prevDwcBreakdown.photoDefect +
+      prevDwcBreakdown.noPhoto +
+      prevDwcBreakdown.otpMiss +
+      prevDwcBreakdown.other;
     const dwcTrend = dwcTotal - prevDwcTotal;
-    const dwcTrendPercent = prevDwcTotal > 0
-      ? Math.round(((dwcTotal - prevDwcTotal) / prevDwcTotal) * 100)
-      : 0;
+    const dwcTrendPercent = prevDwcTotal > 0 ? Math.round(((dwcTotal - prevDwcTotal) / prevDwcTotal) * 100) : 0;
 
     // Calculate IADC errors total
-    const iadcTotal = iadcBreakdown.mailbox + iadcBreakdown.unattended +
-      iadcBreakdown.safePlace + iadcBreakdown.other;
-    const prevIadcTotal = prevIadcBreakdown.mailbox + prevIadcBreakdown.unattended +
-      prevIadcBreakdown.safePlace + prevIadcBreakdown.other;
+    const iadcTotal = iadcBreakdown.mailbox + iadcBreakdown.unattended + iadcBreakdown.safePlace + iadcBreakdown.other;
+    const prevIadcTotal =
+      prevIadcBreakdown.mailbox + prevIadcBreakdown.unattended + prevIadcBreakdown.safePlace + prevIadcBreakdown.other;
     const iadcTrend = iadcTotal - prevIadcTotal;
-    const iadcTrendPercent = prevIadcTotal > 0
-      ? Math.round(((iadcTotal - prevIadcTotal) / prevIadcTotal) * 100)
-      : 0;
+    const iadcTrendPercent = prevIadcTotal > 0 ? Math.round(((iadcTotal - prevIadcTotal) / prevIadcTotal) * 100) : 0;
 
     // Failed attempts (false scans)
     const failedAttempts = currentStats?.failedAttempts || 0;
     const prevFailedAttempts = prevStats?.failedAttempts || 0;
     const faTrend = failedAttempts - prevFailedAttempts;
-    const faTrendPercent = prevFailedAttempts > 0
-      ? Math.round(((failedAttempts - prevFailedAttempts) / prevFailedAttempts) * 100)
-      : 0;
+    const faTrendPercent =
+      prevFailedAttempts > 0 ? Math.round(((failedAttempts - prevFailedAttempts) / prevFailedAttempts) * 100) : 0;
 
     // Helper to calculate percentage
-    const pct = (val: number, total: number) =>
-      total > 0 ? Math.round((val / total) * 100) : 0;
+    const pct = (val: number, total: number) => (total > 0 ? Math.round((val / total) * 100) : 0);
     const trendVal = (curr: number, prev: number) => curr - prev;
 
     return [
@@ -791,7 +765,7 @@ export const getTopDriversErrors = query({
     const weeklyStats = await ctx.db
       .query("driverWeeklyStats")
       .withIndex("by_station_week", (q) =>
-        q.eq("stationId", args.stationId).eq("year", args.year).eq("week", args.week)
+        q.eq("stationId", args.stationId).eq("year", args.year).eq("week", args.week),
       )
       .collect();
 
@@ -799,18 +773,28 @@ export const getTopDriversErrors = query({
     const getFilteredErrorCount = (
       dwcBreakdown: { contactMiss: number; photoDefect: number; noPhoto: number; otpMiss: number; other: number },
       iadcBreakdown: { mailbox: number; unattended: number; safePlace: number; other: number },
-      failedAttempts: number
+      failedAttempts: number,
     ): number => {
       switch (filter) {
         case "all":
-          return dwcBreakdown.contactMiss + dwcBreakdown.photoDefect +
-            dwcBreakdown.noPhoto + dwcBreakdown.otpMiss + dwcBreakdown.other + failedAttempts;
+          return (
+            dwcBreakdown.contactMiss +
+            dwcBreakdown.photoDefect +
+            dwcBreakdown.noPhoto +
+            dwcBreakdown.otpMiss +
+            dwcBreakdown.other +
+            failedAttempts
+          );
         case "dwc":
-          return dwcBreakdown.contactMiss + dwcBreakdown.photoDefect +
-            dwcBreakdown.noPhoto + dwcBreakdown.otpMiss + dwcBreakdown.other;
+          return (
+            dwcBreakdown.contactMiss +
+            dwcBreakdown.photoDefect +
+            dwcBreakdown.noPhoto +
+            dwcBreakdown.otpMiss +
+            dwcBreakdown.other
+          );
         case "iadc":
-          return iadcBreakdown.mailbox + iadcBreakdown.unattended +
-            iadcBreakdown.safePlace + iadcBreakdown.other;
+          return iadcBreakdown.mailbox + iadcBreakdown.unattended + iadcBreakdown.safePlace + iadcBreakdown.other;
         case "contact-miss":
           return dwcBreakdown.contactMiss;
         case "photo-defect":
@@ -832,8 +816,14 @@ export const getTopDriversErrors = query({
         case "failed-attempts":
           return failedAttempts;
         default:
-          return dwcBreakdown.contactMiss + dwcBreakdown.photoDefect +
-            dwcBreakdown.noPhoto + dwcBreakdown.otpMiss + dwcBreakdown.other + failedAttempts;
+          return (
+            dwcBreakdown.contactMiss +
+            dwcBreakdown.photoDefect +
+            dwcBreakdown.noPhoto +
+            dwcBreakdown.otpMiss +
+            dwcBreakdown.other +
+            failedAttempts
+          );
       }
     };
 
@@ -876,15 +866,11 @@ export const getTopDriversErrors = query({
           { name: "Safe Place", count: iadcBreakdown.safePlace },
           { name: "Other", count: dwcBreakdown.other + iadcBreakdown.other },
         ];
-        const mainError = errorTypes.reduce((max, curr) =>
-          curr.count > max.count ? curr : max
-        );
+        const mainError = errorTypes.reduce((max, curr) => (curr.count > max.count ? curr : max));
 
         // Calculate DWC percent and tier
         const dwcTotal = stat.dwcCompliant + stat.dwcMisses + stat.failedAttempts;
-        const dwcPercent = dwcTotal > 0
-          ? Math.round((stat.dwcCompliant / dwcTotal) * 1000) / 10
-          : 0;
+        const dwcPercent = dwcTotal > 0 ? Math.round((stat.dwcCompliant / dwcTotal) * 1000) / 10 : 0;
 
         const tier = getTier(dwcPercent);
 
@@ -897,7 +883,7 @@ export const getTopDriversErrors = query({
           mainError: mainError.name,
           mainErrorCount: mainError.count,
         };
-      })
+      }),
     );
 
     // Filter, sort by errors descending, and limit
@@ -909,9 +895,7 @@ export const getTopDriversErrors = query({
     // Calculate percentages after we know total
     return validDrivers.map((d) => ({
       ...d,
-      percentage: totalStationErrors > 0
-        ? Math.round((d.totalErrors / totalStationErrors) * 100)
-        : 0,
+      percentage: totalStationErrors > 0 ? Math.round((d.totalErrors / totalStationErrors) * 100) : 0,
     }));
   },
 });
@@ -950,15 +934,11 @@ export const getPerformanceEvolution = query({
     return recentStats.map((stat) => {
       // Calculate DWC %
       const dwcTotal = stat.dwcCompliant + stat.dwcMisses + stat.failedAttempts;
-      const dwcPercent = dwcTotal > 0
-        ? Math.round((stat.dwcCompliant / dwcTotal) * 100 * 10) / 10
-        : 0;
+      const dwcPercent = dwcTotal > 0 ? Math.round((stat.dwcCompliant / dwcTotal) * 100 * 10) / 10 : 0;
 
       // Calculate IADC %
       const iadcTotal = stat.iadcCompliant + stat.iadcNonCompliant;
-      const iadcPercent = iadcTotal > 0
-        ? Math.round((stat.iadcCompliant / iadcTotal) * 100 * 10) / 10
-        : 0;
+      const iadcPercent = iadcTotal > 0 ? Math.round((stat.iadcCompliant / iadcTotal) * 100 * 10) / 10 : 0;
 
       return {
         week: `S${stat.week}`,
@@ -1012,8 +992,13 @@ export const getErrorTrends = query({
         other: 0,
       };
 
-      const total = breakdown.contactMiss + breakdown.photoDefect +
-        breakdown.noPhoto + breakdown.otpMiss + breakdown.other + stat.failedAttempts;
+      const total =
+        breakdown.contactMiss +
+        breakdown.photoDefect +
+        breakdown.noPhoto +
+        breakdown.otpMiss +
+        breakdown.other +
+        stat.failedAttempts;
 
       return {
         week: `S${stat.week}`,
@@ -1050,9 +1035,7 @@ export const getDashboardKPIsDaily = query({
     // Get all daily stats for this date
     const dailyStats = await ctx.db
       .query("driverDailyStats")
-      .withIndex("by_station_date", (q) =>
-        q.eq("stationId", args.stationId).eq("date", args.date)
-      )
+      .withIndex("by_station_date", (q) => q.eq("stationId", args.stationId).eq("date", args.date))
       .collect();
 
     if (dailyStats.length === 0) {
@@ -1067,9 +1050,7 @@ export const getDashboardKPIsDaily = query({
     // Get previous day stats
     const prevDailyStats = await ctx.db
       .query("driverDailyStats")
-      .withIndex("by_station_date", (q) =>
-        q.eq("stationId", args.stationId).eq("date", prevDate)
-      )
+      .withIndex("by_station_date", (q) => q.eq("stationId", args.stationId).eq("date", prevDate))
       .collect();
 
     // Aggregate current day stats
@@ -1131,15 +1112,14 @@ export const getDashboardKPIsDaily = query({
       iadcTrend = Math.round((iadcPercent - prevIadcPercent) * 10) / 10;
     }
 
-    // Count alerts (drivers under 90% DWC)
-    let alerts = 0;
-    for (const stat of dailyStats) {
-      const total = stat.dwcCompliant + stat.dwcMisses + stat.failedAttempts;
-      if (total > 0) {
-        const driverDwc = (stat.dwcCompliant / total) * 100;
-        if (driverDwc < 90) alerts++;
-      }
-    }
+    const alerts = (
+      await ctx.db
+        .query("alerts")
+        .withIndex("by_station_week", (q) =>
+          q.eq("stationId", args.stationId).eq("year", dailyStats[0].year).eq("week", dailyStats[0].week),
+        )
+        .collect()
+    ).filter((alert) => !alert.isDismissed).length;
 
     return {
       avgDwc: Math.round(dwcPercent * 10) / 10,
@@ -1176,9 +1156,7 @@ export const getDashboardDriversDaily = query({
     // Get all daily stats for this date
     const dailyStats = await ctx.db
       .query("driverDailyStats")
-      .withIndex("by_station_date", (q) =>
-        q.eq("stationId", args.stationId).eq("date", args.date)
-      )
+      .withIndex("by_station_date", (q) => q.eq("stationId", args.stationId).eq("date", args.date))
       .collect();
 
     // Calculate previous date for trend
@@ -1189,13 +1167,11 @@ export const getDashboardDriversDaily = query({
     // Get previous day stats for trend calculation
     const prevDailyStats = await ctx.db
       .query("driverDailyStats")
-      .withIndex("by_station_date", (q) =>
-        q.eq("stationId", args.stationId).eq("date", prevDate)
-      )
+      .withIndex("by_station_date", (q) => q.eq("stationId", args.stationId).eq("date", prevDate))
       .collect();
 
     // Create a map of previous day stats by driver
-    const prevStatsByDriver = new Map<string, typeof prevDailyStats[0]>();
+    const prevStatsByDriver = new Map<string, (typeof prevDailyStats)[0]>();
     for (const stat of prevDailyStats) {
       prevStatsByDriver.set(stat.driverId.toString(), stat);
     }
@@ -1219,9 +1195,7 @@ export const getDashboardDriversDaily = query({
         const prevStat = prevStatsByDriver.get(stat.driverId.toString());
         if (prevStat) {
           const prevDwcTotal = prevStat.dwcCompliant + prevStat.dwcMisses + prevStat.failedAttempts;
-          const prevDwcPercent = prevDwcTotal > 0
-            ? Math.round((prevStat.dwcCompliant / prevDwcTotal) * 1000) / 10
-            : 0;
+          const prevDwcPercent = prevDwcTotal > 0 ? Math.round((prevStat.dwcCompliant / prevDwcTotal) * 1000) / 10 : 0;
           trend = Math.round((dwcPercent - prevDwcPercent) * 10) / 10;
         }
 
@@ -1237,7 +1211,7 @@ export const getDashboardDriversDaily = query({
           trend,
           photoDefects: stat.dwcBreakdown?.photoDefect ?? 0,
         };
-      })
+      }),
     );
 
     return driversWithStats.filter((d) => d !== null);
@@ -1264,7 +1238,7 @@ export const getWeeklyComparison = query({
     const currentWeekStats = await ctx.db
       .query("driverWeeklyStats")
       .withIndex("by_station_week", (q) =>
-        q.eq("stationId", args.stationId).eq("year", args.year).eq("week", args.week)
+        q.eq("stationId", args.stationId).eq("year", args.year).eq("week", args.week),
       )
       .collect();
 
@@ -1275,13 +1249,11 @@ export const getWeeklyComparison = query({
     // Get previous week stats
     const prevWeekStats = await ctx.db
       .query("driverWeeklyStats")
-      .withIndex("by_station_week", (q) =>
-        q.eq("stationId", args.stationId).eq("year", prevYear).eq("week", prevWeek)
-      )
+      .withIndex("by_station_week", (q) => q.eq("stationId", args.stationId).eq("year", prevYear).eq("week", prevWeek))
       .collect();
 
     // Create map of previous week stats by driver
-    const prevStatsByDriver = new Map<string, typeof prevWeekStats[0]>();
+    const prevStatsByDriver = new Map<string, (typeof prevWeekStats)[0]>();
     for (const stat of prevWeekStats) {
       prevStatsByDriver.set(stat.driverId.toString(), stat);
     }
@@ -1352,7 +1324,7 @@ export const getWeeklyComparison = query({
           },
           status,
         };
-      })
+      }),
     );
 
     return comparisons
@@ -1390,9 +1362,7 @@ export const getDashboardKPIsRange = query({
     for (const w of weeks) {
       const stats = await ctx.db
         .query("stationWeeklyStats")
-        .withIndex("by_station_week", (q) =>
-          q.eq("stationId", stationId).eq("year", w.year).eq("week", w.week)
-        )
+        .withIndex("by_station_week", (q) => q.eq("stationId", stationId).eq("year", w.year).eq("week", w.week))
         .first();
       if (stats) weeklyStats.push(stats);
     }
@@ -1414,41 +1384,33 @@ export const getDashboardKPIsRange = query({
         failedAttempts: 0,
         iadcCompliant: 0,
         iadcNonCompliant: 0,
-      }
+      },
     );
 
     // 4. Calculer % depuis les totaux agrégés
-    const dwcTotal =
-      totals.dwcCompliant + totals.dwcMisses + totals.failedAttempts;
+    const dwcTotal = totals.dwcCompliant + totals.dwcMisses + totals.failedAttempts;
     const avgDwc = dwcTotal > 0 ? (totals.dwcCompliant / dwcTotal) * 100 : 0;
 
     const iadcTotal = totals.iadcCompliant + totals.iadcNonCompliant;
-    const avgIadc =
-      iadcTotal > 0 ? (totals.iadcCompliant / iadcTotal) * 100 : 0;
+    const avgIadc = iadcTotal > 0 ? (totals.iadcCompliant / iadcTotal) * 100 : 0;
 
     // 5. Trend = dernière semaine - première semaine (en %)
     const first = weeklyStats[0];
     const last = weeklyStats[weeklyStats.length - 1];
 
-    const firstDwcTotal =
-      first.dwcCompliant + first.dwcMisses + first.failedAttempts;
-    const firstDwc =
-      firstDwcTotal > 0 ? (first.dwcCompliant / firstDwcTotal) * 100 : 0;
+    const firstDwcTotal = first.dwcCompliant + first.dwcMisses + first.failedAttempts;
+    const firstDwc = firstDwcTotal > 0 ? (first.dwcCompliant / firstDwcTotal) * 100 : 0;
 
-    const lastDwcTotal =
-      last.dwcCompliant + last.dwcMisses + last.failedAttempts;
-    const lastDwc =
-      lastDwcTotal > 0 ? (last.dwcCompliant / lastDwcTotal) * 100 : 0;
+    const lastDwcTotal = last.dwcCompliant + last.dwcMisses + last.failedAttempts;
+    const lastDwc = lastDwcTotal > 0 ? (last.dwcCompliant / lastDwcTotal) * 100 : 0;
 
     const dwcTrend = Math.round((lastDwc - firstDwc) * 10) / 10;
 
     const firstIadcTotal = first.iadcCompliant + first.iadcNonCompliant;
-    const firstIadc =
-      firstIadcTotal > 0 ? (first.iadcCompliant / firstIadcTotal) * 100 : 0;
+    const firstIadc = firstIadcTotal > 0 ? (first.iadcCompliant / firstIadcTotal) * 100 : 0;
 
     const lastIadcTotal = last.iadcCompliant + last.iadcNonCompliant;
-    const lastIadc =
-      lastIadcTotal > 0 ? (last.iadcCompliant / lastIadcTotal) * 100 : 0;
+    const lastIadc = lastIadcTotal > 0 ? (last.iadcCompliant / lastIadcTotal) * 100 : 0;
 
     const iadcTrend = Math.round((lastIadc - firstIadc) * 10) / 10;
 
@@ -1456,16 +1418,12 @@ export const getDashboardKPIsRange = query({
     const activeDrivers = Math.max(...weeklyStats.map((s) => s.activeDrivers));
     const totalDrivers = Math.max(...weeklyStats.map((s) => s.totalDrivers));
 
-    // Compter les alertes (drivers <90% DWC sur la période)
-    // On doit le calculer depuis les daily stats
     const allDailyStats = await ctx.db
       .query("driverDailyStats")
       .withIndex("by_station_date", (q) => q.eq("stationId", stationId))
       .collect();
 
-    const filteredDailyStats = allDailyStats.filter(
-      (s) => s.date >= startDate && s.date <= endDate
-    );
+    const filteredDailyStats = allDailyStats.filter((s) => s.date >= startDate && s.date <= endDate);
 
     // Grouper par driver et calculer leur DWC moyen
     const byDriver = new Map<string, typeof filteredDailyStats>();
@@ -1475,8 +1433,18 @@ export const getDashboardKPIsRange = query({
       byDriver.get(key)!.push(stat);
     }
 
-    // 7. Calculer alerts et tierDistribution depuis les drivers uniques
-    let alerts = 0;
+    const periodAlertsRaw = await Promise.all(
+      weeks.map(
+        async (w) =>
+          await ctx.db
+            .query("alerts")
+            .withIndex("by_station_week", (q) => q.eq("stationId", stationId).eq("year", w.year).eq("week", w.week))
+            .collect(),
+      ),
+    );
+    const alerts = periodAlertsRaw.flat().filter((alert) => !alert.isDismissed).length;
+
+    // 7. Calculer tierDistribution depuis les drivers uniques
     const tierDistribution = { fantastic: 0, great: 0, fair: 0, poor: 0 };
 
     for (const stats of byDriver.values()) {
@@ -1486,17 +1454,11 @@ export const getDashboardKPIsRange = query({
           dwcMisses: acc.dwcMisses + s.dwcMisses,
           failedAttempts: acc.failedAttempts + s.failedAttempts,
         }),
-        { dwcCompliant: 0, dwcMisses: 0, failedAttempts: 0 }
+        { dwcCompliant: 0, dwcMisses: 0, failedAttempts: 0 },
       );
-      const total =
-        driverTotals.dwcCompliant +
-        driverTotals.dwcMisses +
-        driverTotals.failedAttempts;
+      const total = driverTotals.dwcCompliant + driverTotals.dwcMisses + driverTotals.failedAttempts;
       if (total > 0) {
         const driverDwc = (driverTotals.dwcCompliant / total) * 100;
-
-        // Compter les alertes
-        if (driverDwc < 90) alerts++;
 
         // Calculer le tier du driver unique depuis la politique canonique
         tierDistribution[getTier(driverDwc)]++;
@@ -1542,9 +1504,7 @@ export const getDashboardDriversRange = query({
       .withIndex("by_station_date", (q) => q.eq("stationId", stationId))
       .collect();
 
-    const filtered = allStats.filter(
-      (s) => s.date >= startDate && s.date <= endDate
-    );
+    const filtered = allStats.filter((s) => s.date >= startDate && s.date <= endDate);
 
     if (filtered.length === 0) return [];
 
@@ -1577,22 +1537,15 @@ export const getDashboardDriversRange = query({
             failedAttempts: 0,
             iadcCompliant: 0,
             iadcNonCompliant: 0,
-          }
+          },
         );
 
         // Calculer % depuis totaux
-        const dwcTotal =
-          totals.dwcCompliant + totals.dwcMisses + totals.failedAttempts;
-        const dwcPercent =
-          dwcTotal > 0
-            ? Math.round((totals.dwcCompliant / dwcTotal) * 1000) / 10
-            : 0;
+        const dwcTotal = totals.dwcCompliant + totals.dwcMisses + totals.failedAttempts;
+        const dwcPercent = dwcTotal > 0 ? Math.round((totals.dwcCompliant / dwcTotal) * 1000) / 10 : 0;
 
         const iadcTotal = totals.iadcCompliant + totals.iadcNonCompliant;
-        const iadcPercent =
-          iadcTotal > 0
-            ? Math.round((totals.iadcCompliant / iadcTotal) * 1000) / 10
-            : 0;
+        const iadcPercent = iadcTotal > 0 ? Math.round((totals.iadcCompliant / iadcTotal) * 1000) / 10 : 0;
 
         const tier = getTier(dwcPercent);
 
@@ -1601,23 +1554,16 @@ export const getDashboardDriversRange = query({
         const first = sorted[0];
         const last = sorted[sorted.length - 1];
 
-        const firstTotal =
-          first.dwcCompliant + first.dwcMisses + first.failedAttempts;
-        const firstPercent =
-          firstTotal > 0 ? (first.dwcCompliant / firstTotal) * 100 : 0;
+        const firstTotal = first.dwcCompliant + first.dwcMisses + first.failedAttempts;
+        const firstPercent = firstTotal > 0 ? (first.dwcCompliant / firstTotal) * 100 : 0;
 
-        const lastTotal =
-          last.dwcCompliant + last.dwcMisses + last.failedAttempts;
-        const lastPercent =
-          lastTotal > 0 ? (last.dwcCompliant / lastTotal) * 100 : 0;
+        const lastTotal = last.dwcCompliant + last.dwcMisses + last.failedAttempts;
+        const lastPercent = lastTotal > 0 ? (last.dwcCompliant / lastTotal) * 100 : 0;
 
         const trend = Math.round((lastPercent - firstPercent) * 10) / 10;
 
         // Sum photo defects from all stats
-        const photoDefects = stats.reduce(
-          (sum, s) => sum + (s.dwcBreakdown?.photoDefect ?? 0),
-          0
-        );
+        const photoDefects = stats.reduce((sum, s) => sum + (s.dwcBreakdown?.photoDefect ?? 0), 0);
 
         return {
           id: driver._id,
@@ -1631,7 +1577,7 @@ export const getDashboardDriversRange = query({
           trend,
           photoDefects,
         };
-      })
+      }),
     );
 
     return driversWithStats.filter((d) => d !== null);

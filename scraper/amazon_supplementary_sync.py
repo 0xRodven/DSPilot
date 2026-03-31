@@ -17,6 +17,7 @@ import urllib.request
 from datetime import datetime
 from pathlib import Path
 
+import nodriver as uc
 from bs4 import BeautifulSoup
 
 BASE_URL = os.getenv("AMAZON_LOGISTICS_BASE_URL", "https://logistics.amazon.fr").rstrip("/")
@@ -31,6 +32,32 @@ DOWNLOADABLE_REPORT_TYPES = {
 
 def log(message):
     print(f"[{datetime.now().strftime('%H:%M:%S')}] {message}", flush=True)
+
+
+async def navigate_with_fallback(page, url, wait_seconds=5, timeout_seconds=30):
+    log(f"Opening {url}")
+    try:
+        await asyncio.wait_for(page.get(url), timeout=timeout_seconds)
+    except asyncio.TimeoutError:
+        log("  Primary navigation timed out, using direct CDP navigate fallback")
+        try:
+            await asyncio.wait_for(page.send(uc.cdp.page.navigate(url)), timeout=10)
+        except asyncio.TimeoutError:
+            log("  CDP navigate timed out, forcing window.location fallback")
+            await asyncio.wait_for(page.evaluate(f"window.location.href = {json.dumps(url)}"), timeout=5)
+    await asyncio.sleep(wait_seconds)
+
+
+async def get_page_html(page, timeout_seconds=20):
+    try:
+        return await asyncio.wait_for(page.get_content(), timeout=timeout_seconds)
+    except asyncio.TimeoutError:
+        log("  DOM snapshot timed out, using documentElement.outerHTML fallback")
+        html = await asyncio.wait_for(
+            page.evaluate("document.documentElement.outerHTML", return_by_value=True),
+            timeout=10,
+        )
+        return html if isinstance(html, str) else str(html)
 
 
 def normalize_text(text):
@@ -183,22 +210,24 @@ def run_ingest(output_dir, station_code, expected_amazon_station_code):
 
 
 async def capture_browser_weeks(args):
-    from amazon_deep_scraper import load_cookies_and_login, setup_browser
+    from amazon_deep_scraper import close_browser, load_cookies_and_login, looks_like_login_page, setup_browser
 
     browser = await setup_browser()
     page = await load_cookies_and_login(browser)
     if not page:
-        browser.stop()
+        await close_browser(browser)
         raise SystemExit(1)
 
-    await page.get(REPORTS_URL)
-    await asyncio.sleep(5)
+    await navigate_with_fallback(page, REPORTS_URL)
 
     seen_week_labels = set()
     captures = []
 
     for index in range(args.weeks):
-        html = await page.get_content()
+        log("  Capturing reports page DOM")
+        html = await get_page_html(page)
+        if looks_like_login_page(html):
+            raise RuntimeError("reports_page_redirected_to_login")
         manifest = extract_report_manifest(html, f"browser:{REPORTS_URL}")
         week_slug = build_week_slug(manifest)
         week_dir = args.output_dir / week_slug
@@ -237,13 +266,14 @@ async def capture_browser_weeks(args):
         await previous_button.click()
         await asyncio.sleep(4)
 
-        updated_html = await page.get_content()
+        log("  Refreshing reports page DOM after week change")
+        updated_html = await get_page_html(page)
         updated_manifest = extract_report_manifest(updated_html, f"browser:{REPORTS_URL}")
         if updated_manifest.get("week_label") == current_label:
             log("  Week label did not change after click, stopping")
             break
 
-    browser.stop()
+    await close_browser(browser)
     return captures
 
 

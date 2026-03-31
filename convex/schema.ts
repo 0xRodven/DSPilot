@@ -24,6 +24,71 @@ const tierDistributionValidator = v.object({
   poor: v.number(),
 });
 
+const confidenceLevelValidator = v.union(v.literal("low"), v.literal("medium"), v.literal("high"));
+
+const automationRunStatusValidator = v.union(
+  v.literal("pending"),
+  v.literal("running"),
+  v.literal("success"),
+  v.literal("partial"),
+  v.literal("failed"),
+);
+
+const logicalChannelValidator = v.union(
+  v.literal("ops"),
+  v.literal("alerts"),
+  v.literal("reports_daily"),
+  v.literal("reports_weekly"),
+);
+
+const reportTypeValidator = v.union(v.literal("daily"), v.literal("weekly"));
+
+const reportAudienceValidator = v.union(v.literal("internal"), v.literal("manager"));
+
+const rosterStatusValidator = v.union(
+  v.literal("ACTIVE"),
+  v.literal("ONBOARDING"),
+  v.literal("OFFBOARDED"),
+  v.literal("UNKNOWN"),
+);
+
+const rosterMatchMethodValidator = v.union(v.literal("normalized_name"), v.literal("unmatched"));
+
+const deliveryStatusValidator = v.union(
+  v.literal("pending"),
+  v.literal("sent"),
+  v.literal("failed"),
+  v.literal("skipped"),
+);
+
+const pdfStatusValidator = v.union(
+  v.literal("pending"),
+  v.literal("generated"),
+  v.literal("failed"),
+  v.literal("skipped"),
+);
+
+const decisionTypeValidator = v.union(
+  v.literal("alert"),
+  v.literal("digest"),
+  v.literal("report_daily"),
+  v.literal("report_weekly"),
+);
+
+const decisionStatusValidator = v.union(
+  v.literal("draft"),
+  v.literal("queued"),
+  v.literal("sent"),
+  v.literal("suppressed"),
+);
+
+const channelMappingsValidator = v.object({
+  ops: v.string(),
+  alerts: v.string(),
+  reportsDaily: v.string(),
+  reportsWeekly: v.string(),
+});
+
 export default defineSchema({
   // Stations (DSP delivery stations)
   stations: defineTable({
@@ -32,11 +97,7 @@ export default defineSchema({
     region: v.optional(v.string()),
     organizationId: v.optional(v.string()), // Clerk org ID (optional for migration)
     ownerId: v.string(), // Clerk user ID (creator)
-    plan: v.union(
-      v.literal("free"),
-      v.literal("pro"),
-      v.literal("enterprise")
-    ),
+    plan: v.union(v.literal("free"), v.literal("pro"), v.literal("enterprise")),
     createdAt: v.number(),
   })
     .index("by_organization", ["organizationId"])
@@ -48,10 +109,7 @@ export default defineSchema({
     organizationId: v.string(), // Clerk org ID
     userId: v.string(), // Clerk user ID
     stationId: v.id("stations"), // Station granted access to
-    role: v.union(
-      v.literal("manager"),
-      v.literal("viewer")
-    ),
+    role: v.union(v.literal("manager"), v.literal("viewer")),
     grantedBy: v.string(), // Who granted access
     grantedAt: v.number(),
   })
@@ -97,6 +155,12 @@ export default defineSchema({
 
     // Breakdowns IADC (par Group)
     iadcBreakdown: v.optional(iadcBreakdownValidator),
+
+    // Champs bruts Daily Report (Amazon "Rapports supplémentaires")
+    rtsCount: v.optional(v.number()), // Return to Station
+    dnrCount: v.optional(v.number()), // Did Not Receive
+    podFails: v.optional(v.number()), // Proof of Delivery failures
+    ccFails: v.optional(v.number()), // Contact Compliance failures
 
     createdAt: v.number(),
   })
@@ -179,23 +243,57 @@ export default defineSchema({
     .index("by_station_week", ["stationId", "year", "week"])
     .index("by_station_metric_week", ["stationId", "metricName", "year", "week"]),
 
+  driverAssociateStats: defineTable({
+    stationId: v.id("stations"),
+    driverId: v.id("drivers"),
+    amazonId: v.string(),
+    year: v.number(),
+    week: v.number(),
+    packagesDelivered: v.optional(v.number()),
+    dnrCount: v.optional(v.number()),
+    dnrDpmo: v.optional(v.number()),
+    packagesShipped: v.optional(v.number()),
+    rtsCount: v.optional(v.number()),
+    rtsPercent: v.optional(v.number()),
+    rtsDpmo: v.optional(v.number()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_station", ["stationId"])
+    .index("by_driver", ["driverId"])
+    .index("by_station_week", ["stationId", "year", "week"])
+    .index("by_station_driver_week", ["stationId", "driverId", "year", "week"]),
+
+  driverRosterSnapshots: defineTable({
+    stationId: v.id("stations"),
+    driverId: v.optional(v.id("drivers")),
+    year: v.number(),
+    week: v.number(),
+    name: v.string(),
+    providerId: v.string(),
+    dspName: v.optional(v.string()),
+    email: v.optional(v.string()),
+    phoneNumber: v.optional(v.string()),
+    onboardingTasks: v.optional(v.string()),
+    status: rosterStatusValidator,
+    serviceArea: v.optional(v.string()),
+    matchMethod: rosterMatchMethodValidator,
+    matchConfidence: v.number(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_station", ["stationId"])
+    .index("by_driver", ["driverId"])
+    .index("by_station_week", ["stationId", "year", "week"])
+    .index("by_station_status_week", ["stationId", "status", "year", "week"]),
+
   // Coaching actions for drivers
   coachingActions: defineTable({
     driverId: v.id("drivers"),
     stationId: v.id("stations"),
 
-    actionType: v.union(
-      v.literal("discussion"),
-      v.literal("warning"),
-      v.literal("training"),
-      v.literal("suspension")
-    ),
-    status: v.union(
-      v.literal("pending"),
-      v.literal("improved"),
-      v.literal("no_effect"),
-      v.literal("escalated")
-    ),
+    actionType: v.union(v.literal("discussion"), v.literal("warning"), v.literal("training"), v.literal("suspension")),
+    status: v.union(v.literal("pending"), v.literal("improved"), v.literal("no_effect"), v.literal("escalated")),
 
     reason: v.string(),
     targetCategory: v.optional(v.string()),
@@ -236,7 +334,7 @@ export default defineSchema({
       v.literal("processing"),
       v.literal("success"),
       v.literal("partial"),
-      v.literal("failed")
+      v.literal("failed"),
     ),
 
     // Stats import
@@ -262,6 +360,113 @@ export default defineSchema({
     .index("by_station_week", ["stationId", "year", "week"])
     .index("by_status", ["status"]),
 
+  automationRuns: defineTable({
+    stationId: v.id("stations"),
+    importId: v.optional(v.id("imports")),
+    trigger: v.union(v.literal("amazon_ingest"), v.literal("manual"), v.literal("cron")),
+    source: v.string(),
+    status: automationRunStatusValidator,
+    year: v.optional(v.number()),
+    week: v.optional(v.number()),
+    filename: v.optional(v.string()),
+    reportStationCode: v.optional(v.string()),
+    importedBy: v.optional(v.string()),
+    artifactCount: v.number(),
+    alertCount: v.number(),
+    reportCount: v.number(),
+    summary: v.optional(v.string()),
+    error: v.optional(v.string()),
+    startedAt: v.number(),
+    completedAt: v.optional(v.number()),
+  })
+    .index("by_station", ["stationId"])
+    .index("by_station_status", ["stationId", "status"])
+    .index("by_station_week", ["stationId", "year", "week"]),
+
+  sourceArtifacts: defineTable({
+    stationId: v.id("stations"),
+    runId: v.optional(v.id("automationRuns")),
+    importId: v.optional(v.id("imports")),
+    artifactType: v.string(),
+    logicalSource: v.string(),
+    filename: v.string(),
+    storagePath: v.string(),
+    mimeType: v.optional(v.string()),
+    sizeBytes: v.optional(v.number()),
+    sha256: v.optional(v.string()),
+    stationCode: v.optional(v.string()),
+    year: v.optional(v.number()),
+    week: v.optional(v.number()),
+    createdAt: v.number(),
+  })
+    .index("by_station", ["stationId"])
+    .index("by_run", ["runId"])
+    .index("by_import", ["importId"])
+    .index("by_station_week", ["stationId", "year", "week"]),
+
+  decisionScores: defineTable({
+    stationId: v.id("stations"),
+    runId: v.optional(v.id("automationRuns")),
+    importId: v.optional(v.id("imports")),
+    driverId: v.optional(v.id("drivers")),
+    year: v.optional(v.number()),
+    week: v.optional(v.number()),
+    decisionType: decisionTypeValidator,
+    logicalChannel: logicalChannelValidator,
+    title: v.string(),
+    summary: v.string(),
+    severity: v.union(v.literal("info"), v.literal("warning"), v.literal("critical")),
+    confidenceScore: v.number(),
+    confidenceLevel: confidenceLevelValidator,
+    status: decisionStatusValidator,
+    targetPath: v.optional(v.string()),
+    evidence: v.array(v.string()),
+    recommendedAction: v.optional(v.string()),
+    createdAt: v.number(),
+  })
+    .index("by_station", ["stationId"])
+    .index("by_run", ["runId"])
+    .index("by_station_week", ["stationId", "year", "week"])
+    .index("by_station_channel", ["stationId", "logicalChannel"]),
+
+  reportDeliveries: defineTable({
+    stationId: v.id("stations"),
+    runId: v.optional(v.id("automationRuns")),
+    importId: v.optional(v.id("imports")),
+    reportType: reportTypeValidator,
+    logicalChannel: logicalChannelValidator,
+    audience: reportAudienceValidator,
+    periodLabel: v.string(),
+    year: v.optional(v.number()),
+    week: v.optional(v.number()),
+    title: v.string(),
+    summary: v.string(),
+    asciiContent: v.string(),
+    htmlContent: v.string(),
+    pdfStatus: pdfStatusValidator,
+    pdfPath: v.optional(v.string()),
+    deliveryStatus: deliveryStatusValidator,
+    targetPath: v.optional(v.string()),
+    confidenceScore: v.number(),
+    createdAt: v.number(),
+    sentAt: v.optional(v.number()),
+  })
+    .index("by_station", ["stationId"])
+    .index("by_run", ["runId"])
+    .index("by_station_type", ["stationId", "reportType"])
+    .index("by_station_week", ["stationId", "year", "week"]),
+
+  stationAutomationConfigs: defineTable({
+    stationId: v.id("stations"),
+    enabled: v.boolean(),
+    timezone: v.string(),
+    autoApproveMinConfidence: v.number(),
+    channelMappings: channelMappingsValidator,
+    audiences: v.array(reportAudienceValidator),
+    updatedBy: v.string(),
+    updatedAt: v.number(),
+  }).index("by_station", ["stationId"]),
+
   // WhatsApp settings per station
   whatsappSettings: defineTable({
     stationId: v.id("stations"),
@@ -282,18 +487,23 @@ export default defineSchema({
       v.literal("dwc_critical"), // DWC under 90%
       v.literal("coaching_pending"), // Coaching > 14 days pending
       v.literal("new_driver"), // New driver needs attention
-      v.literal("tier_downgrade") // Driver dropped tier
+      v.literal("tier_downgrade"), // Driver dropped tier
     ),
-    severity: v.union(
-      v.literal("warning"),
-      v.literal("critical")
-    ),
+    severity: v.union(v.literal("warning"), v.literal("critical")),
     title: v.string(),
     message: v.string(),
     // Context data
     currentValue: v.optional(v.number()),
     previousValue: v.optional(v.number()),
     threshold: v.optional(v.number()),
+    confidenceScore: v.optional(v.number()),
+    confidenceLevel: v.optional(confidenceLevelValidator),
+    logicalChannel: v.optional(logicalChannelValidator),
+    targetPath: v.optional(v.string()),
+    evidence: v.optional(v.array(v.string())),
+    recommendedAction: v.optional(v.string()),
+    sourceRunId: v.optional(v.id("automationRuns")),
+    decisionScoreId: v.optional(v.id("decisionScores")),
     year: v.number(),
     week: v.number(),
     // Status
@@ -322,7 +532,7 @@ export default defineSchema({
       v.literal("sent"),
       v.literal("delivered"),
       v.literal("failed"),
-      v.literal("undelivered")
+      v.literal("undelivered"),
     ),
     errorMessage: v.optional(v.string()),
     sentAt: v.optional(v.number()),

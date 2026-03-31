@@ -2,11 +2,24 @@ import { ConvexHttpClient } from "convex/browser";
 import { type FunctionReference, makeFunctionReference } from "convex/server";
 
 import { parseHtmlContent } from "../src/lib/parser";
+import { parseAssociateOverviewHtml } from "../src/lib/parser/associate-overview-html";
+import { parseDailyReportHtml } from "../src/lib/parser/daily-report-html";
 import { parseDeliveryOverviewCsv } from "../src/lib/parser/delivery-overview-csv";
 import { parseDriverNamesCsv } from "../src/lib/parser/driver-names-csv";
+import { parseDriverRosterHtml } from "../src/lib/parser/driver-roster-html";
+import { createHash } from "node:crypto";
 import { readdir, readFile, stat } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
+
+type DailyReportStat = {
+  transporterId: string;
+  date: string;
+  rtsCount: number;
+  dnrCount: number;
+  podFails: number;
+  ccFails: number;
+};
 
 type CliOptions = {
   stationCode: string;
@@ -14,6 +27,9 @@ type CliOptions = {
   dwcHtmlPath?: string;
   deliveryOverviewPath?: string;
   driverNamesPath?: string;
+  associateOverviewHtmlPath?: string;
+  driverRosterHtmlPath?: string;
+  dailyReportHtmlPath?: string;
   artifactsDir?: string;
   importedBy: string;
   dryRun: boolean;
@@ -92,6 +108,41 @@ type AutomationActionArgs = {
     value: string;
     numericValue?: number;
   }>;
+  associateWeeklyStats?: Array<{
+    amazonId: string;
+    name: string;
+    packagesDelivered?: number;
+    dnrCount?: number;
+    dnrDpmo?: number;
+    packagesShipped?: number;
+    rtsCount?: number;
+    rtsPercent?: number;
+    rtsDpmo?: number;
+  }>;
+  driverRosterEntries?: Array<{
+    name: string;
+    providerId: string;
+    dspName?: string;
+    email?: string;
+    phoneNumber?: string;
+    onboardingTasks?: string;
+    status: "ACTIVE" | "ONBOARDING" | "OFFBOARDED" | "UNKNOWN";
+    serviceArea?: string;
+  }>;
+  dailyReportStats?: DailyReportStat[];
+  source?: string;
+  artifacts?: Array<{
+    artifactType: string;
+    logicalSource: string;
+    filename: string;
+    storagePath: string;
+    mimeType?: string;
+    sizeBytes?: number;
+    sha256?: string;
+    stationCode?: string;
+    year?: number;
+    week?: number;
+  }>;
   warnings?: string[];
 };
 
@@ -108,6 +159,9 @@ type AutomationActionResult = {
   dailyRecordsCount: number;
   weeklyRecordsCount: number;
   deliveryMetricsCount: number;
+  associateStatsCount?: number;
+  rosterEntriesCount?: number;
+  rosterLinkedCount?: number;
   dwcScore: number;
   iadcScore: number;
   tierDistribution: {
@@ -135,8 +189,6 @@ const ingestParsedAmazonReportRef = makeFunctionReference(
 
 async function main() {
   const options = parseArgs(process.argv.slice(2));
-  const convexUrl = requireEnv("NEXT_PUBLIC_CONVEX_URL");
-  const convexDeployKey = requireEnv("CONVEX_DEPLOY_KEY");
 
   const discoveredPaths = await discoverArtifactPaths(options);
   const dwcHtmlPath = discoveredPaths.dwcHtmlPath;
@@ -149,6 +201,8 @@ async function main() {
   const parsedReport = parseHtmlContent(dwcHtmlContent, {
     filename: path.basename(dwcHtmlPath),
   });
+
+  const supplementalPaths = await discoverSupplementaryPaths(options, parsedReport.year, parsedReport.week);
 
   if (options.expectedAmazonStationCode && parsedReport.stationCode !== options.expectedAmazonStationCode) {
     throw new Error(
@@ -171,6 +225,32 @@ async function main() {
   if (driverNames && driverNames.errors.length > 0) {
     throw new Error(`CSV noms livreurs invalide: ${driverNames.errors.join(" | ")}`);
   }
+
+  const associateStats = await parseAssociateOverviewArtifacts(supplementalPaths.associateOverviewHtmlPaths);
+  const rosterEntries = supplementalPaths.driverRosterHtmlPath
+    ? parseDriverRosterHtml(await readFile(supplementalPaths.driverRosterHtmlPath, "utf-8"))
+    : null;
+  const dailyReportStats = await parseDailyReportArtifacts(supplementalPaths.dailyReportHtmlPaths);
+
+  if (associateStats.errors.length > 0) {
+    throw new Error(`Associate Overview invalide: ${associateStats.errors.join(" | ")}`);
+  }
+
+  if (dailyReportStats.errors.length > 0) {
+    throw new Error(`Daily Report invalide: ${dailyReportStats.errors.join(" | ")}`);
+  }
+
+  if (rosterEntries && rosterEntries.errors.length > 0) {
+    throw new Error(`Roster HTML invalide: ${rosterEntries.errors.join(" | ")}`);
+  }
+
+  const mergedDriverMappings = mergeDriverMappings(
+    driverNames?.mappings || [],
+    associateStats.rows.map((row) => ({
+      amazonId: row.amazonId,
+      name: row.name,
+    })),
+  );
 
   const payload: AutomationActionArgs = {
     stationId: "",
@@ -219,14 +299,40 @@ async function main() {
           }
         : undefined,
     })),
-    driverMappings: driverNames?.mappings,
+    driverMappings: mergedDriverMappings,
     deliveryMetrics: deliveryOverview?.metrics,
+    associateWeeklyStats: associateStats.rows,
+    driverRosterEntries: rosterEntries?.rows,
+    dailyReportStats: dailyReportStats.stats,
+    source: options.artifactsDir ? "amazon_artifacts_dir" : "amazon_explicit_files",
     warnings: [
       ...parsedReport.warnings,
       ...(deliveryOverview ? [] : ["Delivery Overview absent"]),
       ...(driverNames ? [] : ["CSV noms livreurs absent"]),
+      ...associateStats.warnings,
+      ...(associateStats.rows.length > 0 ? [] : ["Associate Overview absent"]),
+      ...(rosterEntries ? rosterEntries.warnings : []),
+      ...(rosterEntries?.rows.length ? [] : ["Roster HTML absent"]),
+      ...dailyReportStats.warnings,
+      ...(dailyReportStats.stats.length > 0 ? [] : ["Daily Report absent"]),
     ],
   };
+
+  payload.artifacts = await buildArtifactMetadata(
+    {
+      dwcHtmlPath,
+      deliveryOverviewPath: discoveredPaths.deliveryOverviewPath,
+      driverNamesPath: discoveredPaths.driverNamesPath,
+      associateOverviewHtmlPaths: supplementalPaths.associateOverviewHtmlPaths,
+      driverRosterHtmlPath: supplementalPaths.driverRosterHtmlPath,
+      artifactsDir: options.artifactsDir,
+    },
+    {
+      stationCode: parsedReport.stationCode,
+      year: parsedReport.year,
+      week: parsedReport.week,
+    },
+  );
 
   const summary = {
     dspilotStationCode: options.stationCode,
@@ -237,13 +343,18 @@ async function main() {
       dwcHtmlPath,
       deliveryOverviewPath: discoveredPaths.deliveryOverviewPath || null,
       driverNamesPath: discoveredPaths.driverNamesPath || null,
+      associateOverviewHtmlPaths: supplementalPaths.associateOverviewHtmlPaths,
+      driverRosterHtmlPath: supplementalPaths.driverRosterHtmlPath || null,
     },
     counts: {
       transporters: parsedReport.transporterIds.length,
       dailyStats: parsedReport.dailyStats.length,
       weeklyStats: parsedReport.weeklyStats.length,
       deliveryMetrics: deliveryOverview?.metrics.length || 0,
-      driverMappings: driverNames?.mappings.length || 0,
+      driverMappings: mergedDriverMappings.length,
+      associateStats: associateStats.rows.length,
+      driverRosterEntries: rosterEntries?.rows.length || 0,
+      dailyReportStats: dailyReportStats.stats.length,
     },
     warnings: payload.warnings || [],
   };
@@ -253,6 +364,8 @@ async function main() {
     return;
   }
 
+  const convexUrl = requireEnv("NEXT_PUBLIC_CONVEX_URL");
+  const convexDeployKey = requireEnv("CONVEX_DEPLOY_KEY");
   const client = new ConvexHttpClient(convexUrl) as unknown as AdminConvexHttpClient;
   client.setAdminAuth(convexDeployKey);
 
@@ -288,6 +401,9 @@ function parseArgs(argv: string[]): CliOptions {
     dwcHtmlPath: process.env.DSPILOT_DWC_HTML_PATH,
     deliveryOverviewPath: process.env.DSPILOT_DELIVERY_OVERVIEW_PATH,
     driverNamesPath: process.env.DSPILOT_DRIVER_NAMES_PATH,
+    associateOverviewHtmlPath: process.env.DSPILOT_ASSOCIATE_OVERVIEW_HTML_PATH,
+    driverRosterHtmlPath: process.env.DSPILOT_DRIVER_ROSTER_HTML_PATH,
+    dailyReportHtmlPath: process.env.DSPILOT_DAILY_REPORT_HTML_PATH,
     artifactsDir: process.env.DSPILOT_ARTIFACTS_DIR,
     importedBy: process.env.DSPILOT_AUTOMATION_IMPORTED_BY || "system:amazon-automation",
     dryRun: false,
@@ -318,12 +434,24 @@ function parseArgs(argv: string[]): CliOptions {
         options.driverNamesPath = requireOptionValue(arg, next);
         index += 1;
         break;
+      case "--associate-overview-html":
+        options.associateOverviewHtmlPath = requireOptionValue(arg, next);
+        index += 1;
+        break;
+      case "--driver-roster-html":
+        options.driverRosterHtmlPath = requireOptionValue(arg, next);
+        index += 1;
+        break;
       case "--artifacts-dir":
         options.artifactsDir = requireOptionValue(arg, next);
         index += 1;
         break;
       case "--imported-by":
         options.importedBy = requireOptionValue(arg, next);
+        index += 1;
+        break;
+      case "--daily-report-html":
+        options.dailyReportHtmlPath = requireOptionValue(arg, next);
         index += 1;
         break;
       case "--dry-run":
@@ -361,6 +489,16 @@ async function discoverArtifactPaths(options: CliOptions) {
   return {
     dwcHtmlPath:
       options.dwcHtmlPath ||
+      (await pickNewestMatchingFile(files, (filePath) => {
+        const normalized = path.basename(filePath).toLowerCase();
+        return (
+          normalized.endsWith(".html") &&
+          (normalized.includes("dwc-iadc-report") ||
+            normalized.includes("dwc_iadc") ||
+            (normalized.includes("dwc") && normalized.includes("iadc")) ||
+            normalized.startsWith("scorecard_"))
+        );
+      })) ||
       (await pickNewestMatchingFile(files, (filePath) => filePath.toLowerCase().endsWith(".html"))),
     deliveryOverviewPath:
       options.deliveryOverviewPath ||
@@ -379,9 +517,56 @@ async function discoverArtifactPaths(options: CliOptions) {
         const normalized = filePath.toLowerCase();
         return (
           normalized.endsWith(".csv") &&
-          (normalized.includes("concessions") || normalized.includes("associ") || normalized.includes("livreur"))
+          (normalized.includes("concessions") ||
+            normalized.includes("associ") ||
+            normalized.includes("livreur") ||
+            normalized.includes("roster"))
         );
       })),
+  };
+}
+
+async function discoverSupplementaryPaths(options: CliOptions, year: number, week: number) {
+  if (!options.artifactsDir) {
+    return {
+      associateOverviewHtmlPaths: options.associateOverviewHtmlPath ? [options.associateOverviewHtmlPath] : [],
+      driverRosterHtmlPath: options.driverRosterHtmlPath,
+      dailyReportHtmlPaths: options.dailyReportHtmlPath ? [options.dailyReportHtmlPath] : [],
+    };
+  }
+
+  const files = await listFilesRecursively(options.artifactsDir);
+  const associateWeekTag = `associate_w${week}_${year}`;
+
+  const associateOverviewHtmlPaths = dedupePaths([
+    ...(options.associateOverviewHtmlPath ? [options.associateOverviewHtmlPath] : []),
+    ...files.filter((filePath) => {
+      const filename = path.basename(filePath).toLowerCase();
+      return (
+        filename.endsWith(".html") && (filename.includes(associateWeekTag) || filename.includes(`associate-overview`))
+      );
+    }),
+  ]);
+
+  const driverRosterHtmlPath =
+    options.driverRosterHtmlPath ||
+    (await pickNewestMatchingFile(files, (filePath) => {
+      const filename = path.basename(filePath).toLowerCase();
+      return filename.endsWith(".html") && (filename.includes("all_associates") || filename.includes("roster"));
+    }));
+
+  const dailyReportHtmlPaths = dedupePaths([
+    ...(options.dailyReportHtmlPath ? [options.dailyReportHtmlPath] : []),
+    ...files.filter((filePath) => {
+      const filename = path.basename(filePath).toLowerCase();
+      return filename.endsWith(".html") && filename.includes("daily-report");
+    }),
+  ]);
+
+  return {
+    associateOverviewHtmlPaths,
+    driverRosterHtmlPath,
+    dailyReportHtmlPaths,
   };
 }
 
@@ -420,6 +605,278 @@ async function pickNewestMatchingFile(files: string[], predicate: (filePath: str
   return stats.sort((left, right) => right.mtimeMs - left.mtimeMs)[0]?.filePath;
 }
 
+function dedupePaths(paths: string[]) {
+  return Array.from(new Set(paths.filter(Boolean)));
+}
+
+async function buildArtifactMetadata(
+  paths: {
+    dwcHtmlPath?: string;
+    deliveryOverviewPath?: string;
+    driverNamesPath?: string;
+    associateOverviewHtmlPaths?: string[];
+    driverRosterHtmlPath?: string;
+    artifactsDir?: string;
+  },
+  context: {
+    stationCode: string;
+    year: number;
+    week: number;
+  },
+) {
+  const explicitArtifacts = [
+    paths.dwcHtmlPath
+      ? {
+          artifactType: "dwc_iadc_html",
+          logicalSource: "amazon_dwc_iadc",
+          filePath: paths.dwcHtmlPath,
+          mimeType: "text/html",
+        }
+      : null,
+    paths.deliveryOverviewPath
+      ? {
+          artifactType: "delivery_overview_csv",
+          logicalSource: "amazon_delivery_overview",
+          filePath: paths.deliveryOverviewPath,
+          mimeType: "text/csv",
+        }
+      : null,
+    paths.driverNamesPath
+      ? {
+          artifactType: "driver_roster_csv",
+          logicalSource: "amazon_driver_roster",
+          filePath: paths.driverNamesPath,
+          mimeType: "text/csv",
+        }
+      : null,
+    ...(paths.associateOverviewHtmlPaths || []).map((filePath) => ({
+      artifactType: "associate_weekly_html",
+      logicalSource: "amazon_associate_overview",
+      filePath,
+      mimeType: "text/html",
+    })),
+    paths.driverRosterHtmlPath
+      ? {
+          artifactType: "driver_roster_html",
+          logicalSource: "amazon_driver_roster",
+          filePath: paths.driverRosterHtmlPath,
+          mimeType: "text/html",
+        }
+      : null,
+  ].filter(Boolean) as Array<{
+    artifactType: string;
+    logicalSource: string;
+    filePath: string;
+    mimeType: string;
+  }>;
+
+  const manifests: Array<{
+    artifactType: string;
+    logicalSource: string;
+    filePath: string;
+    mimeType: string;
+  }> = [];
+
+  const discoveredArtifacts: Array<{
+    artifactType: string;
+    logicalSource: string;
+    filePath: string;
+    mimeType: string;
+  }> = [];
+
+  if (paths.artifactsDir) {
+    for (const manifestName of ["manifest.json", "captures.json"]) {
+      const manifestPath = path.join(paths.artifactsDir, manifestName);
+      try {
+        await stat(manifestPath);
+        manifests.push({
+          artifactType: manifestName === "manifest.json" ? "supplementary_manifest" : "capture_summary",
+          logicalSource: "amazon_supplementary_reports",
+          filePath: manifestPath,
+          mimeType: "application/json",
+        });
+      } catch {
+        // ignore missing manifest files
+      }
+    }
+
+    const files = await listFilesRecursively(paths.artifactsDir);
+    for (const filePath of files) {
+      const filename = path.basename(filePath).toLowerCase();
+      if (explicitArtifacts.some((artifact) => artifact.filePath === filePath)) {
+        continue;
+      }
+      if (manifests.some((artifact) => artifact.filePath === filePath)) {
+        continue;
+      }
+
+      if (filename.includes("daily-report")) {
+        discoveredArtifacts.push({
+          artifactType: "associate_daily_html",
+          logicalSource: "amazon_associate_daily",
+          filePath,
+          mimeType: "text/html",
+        });
+      } else if (filename.includes("associate_w")) {
+        discoveredArtifacts.push({
+          artifactType: "associate_weekly_html",
+          logicalSource: "amazon_associate_overview",
+          filePath,
+          mimeType: "text/html",
+        });
+      } else if (filename.includes("dwc-iadc-report")) {
+        discoveredArtifacts.push({
+          artifactType: "dwc_iadc_html",
+          logicalSource: "amazon_dwc_iadc",
+          filePath,
+          mimeType: "text/html",
+        });
+      } else if (filename.includes("dnr_investigations")) {
+        discoveredArtifacts.push({
+          artifactType: "dnr_investigations_html",
+          logicalSource: "amazon_dnr_investigations",
+          filePath,
+          mimeType: "text/html",
+        });
+      } else if (
+        filename.includes("all_associates") ||
+        filename.includes("roster") ||
+        filename.includes("concessions") ||
+        filename.includes("associ")
+      ) {
+        discoveredArtifacts.push({
+          artifactType: filename.endsWith(".csv") ? "driver_roster_csv" : "driver_roster_html",
+          logicalSource: "amazon_driver_roster",
+          filePath,
+          mimeType: filename.endsWith(".csv") ? "text/csv" : "text/html",
+        });
+      }
+    }
+  }
+
+  return await Promise.all(
+    [...explicitArtifacts, ...manifests, ...discoveredArtifacts].map(async (artifact) => ({
+      artifactType: artifact.artifactType,
+      logicalSource: artifact.logicalSource,
+      filename: path.basename(artifact.filePath),
+      storagePath: artifact.filePath,
+      mimeType: artifact.mimeType,
+      sizeBytes: (await stat(artifact.filePath)).size,
+      sha256: await computeSha256(artifact.filePath),
+      stationCode: context.stationCode,
+      year: context.year,
+      week: context.week,
+    })),
+  );
+}
+
+async function computeSha256(filePath: string) {
+  const buffer = await readFile(filePath);
+  return createHash("sha256").update(buffer).digest("hex");
+}
+
+async function parseAssociateOverviewArtifacts(filePaths: string[]) {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+  const byAmazonId = new Map<
+    string,
+    {
+      amazonId: string;
+      name: string;
+      packagesDelivered?: number;
+      dnrCount?: number;
+      dnrDpmo?: number;
+      packagesShipped?: number;
+      rtsCount?: number;
+      rtsPercent?: number;
+      rtsDpmo?: number;
+    }
+  >();
+
+  for (const filePath of filePaths) {
+    const parsed = parseAssociateOverviewHtml(await readFile(filePath, "utf-8"));
+    errors.push(...parsed.errors.map((error) => `${path.basename(filePath)}: ${error}`));
+    warnings.push(...parsed.warnings.map((warning) => `${path.basename(filePath)}: ${warning}`));
+
+    for (const row of parsed.rows) {
+      const existing = byAmazonId.get(row.amazonId);
+      if (!existing) {
+        byAmazonId.set(row.amazonId, { ...row });
+        continue;
+      }
+
+      byAmazonId.set(row.amazonId, {
+        ...existing,
+        ...pickDefinedFields(row),
+        name: existing.name || row.name,
+      });
+    }
+  }
+
+  return {
+    rows: Array.from(byAmazonId.values()),
+    errors,
+    warnings,
+  };
+}
+
+async function parseDailyReportArtifacts(filePaths: string[]) {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+  const stats: DailyReportStat[] = [];
+
+  for (const filePath of filePaths) {
+    const parsed = parseDailyReportHtml(await readFile(filePath, "utf-8"), {
+      filename: path.basename(filePath),
+    });
+    errors.push(...parsed.errors.map((e) => `${path.basename(filePath)}: ${e}`));
+    warnings.push(...parsed.warnings.map((w) => `${path.basename(filePath)}: ${w}`));
+
+    for (const row of parsed.stats) {
+      stats.push({
+        transporterId: row.transporterId,
+        date: parsed.date,
+        rtsCount: row.rtsCount,
+        dnrCount: row.dnrCount,
+        podFails: row.podFails,
+        ccFails: row.ccFails,
+      });
+    }
+  }
+
+  return { stats, errors, warnings };
+}
+
+function pickDefinedFields<T extends Record<string, unknown>>(value: T) {
+  return Object.fromEntries(
+    Object.entries(value).filter(([, entry]) => entry !== undefined && entry !== null),
+  ) as Partial<T>;
+}
+
+function mergeDriverMappings(
+  primary: Array<{ amazonId: string; name: string }>,
+  fallback: Array<{ amazonId: string; name: string }>,
+) {
+  const merged = new Map<string, string>();
+
+  for (const mapping of fallback) {
+    if (mapping.amazonId && mapping.name) {
+      merged.set(mapping.amazonId, mapping.name);
+    }
+  }
+
+  for (const mapping of primary) {
+    if (mapping.amazonId && mapping.name) {
+      merged.set(mapping.amazonId, mapping.name);
+    }
+  }
+
+  return Array.from(merged.entries()).map(([amazonId, name]) => ({
+    amazonId,
+    name,
+  }));
+}
+
 function requireEnv(name: string) {
   const value = process.env[name];
   if (!value) {
@@ -453,6 +910,8 @@ Options:
   --dwc-html <path>                        Export HTML DWC/IADC Amazon
   --delivery-overview <path>               CSV Delivery Overview (optionnel)
   --driver-names <path>                    CSV noms livreurs / concessions (optionnel)
+  --associate-overview-html <path>         HTML Associate Overview Amazon (optionnel)
+  --driver-roster-html <path>              HTML Delivery Associates / roster (optionnel)
   --artifacts-dir <path>                   Dossier a scanner pour auto-detecter les fichiers
   --imported-by <id>                       Identifiant logique pour l'historique d'import
   --dry-run                                Parse uniquement, sans ecriture Convex

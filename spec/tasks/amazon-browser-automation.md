@@ -26,6 +26,8 @@ Objectif: automatiser la collecte des exports Amazon Logistics et les injecter d
 - CLI `npm run amazon:ingest` pour ingester des fichiers deja telecharges
 - Auto-decouverte des artifacts depuis un dossier de downloads
 - Runner `npm run amazon:reports:sync` pour parser / telecharger les exports depuis `Rapports supplementaires`
+- Orchestrateur automation avec `automationRuns`, `sourceArtifacts`, `decisionScores` et `reportDeliveries`
+- Generation automatique des reports ASCII/HTML daily et weekly apres import
 
 ## User Stories
 
