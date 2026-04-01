@@ -433,26 +433,6 @@ export const forceReassignStationToCurrentOrg = mutation({
   },
 });
 
-// TEMP: Admin patch station org — remove after use
-export const adminPatchStationOrg = mutation({
-  args: {
-    stationCode: v.string(),
-    organizationId: v.string(),
-    secret: v.string(),
-  },
-  handler: async (ctx, args) => {
-    if (args.secret !== "dspilot-admin-2026") {
-      throw new Error("Invalid secret");
-    }
-    const station = await ctx.db
-      .query("stations")
-      .withIndex("by_code", (q) => q.eq("code", args.stationCode))
-      .first();
-    if (!station) throw new Error(`Station ${args.stationCode} not found`);
-    await ctx.db.patch(station._id, { organizationId: args.organizationId });
-    return { patched: true, stationId: station._id, code: station.code, oldOrgId: station.organizationId, newOrgId: args.organizationId };
-  },
-});
 
 /**
  * Migration: Lie les stations existantes de l'utilisateur à son organisation
