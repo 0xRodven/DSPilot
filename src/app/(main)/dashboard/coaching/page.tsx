@@ -1,49 +1,47 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import Link from "next/link"
-import { useQuery } from "convex/react"
-import { api } from "@convex/_generated/api"
-import type { Id } from "@convex/_generated/dataModel"
-import { useDashboardStore } from "@/lib/store"
-import { useFilters } from "@/lib/filters"
-import { GraduationCap, Calendar, ChevronRight, Plus } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { CoachingKPIs } from "@/components/coaching/coaching-kpis"
-import { CoachingKanban } from "@/components/coaching/kanban"
-import { CoachingEffectiveness } from "@/components/coaching/coaching-effectiveness"
-import { NewActionModal } from "@/components/coaching/new-action-modal"
-import { EvaluateActionModal } from "@/components/coaching/evaluate-action-modal"
-import type { CoachingSuggestion, CoachingActionFull } from "@/lib/types"
+import { useState } from "react";
+
+import Link from "next/link";
+
+import { api } from "@convex/_generated/api";
+import type { Id } from "@convex/_generated/dataModel";
+import { useQuery } from "convex/react";
+import { Calendar, ChevronRight, GraduationCap, Plus } from "lucide-react";
+
+import { CoachingEffectiveness } from "@/components/coaching/coaching-effectiveness";
+import { CoachingKPIs } from "@/components/coaching/coaching-kpis";
+import { EvaluateActionModal } from "@/components/coaching/evaluate-action-modal";
+import { CoachingKanban } from "@/components/coaching/kanban";
+import { NewActionModal } from "@/components/coaching/new-action-modal";
+import { Button } from "@/components/ui/button";
+import { useFilters } from "@/lib/filters";
+import { useDashboardStore } from "@/lib/store";
+import type { CoachingActionFull, CoachingSuggestion } from "@/lib/types";
+import { getTier } from "@/lib/utils/tier";
 
 export default function CoachingPage() {
-  const { selectedStation } = useDashboardStore()
-  const { year, weekNum } = useFilters()
+  const { selectedStation } = useDashboardStore();
+  const { year, weekNum } = useFilters();
 
   // Get station from Convex - skip if no code yet (prevents race condition on navigation)
   const station = useQuery(
     api.stations.getStationByCode,
-    selectedStation.code ? { code: selectedStation.code } : "skip"
-  )
+    selectedStation.code ? { code: selectedStation.code } : "skip",
+  );
 
   // Get coaching stats from Convex
-  const stats = useQuery(
-    api.coaching.getCoachingStats,
-    station ? { stationId: station._id } : "skip"
-  )
+  const stats = useQuery(api.coaching.getCoachingStats, station ? { stationId: station._id } : "skip");
 
   // Modals state
-  const [newActionOpen, setNewActionOpen] = useState(false)
-  const [evaluateOpen, setEvaluateOpen] = useState(false)
-  const [prefillSuggestion, setPrefillSuggestion] = useState<CoachingSuggestion | null>(null)
-  const [actionToEvaluate, setActionToEvaluate] = useState<CoachingActionFull | null>(null)
-  const [statusFilter, setStatusFilter] = useState<string | null>(null)
+  const [newActionOpen, setNewActionOpen] = useState(false);
+  const [evaluateOpen, setEvaluateOpen] = useState(false);
+  const [prefillSuggestion, setPrefillSuggestion] = useState<CoachingSuggestion | null>(null);
+  const [actionToEvaluate, setActionToEvaluate] = useState<CoachingActionFull | null>(null);
+  const [statusFilter, setStatusFilter] = useState<string | null>(null);
 
   // Get all actions for finding the one to evaluate
-  const actions = useQuery(
-    api.coaching.listCoachingActions,
-    station ? { stationId: station._id } : "skip"
-  )
+  const actions = useQuery(api.coaching.listCoachingActions, station ? { stationId: station._id } : "skip");
 
   // Handlers
   const handlePlanCoaching = (driverId: Id<"drivers">, driverName: string, dwcPercent: number) => {
@@ -51,30 +49,30 @@ export default function CoachingPage() {
       id: `kanban-${driverId}`,
       driverId,
       driverName,
-      driverTier: dwcPercent >= 90 ? "fair" : "poor",
+      driverTier: getTier(dwcPercent),
       driverDwc: dwcPercent,
-      priority: dwcPercent < 90 ? "high" : "new_poor",
+      priority: getTier(dwcPercent) === "poor" ? "high" : "new_poor",
       reason: `Performance sous le seuil: ${dwcPercent}% DWC`,
       mainError: "DWC",
       mainErrorCount: 0,
       hasActiveAction: false,
-    })
-    setNewActionOpen(true)
-  }
+    });
+    setNewActionOpen(true);
+  };
 
   const handleEvaluateAction = (actionId: Id<"coachingActions">) => {
     // Find the action in our list
-    const action = actions?.find((a) => a.id === actionId)
+    const action = actions?.find((a) => a.id === actionId);
     if (action) {
-      setActionToEvaluate(action)
-      setEvaluateOpen(true)
+      setActionToEvaluate(action);
+      setEvaluateOpen(true);
     }
-  }
+  };
 
   const handleNewAction = () => {
-    setPrefillSuggestion(null)
-    setNewActionOpen(true)
-  }
+    setPrefillSuggestion(null);
+    setNewActionOpen(true);
+  };
 
   // Loading state
   if (!station || stats === undefined || stats === null) {
@@ -85,22 +83,22 @@ export default function CoachingPage() {
             <div className="flex items-center gap-3">
               <GraduationCap className="h-8 w-8 text-primary" />
               <div>
-                <h1 className="text-2xl font-bold text-foreground">Coaching</h1>
-                <p className="text-sm text-muted-foreground">Chargement...</p>
+                <h1 className="font-bold text-2xl text-foreground">Coaching</h1>
+                <p className="text-muted-foreground text-sm">Chargement...</p>
               </div>
             </div>
           </div>
           <div className="animate-pulse space-y-6">
             <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
               {[...Array(4)].map((_, i) => (
-                <div key={i} className="h-24 bg-muted rounded-lg" />
+                <div key={i} className="h-24 rounded-lg bg-muted" />
               ))}
             </div>
-            <div className="h-96 bg-muted rounded-lg" />
+            <div className="h-96 rounded-lg bg-muted" />
           </div>
         </div>
       </main>
-    )
+    );
   }
 
   return (
@@ -111,8 +109,8 @@ export default function CoachingPage() {
           <div className="flex items-center gap-3">
             <GraduationCap className="h-8 w-8 text-primary" />
             <div>
-              <h1 className="text-2xl font-bold text-foreground">Coaching</h1>
-              <p className="text-sm text-muted-foreground">
+              <h1 className="font-bold text-2xl text-foreground">Coaching</h1>
+              <p className="text-muted-foreground text-sm">
                 {stats.total} actions • {stats.thisMonth} améliorés ce mois
               </p>
             </div>
@@ -130,10 +128,10 @@ export default function CoachingPage() {
 
         {/* Zone 2: Kanban Header */}
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-foreground">Vue tâches</h2>
+          <h2 className="font-semibold text-foreground text-lg">Vue tâches</h2>
           <Link
             href="/dashboard/coaching/calendar"
-            className="inline-flex items-center text-sm text-primary hover:underline"
+            className="inline-flex items-center text-primary text-sm hover:underline"
           >
             <Calendar className="mr-1.5 h-4 w-4" />
             Calendrier
@@ -162,12 +160,8 @@ export default function CoachingPage() {
           prefillSuggestion={prefillSuggestion}
           stationId={station._id}
         />
-        <EvaluateActionModal
-          open={evaluateOpen}
-          onOpenChange={setEvaluateOpen}
-          action={actionToEvaluate}
-        />
+        <EvaluateActionModal open={evaluateOpen} onOpenChange={setEvaluateOpen} action={actionToEvaluate} />
       </div>
     </main>
-  )
+  );
 }

@@ -48,7 +48,7 @@ function parseNum(raw: string): number {
     return 0;
   }
   const n = parseLocalizedAmazonNumber(raw.trim());
-  return isNaN(n) ? 0 : n;
+  return n == null || Number.isNaN(n) ? 0 : n;
 }
 
 /**
