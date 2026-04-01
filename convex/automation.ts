@@ -1149,3 +1149,41 @@ function getDriverId(driverMap: Map<string, Id<"drivers">>, transporterId: strin
 
   return driverId;
 }
+
+// Admin: assign station to org (used to fix ownership after automation backfill)
+export const adminAssignStationToOrg = internalMutation({
+  args: {
+    stationCode: v.string(),
+    organizationId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const station = await ctx.db
+      .query("stations")
+      .withIndex("by_code", (q) => q.eq("code", args.stationCode))
+      .first();
+    if (!station) throw new Error(`Station ${args.stationCode} not found`);
+    await ctx.db.patch(station._id, { organizationId: args.organizationId });
+    return { stationId: station._id, code: station.code, organizationId: args.organizationId };
+  },
+});
+
+// Admin: inspect station data (debug)
+export const adminInspectStation = internalQuery({
+  args: { code: v.string() },
+  handler: async (ctx, args) => {
+    const station = await ctx.db
+      .query("stations")
+      .withIndex("by_code", (q) => q.eq("code", args.code))
+      .first();
+    if (!station) return null;
+    const weeklyStats = await ctx.db
+      .query("stationWeeklyStats")
+      .withIndex("by_station_week", (q) => q.eq("stationId", station._id))
+      .take(20);
+    return {
+      station: { _id: station._id, code: station.code, name: station.name, organizationId: station.organizationId, ownerId: station.ownerId },
+      weeklyStatsCount: weeklyStats.length,
+      weeklyStatsWeeks: weeklyStats.map((s) => `W${s.week}/${s.year}`),
+    };
+  },
+});
