@@ -146,6 +146,34 @@ export default function ImportPage() {
     currentStation ? { stationId: currentStation._id, year: new Date().getFullYear() } : "skip",
   );
 
+  const startParsing = useCallback(async (file: File) => {
+    setImportStep("parsing");
+    setProgress(0);
+
+    try {
+      // Parse the HTML file
+      setProgress(20);
+      const report = await parseHtmlFile(file);
+      setProgress(60);
+
+      // Convert to UI format
+      const data = convertToParsedImportData(report);
+      setProgress(100);
+
+      setParsedReport(report);
+      setParsedData(data);
+
+      setTimeout(() => {
+        setImportStep("preview");
+      }, 300);
+    } catch (err) {
+      console.error("Parse error:", err);
+      setErrorMessage(err instanceof Error ? err.message : "Erreur de parsing");
+      setErrorDetails(err instanceof Error ? err.stack || "" : String(err));
+      setImportStep("error");
+    }
+  }, []);
+
   // Real file parsing - handles single file (legacy) or triggers batch mode
   const handleFilesSelect = useCallback(
     async (files: File[]) => {
@@ -183,34 +211,6 @@ export default function ImportPage() {
     },
     [batchImport, startParsing],
   );
-
-  const startParsing = useCallback(async (file: File) => {
-    setImportStep("parsing");
-    setProgress(0);
-
-    try {
-      // Parse the HTML file
-      setProgress(20);
-      const report = await parseHtmlFile(file);
-      setProgress(60);
-
-      // Convert to UI format
-      const data = convertToParsedImportData(report);
-      setProgress(100);
-
-      setParsedReport(report);
-      setParsedData(data);
-
-      setTimeout(() => {
-        setImportStep("preview");
-      }, 300);
-    } catch (err) {
-      console.error("Parse error:", err);
-      setErrorMessage(err instanceof Error ? err.message : "Erreur de parsing");
-      setErrorDetails(err instanceof Error ? err.stack || "" : String(err));
-      setImportStep("error");
-    }
-  }, []);
 
   const handleUrlImport = useCallback((_url: string) => {
     // For now, just show an error - URL import would need server-side fetch
