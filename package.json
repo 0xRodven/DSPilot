@@ -19,9 +19,7 @@
     "amazon:core:sync": "bash scripts/amazon-core-sync.sh"
   },
   "lint-staged": {
-    "*.{js,ts,jsx,tsx}": [
-      "biome check --write --no-errors-on-unmatched"
-    ]
+    "*.{js,ts,jsx,tsx}": ["biome check --write --no-errors-on-unmatched"]
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.1",

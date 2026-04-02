@@ -79,7 +79,7 @@ function parseNumericValue(value: string): number | undefined {
     .replace(",", "."); // French decimal to international
 
   const num = parseFloat(normalized);
-  return isNaN(num) ? undefined : num;
+  return Number.isNaN(num) ? undefined : num;
 }
 
 /**
@@ -137,9 +137,7 @@ export function parseDeliveryOverviewCsv(content: string): ParseDeliveryOverview
   const lines = cleanContent.split(/\r?\n/).filter((line) => line.trim());
 
   if (lines.length < 2) {
-    errors.push(
-      "Le fichier doit contenir au moins une ligne d'en-tête et une ligne de données"
-    );
+    errors.push("Le fichier doit contenir au moins une ligne d'en-tête et une ligne de données");
     return { metrics, detectedWeeks, errors };
   }
 
@@ -154,9 +152,7 @@ export function parseDeliveryOverviewCsv(content: string): ParseDeliveryOverview
   // First column should be "Métrique" or similar
   const firstCol = header[0].replace(/[""]/g, "").toLowerCase().trim();
   if (!["métrique", "metrique", "metric", "nom"].includes(firstCol)) {
-    errors.push(
-      `Première colonne inattendue: "${header[0]}". Attendu: "Métrique"`
-    );
+    errors.push(`Première colonne inattendue: "${header[0]}". Attendu: "Métrique"`);
   }
 
   // Parse week columns (columns 1+)
@@ -176,9 +172,7 @@ export function parseDeliveryOverviewCsv(content: string): ParseDeliveryOverview
       });
       detectedWeeks.push({ year, week: weekNum, label: headerValue });
     } else if (headerValue) {
-      errors.push(
-        `En-tête de colonne non reconnu: "${headerValue}". Format attendu: "Semaine X"`
-      );
+      errors.push(`En-tête de colonne non reconnu: "${headerValue}". Format attendu: "Semaine X"`);
     }
   }
 
@@ -222,9 +216,7 @@ export function parseDeliveryOverviewCsv(content: string): ParseDeliveryOverview
 /**
  * Parse un fichier CSV
  */
-export async function parseDeliveryOverviewCsvFile(
-  file: File
-): Promise<ParseDeliveryOverviewResult> {
+export async function parseDeliveryOverviewCsvFile(file: File): Promise<ParseDeliveryOverviewResult> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
 

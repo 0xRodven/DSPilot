@@ -1,13 +1,14 @@
-"use client"
+"use client";
 
-import { UserProfile } from "@clerk/nextjs"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Sun, Moon, Monitor } from "lucide-react"
-import { useTheme } from "next-themes"
+import { UserProfile } from "@clerk/nextjs";
+import { Monitor, Moon, Sun } from "lucide-react";
+import { useTheme } from "next-themes";
+
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export function AccountSettings() {
-  const { theme, setTheme } = useTheme()
+  const { theme, setTheme } = useTheme();
 
   return (
     <div className="space-y-6">
@@ -71,5 +72,5 @@ export function AccountSettings() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

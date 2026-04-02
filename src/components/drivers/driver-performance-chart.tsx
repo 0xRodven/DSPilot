@@ -1,33 +1,35 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
-import type { DriverDetail } from "@/lib/types"
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from "recharts"
+import { useState } from "react";
+
+import { CartesianGrid, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import type { DriverDetail } from "@/lib/types";
 
 interface DriverPerformanceChartProps {
-  driver: DriverDetail
+  driver: DriverDetail;
 }
 
-type Period = "4w" | "8w" | "12w"
+type Period = "4w" | "8w" | "12w";
 
 export function DriverPerformanceChart({ driver }: DriverPerformanceChartProps) {
-  const [period, setPeriod] = useState<Period>("12w")
-  const [showDwc, setShowDwc] = useState(true)
-  const [showIadc, setShowIadc] = useState(true)
-  const [showRefLines, setShowRefLines] = useState(true)
+  const [period, setPeriod] = useState<Period>("12w");
+  const [showDwc, setShowDwc] = useState(true);
+  const [showIadc, setShowIadc] = useState(true);
+  const [showRefLines, setShowRefLines] = useState(true);
 
-  const periodWeeks = period === "4w" ? 4 : period === "8w" ? 8 : 12
-  const data = driver.weeklyHistory.slice(-periodWeeks)
+  const periodWeeks = period === "4w" ? 4 : period === "8w" ? 8 : 12;
+  const data = driver.weeklyHistory.slice(-periodWeeks);
 
   return (
     <Card className="border-border bg-card">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <div>
-          <CardTitle className="text-lg font-semibold text-card-foreground">Performance Driver</CardTitle>
-          <p className="text-sm text-muted-foreground">{periodWeeks} dernières semaines</p>
+          <CardTitle className="font-semibold text-card-foreground text-lg">Performance Driver</CardTitle>
+          <p className="text-muted-foreground text-sm">{periodWeeks} dernières semaines</p>
         </div>
         <div className="flex items-center gap-1 rounded-lg border border-border p-1">
           {(["4w", "8w", "12w"] as Period[]).map((p) => (
@@ -134,5 +136,5 @@ export function DriverPerformanceChart({ driver }: DriverPerformanceChartProps) 
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }

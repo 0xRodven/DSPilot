@@ -1,17 +1,18 @@
-"use client"
+"use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { AlertTriangle, TrendingDown, RotateCcw, UserMinus, Plus, ChevronRight, Target } from "lucide-react"
-import { cn } from "@/lib/utils"
-import type { CoachingSuggestion } from "@/lib/types"
-import { getDwcBadgeClass } from "@/lib/utils/performance-color"
+import { AlertTriangle, ChevronRight, Plus, RotateCcw, Target, TrendingDown, UserMinus } from "lucide-react";
+
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import type { CoachingSuggestion } from "@/lib/types";
+import { cn } from "@/lib/utils";
+import { getDwcBadgeClass } from "@/lib/utils/performance-color";
 
 interface CoachingSuggestionsProps {
-  suggestions: CoachingSuggestion[]
-  onPlanCoaching: (suggestion: CoachingSuggestion) => void
-  className?: string
+  suggestions: CoachingSuggestion[];
+  onPlanCoaching: (suggestion: CoachingSuggestion) => void;
+  className?: string;
 }
 
 const priorityConfig = {
@@ -43,17 +44,17 @@ const priorityConfig = {
     bgColor: "bg-red-500/10",
     borderColor: "border-red-500/30",
   },
-}
+};
 
 function SuggestionCard({
   suggestion,
   onPlanCoaching,
 }: {
-  suggestion: CoachingSuggestion
-  onPlanCoaching: (suggestion: CoachingSuggestion) => void
+  suggestion: CoachingSuggestion;
+  onPlanCoaching: (suggestion: CoachingSuggestion) => void;
 }) {
-  const config = priorityConfig[suggestion.priority]
-  const Icon = config.icon
+  const config = priorityConfig[suggestion.priority];
+  const Icon = config.icon;
 
   return (
     <div className={cn("rounded-lg border p-3", config.borderColor, config.bgColor)}>
@@ -99,7 +100,7 @@ function SuggestionCard({
         Planifier coaching
       </Button>
     </div>
-  )
+  );
 }
 
 export function CoachingSuggestions({ suggestions, onPlanCoaching, className }: CoachingSuggestionsProps) {
@@ -107,24 +108,24 @@ export function CoachingSuggestions({ suggestions, onPlanCoaching, className }: 
     high: suggestions.filter((s) => s.priority === "high" || s.priority === "new_poor"),
     negative_trend: suggestions.filter((s) => s.priority === "negative_trend"),
     relapse: suggestions.filter((s) => s.priority === "relapse"),
-  }
+  };
 
   return (
-    <Card className={cn("border-border bg-card flex flex-col overflow-hidden", className)}>
-      <CardHeader className="pb-3 flex-shrink-0">
-        <CardTitle className="flex items-center gap-2 text-lg font-semibold text-card-foreground">
+    <Card className={cn("flex flex-col overflow-hidden border-border bg-card", className)}>
+      <CardHeader className="flex-shrink-0 pb-3">
+        <CardTitle className="flex items-center gap-2 font-semibold text-card-foreground text-lg">
           <Target className="h-5 w-5 text-blue-400" />
           Suggestions de coaching
         </CardTitle>
-        <p className="text-sm text-muted-foreground">Drivers à risque détectés automatiquement</p>
+        <p className="text-muted-foreground text-sm">Drivers à risque détectés automatiquement</p>
       </CardHeader>
-      <CardContent className="space-y-4 flex-1 overflow-y-auto">
+      <CardContent className="flex-1 space-y-4 overflow-y-auto">
         {/* High Priority */}
         {groupedSuggestions.high.length > 0 && (
           <div>
             <div className="mb-2 flex items-center gap-2">
               <AlertTriangle className="h-4 w-4 text-red-400" />
-              <span className="text-sm font-medium text-red-400">HAUTE PRIORITÉ</span>
+              <span className="font-medium text-red-400 text-sm">HAUTE PRIORITÉ</span>
             </div>
             <div className="space-y-2">
               {groupedSuggestions.high.map((suggestion) => (
@@ -139,7 +140,7 @@ export function CoachingSuggestions({ suggestions, onPlanCoaching, className }: 
           <div>
             <div className="mb-2 flex items-center gap-2">
               <TrendingDown className="h-4 w-4 text-amber-400" />
-              <span className="text-sm font-medium text-amber-400">TENDANCE NÉGATIVE</span>
+              <span className="font-medium text-amber-400 text-sm">TENDANCE NÉGATIVE</span>
             </div>
             <div className="space-y-2">
               {groupedSuggestions.negative_trend.map((suggestion) => (
@@ -154,7 +155,7 @@ export function CoachingSuggestions({ suggestions, onPlanCoaching, className }: 
           <div>
             <div className="mb-2 flex items-center gap-2">
               <RotateCcw className="h-4 w-4 text-orange-400" />
-              <span className="text-sm font-medium text-orange-400">RÉCIDIVE</span>
+              <span className="font-medium text-orange-400 text-sm">RÉCIDIVE</span>
             </div>
             <div className="space-y-2">
               {groupedSuggestions.relapse.map((suggestion) => (
@@ -170,5 +171,5 @@ export function CoachingSuggestions({ suggestions, onPlanCoaching, className }: 
         </Button>
       </CardContent>
     </Card>
-  )
+  );
 }

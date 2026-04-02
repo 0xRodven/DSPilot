@@ -1,7 +1,8 @@
 import { v } from "convex/values";
-import { mutation, query, internalMutation, internalQuery, action, internalAction } from "./_generated/server";
+
 import { internal } from "./_generated/api";
-import type { Id, Doc } from "./_generated/dataModel";
+import type { Doc, Id } from "./_generated/dataModel";
+import { action, internalAction, internalMutation, internalQuery, mutation, query } from "./_generated/server";
 import { getTier } from "./lib/tier";
 
 // Regex pour validation E.164
@@ -34,9 +35,7 @@ export const updateDriverPhone = mutation({
 
     // Validation du numéro si présent
     if (args.phoneNumber && !isValidE164(args.phoneNumber)) {
-      throw new Error(
-        "Format de numéro invalide. Utilisez le format E.164 (ex: +33612345678)"
-      );
+      throw new Error("Format de numéro invalide. Utilisez le format E.164 (ex: +33612345678)");
     }
 
     await ctx.db.patch(args.driverId, {
@@ -191,7 +190,7 @@ export const getWeeklyMessageStats = query({
     const messages = await ctx.db
       .query("whatsappMessages")
       .withIndex("by_station_week", (q) =>
-        q.eq("stationId", args.stationId).eq("year", args.year).eq("week", args.week)
+        q.eq("stationId", args.stationId).eq("year", args.year).eq("week", args.week),
       )
       .collect();
 
@@ -217,15 +216,11 @@ export const getEligibleDrivers = query({
   handler: async (ctx, args) => {
     const drivers = await ctx.db
       .query("drivers")
-      .withIndex("by_station_active", (q) =>
-        q.eq("stationId", args.stationId).eq("isActive", true)
-      )
+      .withIndex("by_station_active", (q) => q.eq("stationId", args.stationId).eq("isActive", true))
       .collect();
 
     // Filtrer ceux avec numéro et opt-in
-    const eligible = drivers.filter(
-      (d) => d.phoneNumber && d.whatsappOptIn === true
-    );
+    const eligible = drivers.filter((d) => d.phoneNumber && d.whatsappOptIn === true);
 
     return eligible;
   },
@@ -269,12 +264,7 @@ export const createPendingMessage = internalMutation({
 export const updateMessageStatus = internalMutation({
   args: {
     messageId: v.id("whatsappMessages"),
-    status: v.union(
-      v.literal("sent"),
-      v.literal("delivered"),
-      v.literal("failed"),
-      v.literal("undelivered")
-    ),
+    status: v.union(v.literal("sent"), v.literal("delivered"), v.literal("failed"), v.literal("undelivered")),
     messageSid: v.optional(v.string()),
     errorMessage: v.optional(v.string()),
   },
@@ -341,10 +331,7 @@ export function generateRecapMessage(data: RecapData): string {
   };
 
   const trendArrow = data.trend > 0 ? "📈" : data.trend < 0 ? "📉" : "➡️";
-  const trendText =
-    data.trend !== 0
-      ? ` (${data.trend > 0 ? "+" : ""}${data.trend.toFixed(1)}%)`
-      : "";
+  const trendText = data.trend !== 0 ? ` (${data.trend > 0 ? "+" : ""}${data.trend.toFixed(1)}%)` : "";
 
   // Top 3 erreurs
   const errorsText =
@@ -493,20 +480,20 @@ export const sendRecapToDriver = internalAction({
   },
   handler: async (ctx, args): Promise<{ success: boolean; messageId: Id<"whatsappMessages"> }> => {
     // Get driver info
-    const driver = await ctx.runQuery(internal.whatsapp.getDriverForRecap, {
+    const driver = (await ctx.runQuery(internal.whatsapp.getDriverForRecap, {
       driverId: args.driverId,
-    }) as { name: string; phoneNumber: string | undefined; whatsappOptIn: boolean | undefined } | null;
+    })) as { name: string; phoneNumber: string | undefined; whatsappOptIn: boolean | undefined } | null;
 
     if (!driver || !driver.phoneNumber) {
       throw new Error("Driver non trouvé ou sans numéro de téléphone");
     }
 
     // Get driver stats for recap
-    const stats = await ctx.runQuery(internal.whatsapp.getDriverStatsForRecap, {
+    const stats = (await ctx.runQuery(internal.whatsapp.getDriverStatsForRecap, {
       driverId: args.driverId,
       year: args.year,
       week: args.week,
-    }) as {
+    })) as {
       dwcPercent: number;
       iadcPercent: number;
       tier: "fantastic" | "great" | "fair" | "poor";
@@ -539,14 +526,14 @@ export const sendRecapToDriver = internalAction({
     });
 
     // Create pending message record
-    const messageId = await ctx.runMutation(internal.whatsapp.createPendingMessage, {
+    const messageId = (await ctx.runMutation(internal.whatsapp.createPendingMessage, {
       stationId: args.stationId,
       driverId: args.driverId,
       year: args.year,
       week: args.week,
       phoneNumber: driver.phoneNumber,
       messageContent,
-    }) as Id<"whatsappMessages">;
+    })) as Id<"whatsappMessages">;
 
     // Send via Twilio
     await ctx.runAction(internal.whatsapp.sendWhatsappMessage, {
@@ -595,12 +582,12 @@ export const sendManualRecap = action({
   },
   handler: async (ctx, args): Promise<{ success: boolean; messageId: Id<"whatsappMessages"> }> => {
     // Use the internal action to send
-    const result = await ctx.runAction(internal.whatsapp.sendRecapToDriver, {
+    const result = (await ctx.runAction(internal.whatsapp.sendRecapToDriver, {
       driverId: args.driverId,
       stationId: args.stationId,
       year: args.year,
       week: args.week,
-    }) as { success: boolean; messageId: Id<"whatsappMessages"> };
+    })) as { success: boolean; messageId: Id<"whatsappMessages"> };
 
     return result;
   },
@@ -619,9 +606,7 @@ export const getDriverStatsForRecap = internalQuery({
     // Get weekly stats
     const weeklyStats = await ctx.db
       .query("driverWeeklyStats")
-      .withIndex("by_driver_week", (q) =>
-        q.eq("driverId", args.driverId).eq("year", args.year).eq("week", args.week)
-      )
+      .withIndex("by_driver_week", (q) => q.eq("driverId", args.driverId).eq("year", args.year).eq("week", args.week))
       .first();
 
     if (!weeklyStats) return null;
@@ -642,9 +627,7 @@ export const getDriverStatsForRecap = internalQuery({
 
     const prevStats = await ctx.db
       .query("driverWeeklyStats")
-      .withIndex("by_driver_week", (q) =>
-        q.eq("driverId", args.driverId).eq("year", prevYear).eq("week", prevWeek)
-      )
+      .withIndex("by_driver_week", (q) => q.eq("driverId", args.driverId).eq("year", prevYear).eq("week", prevWeek))
       .first();
 
     let trend = 0;
@@ -662,7 +645,7 @@ export const getDriverStatsForRecap = internalQuery({
     const allDriverStats = await ctx.db
       .query("driverWeeklyStats")
       .withIndex("by_station_week", (q) =>
-        q.eq("stationId", driver.stationId).eq("year", args.year).eq("week", args.week)
+        q.eq("stationId", driver.stationId).eq("year", args.year).eq("week", args.week),
       )
       .collect();
 
@@ -696,9 +679,7 @@ export const getDriverStatsForRecap = internalQuery({
     // Get coaching actions
     const coachingActions = await ctx.db
       .query("coachingActions")
-      .withIndex("by_driver_status", (q) =>
-        q.eq("driverId", args.driverId).eq("status", "pending")
-      )
+      .withIndex("by_driver_status", (q) => q.eq("driverId", args.driverId).eq("status", "pending"))
       .collect();
 
     return {

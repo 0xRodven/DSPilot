@@ -15,8 +15,8 @@
  * Example data.json structure: see ReportData interface in src/lib/pdf/report-template.ts
  */
 
-import * as fs from "fs";
-import * as path from "path";
+import * as fs from "node:fs";
+import * as path from "node:path";
 
 // We need to handle the import dynamically since this is a standalone script
 // that may be run outside the normal build context

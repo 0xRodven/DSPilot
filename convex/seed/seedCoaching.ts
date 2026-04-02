@@ -1,6 +1,7 @@
 import { v } from "convex/values";
-import { mutation, query } from "../_generated/server";
+
 import type { Id } from "../_generated/dataModel";
+import { mutation, query } from "../_generated/server";
 
 /**
  * List all stations (for finding station ID to use in seed)
@@ -35,7 +36,7 @@ export const seedCoachingData = mutation({
   handler: async (ctx, args) => {
     const now = Date.now();
     const day = 24 * 60 * 60 * 1000;
-    const week = 7 * day;
+    const _week = 7 * day;
     const createdBy = args.createdBy || "seed-script";
 
     // 1. Get drivers with DWC < 95% (poor/fair performers)
@@ -45,7 +46,7 @@ export const seedCoachingData = mutation({
       .collect();
 
     // Get unique drivers and their latest stats
-    const driverStatsMap = new Map<string, typeof allStats[0]>();
+    const driverStatsMap = new Map<string, (typeof allStats)[0]>();
     for (const stat of allStats) {
       const existing = driverStatsMap.get(stat.driverId);
       if (!existing || stat.year > existing.year || (stat.year === existing.year && stat.week > existing.week)) {
@@ -122,9 +123,7 @@ export const seedCoachingData = mutation({
         "Refresh formation Photo/OTP",
         "Session accompagnement terrain",
       ],
-      suspension: [
-        "Suspension temporaire suite à avertissements",
-      ],
+      suspension: ["Suspension temporaire suite à avertissements"],
     };
 
     // 3. Create coaching actions
@@ -167,7 +166,7 @@ export const seedCoachingData = mutation({
         evaluatedAt,
         createdBy,
         createdAt,
-        updatedAt: scenario.status === "pending" ? createdAt : (evaluatedAt || createdAt),
+        updatedAt: scenario.status === "pending" ? createdAt : evaluatedAt || createdAt,
       });
 
       createdActions.push(actionId);
@@ -238,12 +237,7 @@ export const seedCoachingData = mutation({
       message: `${createdActions.length} actions de coaching créées`,
       created: createdActions.length,
       driversUsed: selectedDrivers.length,
-      scenarios: [
-        `Improved: 3+`,
-        `No Effect: 2+`,
-        `Pending (overdue): 2`,
-        `Pending (upcoming): 3`,
-      ],
+      scenarios: [`Improved: 3+`, `No Effect: 2+`, `Pending (overdue): 2`, `Pending (upcoming): 3`],
     };
   },
 });

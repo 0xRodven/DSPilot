@@ -1,45 +1,38 @@
-"use client"
+"use client";
 
-import * as React from "react"
+import * as React from "react";
+
 import {
   type ColumnDef,
   type ColumnFiltersState,
-  type SortingState,
   flexRender,
   getCoreRowModel,
   getFilteredRowModel,
   getPaginationRowModel,
   getSortedRowModel,
+  type SortingState,
   useReactTable,
-} from "@tanstack/react-table"
+} from "@tanstack/react-table";
+import { Download, Search, User } from "lucide-react";
 
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Download, Search, User } from "lucide-react"
-import type { DashboardDriver } from "./columns"
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+
+import type { DashboardDriver } from "./columns";
 
 interface DataTableProps {
-  columns: ColumnDef<DashboardDriver>[]
-  data: DashboardDriver[]
-  periodLabel: string
-  onRowClick: (driverId: string) => void
+  columns: ColumnDef<DashboardDriver>[];
+  data: DashboardDriver[];
+  periodLabel: string;
+  onRowClick: (driverId: string) => void;
 }
 
 export function DataTable({ columns, data, periodLabel, onRowClick }: DataTableProps) {
-  const [sorting, setSorting] = React.useState<SortingState>([
-    { id: "dwcPercent", desc: true }
-  ])
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
-  const [globalFilter, setGlobalFilter] = React.useState("")
+  const [sorting, setSorting] = React.useState<SortingState>([{ id: "dwcPercent", desc: true }]);
+  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
+  const [globalFilter, setGlobalFilter] = React.useState("");
 
   const table = useReactTable({
     data,
@@ -56,30 +49,30 @@ export function DataTable({ columns, data, periodLabel, onRowClick }: DataTableP
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
-    globalFilterFn: (row, columnId, filterValue) => {
-      const name = row.original.name.toLowerCase()
-      const amazonId = row.original.amazonId.toLowerCase()
-      const filter = filterValue.toLowerCase()
-      return name.includes(filter) || amazonId.includes(filter)
+    globalFilterFn: (row, _columnId, filterValue) => {
+      const name = row.original.name.toLowerCase();
+      const amazonId = row.original.amazonId.toLowerCase();
+      const filter = filterValue.toLowerCase();
+      return name.includes(filter) || amazonId.includes(filter);
     },
     initialState: {
       pagination: {
         pageSize: 10,
       },
     },
-  })
+  });
 
-  const tierFilter = (table.getColumn("tier")?.getFilterValue() as string) ?? "all"
+  const tierFilter = (table.getColumn("tier")?.getFilterValue() as string) ?? "all";
 
   // No data state
   if (data.length === 0) {
     return (
       <div className="p-6 text-center">
-        <User className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
+        <User className="mx-auto mb-4 h-12 w-12 text-muted-foreground/50" />
         <p className="text-muted-foreground">Aucun driver pour {periodLabel}</p>
-        <p className="text-sm text-muted-foreground mt-1">Importez un rapport pour voir les drivers</p>
+        <p className="mt-1 text-muted-foreground text-sm">Importez un rapport pour voir les drivers</p>
       </div>
-    )
+    );
   }
 
   return (
@@ -87,7 +80,7 @@ export function DataTable({ columns, data, periodLabel, onRowClick }: DataTableP
       {/* Toolbar */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Search className="-translate-y-1/2 absolute top-1/2 left-3 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Rechercher un driver..."
             value={globalFilter}
@@ -99,7 +92,7 @@ export function DataTable({ columns, data, periodLabel, onRowClick }: DataTableP
         <Select
           value={tierFilter}
           onValueChange={(value) => {
-            table.getColumn("tier")?.setFilterValue(value === "all" ? undefined : value)
+            table.getColumn("tier")?.setFilterValue(value === "all" ? undefined : value);
           }}
         >
           <SelectTrigger className="w-[140px]">
@@ -121,7 +114,7 @@ export function DataTable({ columns, data, periodLabel, onRowClick }: DataTableP
       </div>
 
       {/* Table with horizontal scroll on mobile */}
-      <div className="rounded-md border overflow-x-auto">
+      <div className="overflow-x-auto rounded-md border">
         <Table className="min-w-[600px]">
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
@@ -129,9 +122,7 @@ export function DataTable({ columns, data, periodLabel, onRowClick }: DataTableP
                 <TableHead className="w-12 text-muted-foreground">#</TableHead>
                 {headerGroup.headers.map((header) => (
                   <TableHead key={header.id} className="text-muted-foreground">
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(header.column.columnDef.header, header.getContext())}
+                    {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
                   </TableHead>
                 ))}
               </TableRow>
@@ -149,9 +140,7 @@ export function DataTable({ columns, data, periodLabel, onRowClick }: DataTableP
                     {table.getState().pagination.pageIndex * table.getState().pagination.pageSize + index + 1}
                   </TableCell>
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </TableCell>
+                    <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
                   ))}
                 </TableRow>
               ))
@@ -168,11 +157,11 @@ export function DataTable({ columns, data, periodLabel, onRowClick }: DataTableP
 
       {/* Pagination */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-sm text-muted-foreground text-center sm:text-left">
+        <p className="text-center text-muted-foreground text-sm sm:text-left">
           {table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1}-
           {Math.min(
             (table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize,
-            table.getFilteredRowModel().rows.length
+            table.getFilteredRowModel().rows.length,
           )}{" "}
           sur {table.getFilteredRowModel().rows.length}
         </p>
@@ -187,20 +176,20 @@ export function DataTable({ columns, data, periodLabel, onRowClick }: DataTableP
             <span className="hidden sm:inline">Précédent</span>
             <span className="sm:hidden">←</span>
           </Button>
-          <div className="hidden sm:flex items-center gap-1">
+          <div className="hidden items-center gap-1 sm:flex">
             {Array.from({ length: Math.min(5, table.getPageCount()) }, (_, i) => {
-              const pageIndex = table.getState().pagination.pageIndex
-              const pageCount = table.getPageCount()
-              let pageNum: number
+              const pageIndex = table.getState().pagination.pageIndex;
+              const pageCount = table.getPageCount();
+              let pageNum: number;
 
               if (pageCount <= 5) {
-                pageNum = i
+                pageNum = i;
               } else if (pageIndex <= 2) {
-                pageNum = i
+                pageNum = i;
               } else if (pageIndex >= pageCount - 3) {
-                pageNum = pageCount - 5 + i
+                pageNum = pageCount - 5 + i;
               } else {
-                pageNum = pageIndex - 2 + i
+                pageNum = pageIndex - 2 + i;
               }
 
               return (
@@ -213,10 +202,10 @@ export function DataTable({ columns, data, periodLabel, onRowClick }: DataTableP
                 >
                   {pageNum + 1}
                 </Button>
-              )
+              );
             })}
           </div>
-          <span className="sm:hidden text-sm text-muted-foreground">
+          <span className="text-muted-foreground text-sm sm:hidden">
             {table.getState().pagination.pageIndex + 1} / {table.getPageCount()}
           </span>
           <Button
@@ -232,5 +221,5 @@ export function DataTable({ columns, data, periodLabel, onRowClick }: DataTableP
         </div>
       </div>
     </div>
-  )
+  );
 }

@@ -1,31 +1,32 @@
-"use client"
+"use client";
 
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Search, Plus } from "lucide-react"
-import { cn } from "@/lib/utils"
+import { Plus, Search } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 
 interface CoachingStats {
-  pending: { count: number; overdueCount: number }
-  improved: { count: number; avgImprovement: number }
-  noEffect: { count: number }
-  escalated: { count: number }
-  total: number
-  thisMonth: number
+  pending: { count: number; overdueCount: number };
+  improved: { count: number; avgImprovement: number };
+  noEffect: { count: number };
+  escalated: { count: number };
+  total: number;
+  thisMonth: number;
 }
 
 interface CoachingToolbarProps {
-  searchQuery: string
-  onSearchChange: (query: string) => void
-  typeFilter: string
-  onTypeFilterChange: (type: string) => void
-  periodFilter: string
-  onPeriodFilterChange: (period: string) => void
-  statusFilter: string | null
-  onStatusFilterChange: (status: string | null) => void
-  onNewAction: () => void
-  stats: CoachingStats
+  searchQuery: string;
+  onSearchChange: (query: string) => void;
+  typeFilter: string;
+  onTypeFilterChange: (type: string) => void;
+  periodFilter: string;
+  onPeriodFilterChange: (period: string) => void;
+  statusFilter: string | null;
+  onStatusFilterChange: (status: string | null) => void;
+  onNewAction: () => void;
+  stats: CoachingStats;
 }
 
 const statusTabs = [
@@ -34,7 +35,7 @@ const statusTabs = [
   { id: "improved", label: "Améliorés", color: "text-emerald-400" },
   { id: "no_effect", label: "Sans effet", color: "text-zinc-400" },
   { id: "escalated", label: "Escaladés", color: "text-red-400" },
-]
+];
 
 export function CoachingToolbar({
   searchQuery,
@@ -48,22 +49,21 @@ export function CoachingToolbar({
   onNewAction,
   stats,
 }: CoachingToolbarProps) {
-
   const getCount = (status: string | null) => {
-    if (status === null) return stats.total
-    if (status === "pending") return stats.pending.count
-    if (status === "improved") return stats.improved.count
-    if (status === "no_effect") return stats.noEffect.count
-    if (status === "escalated") return stats.escalated.count
-    return 0
-  }
+    if (status === null) return stats.total;
+    if (status === "pending") return stats.pending.count;
+    if (status === "improved") return stats.improved.count;
+    if (status === "no_effect") return stats.noEffect.count;
+    if (status === "escalated") return stats.escalated.count;
+    return 0;
+  };
 
   return (
     <div className="space-y-4">
       {/* Row 1: Search, Filters, New Button */}
       <div className="flex items-center gap-4">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
+        <div className="relative max-w-md flex-1">
+          <Search className="-translate-y-1/2 absolute top-1/2 left-3 h-4 w-4 text-zinc-500" />
           <Input
             placeholder="Rechercher un driver..."
             value={searchQuery}
@@ -104,13 +104,13 @@ export function CoachingToolbar({
       </div>
 
       {/* Row 2: Status Tabs */}
-      <div className="flex items-center gap-2 border-b border-zinc-800 pb-2">
+      <div className="flex items-center gap-2 border-zinc-800 border-b pb-2">
         {statusTabs.map((tab) => (
           <button
             key={tab.id ?? "all"}
             onClick={() => onStatusFilterChange(tab.id)}
             className={cn(
-              "flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors",
+              "flex items-center gap-2 rounded-lg px-4 py-2 font-medium text-sm transition-colors",
               statusFilter === tab.id
                 ? "bg-zinc-800 text-white"
                 : "text-zinc-400 hover:bg-zinc-800/50 hover:text-white",
@@ -129,5 +129,5 @@ export function CoachingToolbar({
         ))}
       </div>
     </div>
-  )
+  );
 }

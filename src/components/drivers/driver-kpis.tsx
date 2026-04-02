@@ -1,14 +1,15 @@
-"use client"
+"use client";
 
-import { Card, CardContent } from "@/components/ui/card"
-import type { DriverDetail } from "@/lib/types"
-import { getDwcTextClass, getDwcBadgeClass } from "@/lib/utils/performance-color"
-import { TrendingUp, TrendingDown } from "lucide-react"
-import { cn } from "@/lib/utils"
+import { TrendingDown, TrendingUp } from "lucide-react";
+
+import { Card, CardContent } from "@/components/ui/card";
+import type { DriverDetail } from "@/lib/types";
+import { cn } from "@/lib/utils";
+import { getDwcBadgeClass, getDwcTextClass } from "@/lib/utils/performance-color";
 
 interface DriverKpisProps {
-  driver: DriverDetail
-  comparisonLabel?: string
+  driver: DriverDetail;
+  comparisonLabel?: string;
 }
 
 export function DriverKpis({ driver, comparisonLabel = "vs S49" }: DriverKpisProps) {
@@ -46,25 +47,30 @@ export function DriverKpis({ driver, comparisonLabel = "vs S49" }: DriverKpisPro
       trendLabel: comparisonLabel,
       invertColors: true,
     },
-  ]
+  ];
 
   return (
     <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
       {kpis.map((kpi) => (
         <Card key={kpi.label} className="border-border bg-card">
           <CardContent className="p-4">
-            <div className="text-sm font-medium text-muted-foreground">{kpi.label}</div>
+            <div className="font-medium text-muted-foreground text-sm">{kpi.label}</div>
             <div className="mt-2 flex items-baseline gap-2">
               <span
                 className={cn(
-                  "text-2xl font-bold tabular-nums",
-                  kpi.dwcPercent !== null ? getDwcTextClass(kpi.dwcPercent) : "text-card-foreground"
+                  "font-bold text-2xl tabular-nums",
+                  kpi.dwcPercent !== null ? getDwcTextClass(kpi.dwcPercent) : "text-card-foreground",
                 )}
               >
                 {kpi.value}
               </span>
               {kpi.showBadge && kpi.dwcPercent !== null && (
-                <span className={cn("rounded-full px-2 py-0.5 text-xs font-medium tabular-nums", getDwcBadgeClass(kpi.dwcPercent))}>
+                <span
+                  className={cn(
+                    "rounded-full px-2 py-0.5 font-medium text-xs tabular-nums",
+                    getDwcBadgeClass(kpi.dwcPercent),
+                  )}
+                >
                   {kpi.dwcPercent.toFixed(1)}%
                 </span>
               )}
@@ -92,5 +98,5 @@ export function DriverKpis({ driver, comparisonLabel = "vs S49" }: DriverKpisPro
         </Card>
       ))}
     </div>
-  )
+  );
 }

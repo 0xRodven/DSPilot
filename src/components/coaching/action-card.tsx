@@ -1,38 +1,40 @@
-"use client"
+"use client";
 
-import { Card, CardContent } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Badge } from "@/components/ui/badge"
+import Link from "next/link";
+
 import {
-  MessageSquare,
   AlertTriangle,
-  BookOpen,
   Ban,
-  Calendar,
-  Target,
   BarChart3,
-  Eye,
-  Pencil,
+  BookOpen,
+  Calendar,
   ClipboardCheck,
-  Mail,
-  TrendingUp,
   Clock,
-} from "lucide-react"
-import { cn } from "@/lib/utils"
-import type { CoachingActionFull } from "@/lib/types"
-import { getDwcBadgeClass } from "@/lib/utils/performance-color"
+  Eye,
+  Mail,
+  MessageSquare,
+  Pencil,
+  Target,
+  TrendingUp,
+} from "lucide-react";
+
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import type { CoachingActionFull } from "@/lib/types";
+import { cn } from "@/lib/utils";
+import { getDwcBadgeClass } from "@/lib/utils/performance-color";
 import {
-  getCoachingStatusColor,
-  getCoachingStatusLabel,
   getActionTypeColor,
   getActionTypeLabel,
-} from "@/lib/utils/status"
-import Link from "next/link"
+  getCoachingStatusColor,
+  getCoachingStatusLabel,
+} from "@/lib/utils/status";
 
 interface ActionCardProps {
-  action: CoachingActionFull
-  onEvaluate: (action: CoachingActionFull) => void
+  action: CoachingActionFull;
+  onEvaluate: (action: CoachingActionFull) => void;
 }
 
 const ActionTypeIcon = ({ type }: { type: CoachingActionFull["actionType"] }) => {
@@ -41,21 +43,21 @@ const ActionTypeIcon = ({ type }: { type: CoachingActionFull["actionType"] }) =>
     warning: AlertTriangle,
     training: BookOpen,
     suspension: Ban,
-  }
-  const Icon = icons[type]
-  return <Icon className="h-4 w-4" />
-}
+  };
+  const Icon = icons[type];
+  return <Icon className="h-4 w-4" />;
+};
 
 export function ActionCard({ action, onEvaluate }: ActionCardProps) {
   const initials = action.driverName
     .split(" ")
     .map((n) => n[0])
-    .join("")
+    .join("");
 
-  const hasResult = action.status === "improved" || action.status === "no_effect"
-  const isEscalated = action.status === "escalated"
-  const isPending = action.status === "pending"
-  const improvement = hasResult && action.dwcAfterAction ? action.dwcAfterAction - action.dwcAtAction : 0
+  const hasResult = action.status === "improved" || action.status === "no_effect";
+  const isEscalated = action.status === "escalated";
+  const isPending = action.status === "pending";
+  const improvement = hasResult && action.dwcAfterAction ? action.dwcAfterAction - action.dwcAtAction : 0;
 
   return (
     <Card className="border-zinc-800 bg-zinc-900/50">
@@ -113,23 +115,23 @@ export function ActionCard({ action, onEvaluate }: ActionCardProps) {
         {hasResult && (
           <div className="mt-3 rounded-lg border border-zinc-800 bg-zinc-900/50 p-3">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-zinc-300">Résultat</span>
+              <span className="font-medium text-sm text-zinc-300">Résultat</span>
             </div>
             <div className="mt-2 flex items-center justify-between rounded-lg bg-zinc-800/50 px-4 py-3">
               <div className="text-center">
                 <p className="text-xs text-zinc-500">Avant</p>
-                <p className="text-lg font-bold text-white">{action.dwcAtAction}%</p>
+                <p className="font-bold text-lg text-white">{action.dwcAtAction}%</p>
               </div>
               <TrendingUp className={cn("h-5 w-5", improvement > 0 ? "text-emerald-400" : "text-red-400")} />
               <div className="text-center">
                 <p className="text-xs text-zinc-500">Après</p>
-                <p className="text-lg font-bold text-white">{action.dwcAfterAction}%</p>
+                <p className="font-bold text-lg text-white">{action.dwcAfterAction}%</p>
               </div>
               <div className="text-center">
                 <p className="text-xs text-zinc-500">Évolution</p>
                 <p
                   className={cn(
-                    "text-lg font-bold",
+                    "font-bold text-lg",
                     improvement > 0 ? "text-emerald-400" : improvement < 0 ? "text-red-400" : "text-zinc-400",
                   )}
                 >
@@ -138,14 +140,14 @@ export function ActionCard({ action, onEvaluate }: ActionCardProps) {
                 </p>
               </div>
             </div>
-            {action.evaluationNotes && <p className="mt-2 text-sm italic text-zinc-400">"{action.evaluationNotes}"</p>}
+            {action.evaluationNotes && <p className="mt-2 text-sm text-zinc-400 italic">"{action.evaluationNotes}"</p>}
           </div>
         )}
 
         {/* Escalation Section */}
         {isEscalated && (
           <div className="mt-3 rounded-lg border border-red-500/30 bg-red-500/10 p-3">
-            <div className="flex items-center gap-2 text-sm font-medium text-red-400">
+            <div className="flex items-center gap-2 font-medium text-red-400 text-sm">
               <AlertTriangle className="h-4 w-4" />
               Transmis au Manager le {action.escalationDate}
             </div>
@@ -179,7 +181,7 @@ export function ActionCard({ action, onEvaluate }: ActionCardProps) {
           <Button
             size="sm"
             variant="outline"
-            className="border-zinc-700 text-zinc-300 hover:bg-zinc-800 bg-transparent"
+            className="border-zinc-700 bg-transparent text-zinc-300 hover:bg-zinc-800"
             asChild
           >
             <Link href={`/dashboard/drivers/${action.driverId}`}>
@@ -191,7 +193,7 @@ export function ActionCard({ action, onEvaluate }: ActionCardProps) {
             <Button
               size="sm"
               variant="outline"
-              className="border-zinc-700 text-zinc-300 hover:bg-zinc-800 bg-transparent"
+              className="border-zinc-700 bg-transparent text-zinc-300 hover:bg-zinc-800"
             >
               <Pencil className="mr-2 h-4 w-4" />
               Modifier
@@ -210,5 +212,5 @@ export function ActionCard({ action, onEvaluate }: ActionCardProps) {
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }

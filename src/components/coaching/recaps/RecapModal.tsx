@@ -1,66 +1,74 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { TrendingUp, TrendingDown, Copy, Check, Package } from "lucide-react"
-import { cn } from "@/lib/utils"
-import { toast } from "sonner"
-import { generateWhatsAppRecap } from "@/lib/coaching/recap-generator"
+import { useState } from "react";
+
+import { Check, Copy, Package, TrendingDown, TrendingUp } from "lucide-react";
+import { toast } from "sonner";
+
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { generateWhatsAppRecap } from "@/lib/coaching/recap-generator";
+import { cn } from "@/lib/utils";
 
 interface DriverComparison {
-  id: string
-  name: string
+  id: string;
+  name: string;
   current: {
-    deliveries: number
-    dwc: number
-    iadc: number
-  }
+    deliveries: number;
+    dwc: number;
+    iadc: number;
+  };
   previous: {
-    deliveries: number
-    dwc: number
-    iadc: number
-  }
+    deliveries: number;
+    dwc: number;
+    iadc: number;
+  };
   diff: {
-    deliveries: number
-    dwc: number
-    iadc: number
-  }
-  status: "ok" | "watch" | "alert"
+    deliveries: number;
+    dwc: number;
+    iadc: number;
+  };
+  status: "ok" | "watch" | "alert";
 }
 
 interface RecapModalProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  driver: DriverComparison | null
-  week: number
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  driver: DriverComparison | null;
+  week: number;
 }
 
 export function RecapModal({ open, onOpenChange, driver, week }: RecapModalProps) {
-  const [copied, setCopied] = useState(false)
+  const [copied, setCopied] = useState(false);
 
   // Generate message only when driver is available
-  const message = driver ? generateWhatsAppRecap(driver, week) : ""
+  const message = driver ? generateWhatsAppRecap(driver, week) : "";
 
-  if (!driver) return null
+  if (!driver) return null;
 
   const handleCopy = async () => {
-    await navigator.clipboard.writeText(message)
-    setCopied(true)
-    toast.success("Message copie dans le presse-papier")
-    setTimeout(() => setCopied(false), 2000)
-  }
+    await navigator.clipboard.writeText(message);
+    setCopied(true);
+    toast.success("Message copie dans le presse-papier");
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   const DiffBadge = ({ value, suffix = "" }: { value: number; suffix?: string }) => {
-    const isPositive = value >= 0
+    const isPositive = value >= 0;
     return (
-      <span className={cn("inline-flex items-center gap-0.5 text-xs font-medium", isPositive ? "text-emerald-500" : "text-red-500")}>
+      <span
+        className={cn(
+          "inline-flex items-center gap-0.5 font-medium text-xs",
+          isPositive ? "text-emerald-500" : "text-red-500",
+        )}
+      >
         {isPositive ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-        {isPositive ? "+" : ""}{value}{suffix}
+        {isPositive ? "+" : ""}
+        {value}
+        {suffix}
       </span>
-    )
-  }
+    );
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -71,25 +79,25 @@ export function RecapModal({ open, onOpenChange, driver, week }: RecapModalProps
 
         <div className="space-y-4 py-4">
           {/* Summary */}
-          <div className="rounded-lg border border-border bg-muted/50 p-4 space-y-3">
-            <h4 className="text-sm font-medium text-foreground flex items-center gap-2">
+          <div className="space-y-3 rounded-lg border border-border bg-muted/50 p-4">
+            <h4 className="flex items-center gap-2 font-medium text-foreground text-sm">
               <Package className="h-4 w-4" />
               Apercu
             </h4>
             <div className="grid grid-cols-3 gap-4">
               <div>
-                <p className="text-xs text-muted-foreground">Colis</p>
-                <p className="text-lg font-semibold text-foreground">{driver.current.deliveries}</p>
+                <p className="text-muted-foreground text-xs">Colis</p>
+                <p className="font-semibold text-foreground text-lg">{driver.current.deliveries}</p>
                 <DiffBadge value={driver.diff.deliveries} />
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">DWC</p>
-                <p className="text-lg font-semibold text-foreground">{driver.current.dwc}%</p>
+                <p className="text-muted-foreground text-xs">DWC</p>
+                <p className="font-semibold text-foreground text-lg">{driver.current.dwc}%</p>
                 <DiffBadge value={driver.diff.dwc} suffix="%" />
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">IADC</p>
-                <p className="text-lg font-semibold text-foreground">{driver.current.iadc}%</p>
+                <p className="text-muted-foreground text-xs">IADC</p>
+                <p className="font-semibold text-foreground text-lg">{driver.current.iadc}%</p>
                 <DiffBadge value={driver.diff.iadc} suffix="%" />
               </div>
             </div>
@@ -97,8 +105,8 @@ export function RecapModal({ open, onOpenChange, driver, week }: RecapModalProps
 
           {/* WhatsApp Message Preview */}
           <div className="space-y-2">
-            <h4 className="text-sm font-medium text-foreground">Message WhatsApp</h4>
-            <div className="rounded-lg border border-border bg-card p-4 font-mono text-sm whitespace-pre-wrap">
+            <h4 className="font-medium text-foreground text-sm">Message WhatsApp</h4>
+            <div className="whitespace-pre-wrap rounded-lg border border-border bg-card p-4 font-mono text-sm">
               {message}
             </div>
           </div>
@@ -124,5 +132,5 @@ export function RecapModal({ open, onOpenChange, driver, week }: RecapModalProps
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

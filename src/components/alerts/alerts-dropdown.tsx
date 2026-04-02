@@ -1,40 +1,22 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { useQuery, useMutation } from "convex/react"
-import { api } from "@convex/_generated/api"
-import type { Id } from "@convex/_generated/dataModel"
-import {
-  Bell,
-  AlertTriangle,
-  AlertCircle,
-  TrendingDown,
-  UserPlus,
-  Clock,
-  ArrowDown,
-  Check,
-  X,
-} from "lucide-react"
-import { formatDistanceToNow } from "date-fns"
-import { fr } from "date-fns/locale"
+import { useState } from "react";
 
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { cn } from "@/lib/utils"
-import { useDashboardStore } from "@/lib/store"
+import { api } from "@convex/_generated/api";
+import type { Id } from "@convex/_generated/dataModel";
+import { useMutation, useQuery } from "convex/react";
+import { formatDistanceToNow } from "date-fns";
+import { fr } from "date-fns/locale";
+import { AlertCircle, AlertTriangle, ArrowDown, Bell, Check, Clock, TrendingDown, UserPlus, X } from "lucide-react";
 
-type AlertType =
-  | "dwc_drop"
-  | "dwc_critical"
-  | "coaching_pending"
-  | "new_driver"
-  | "tier_downgrade"
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { useDashboardStore } from "@/lib/store";
+import { cn } from "@/lib/utils";
+
+type AlertType = "dwc_drop" | "dwc_critical" | "coaching_pending" | "new_driver" | "tier_downgrade";
 
 const alertIcons: Record<AlertType, typeof AlertTriangle> = {
   dwc_drop: TrendingDown,
@@ -42,7 +24,7 @@ const alertIcons: Record<AlertType, typeof AlertTriangle> = {
   coaching_pending: Clock,
   new_driver: UserPlus,
   tier_downgrade: ArrowDown,
-}
+};
 
 const alertColors: Record<AlertType, string> = {
   dwc_drop: "text-orange-500",
@@ -50,47 +32,41 @@ const alertColors: Record<AlertType, string> = {
   coaching_pending: "text-amber-500",
   new_driver: "text-blue-500",
   tier_downgrade: "text-purple-500",
-}
+};
 
 export function AlertsDropdown() {
-  const [isOpen, setIsOpen] = useState(false)
-  const { selectedStation } = useDashboardStore()
+  const [isOpen, setIsOpen] = useState(false);
+  const { selectedStation } = useDashboardStore();
 
   // Get station from store
   const station = useQuery(
     api.stations.getStationByCode,
-    selectedStation.code ? { code: selectedStation.code } : "skip"
-  )
+    selectedStation.code ? { code: selectedStation.code } : "skip",
+  );
 
-  const alerts = useQuery(
-    api.alerts.getUnreadAlerts,
-    station ? { stationId: station._id } : "skip"
-  )
+  const alerts = useQuery(api.alerts.getUnreadAlerts, station ? { stationId: station._id } : "skip");
 
-  const alertCount = useQuery(
-    api.alerts.getAlertCount,
-    station ? { stationId: station._id } : "skip"
-  )
+  const alertCount = useQuery(api.alerts.getAlertCount, station ? { stationId: station._id } : "skip");
 
-  const markAsRead = useMutation(api.alerts.markAsRead)
-  const markAllAsRead = useMutation(api.alerts.markAllAsRead)
-  const dismissAlert = useMutation(api.alerts.dismissAlert)
+  const markAsRead = useMutation(api.alerts.markAsRead);
+  const markAllAsRead = useMutation(api.alerts.markAllAsRead);
+  const dismissAlert = useMutation(api.alerts.dismissAlert);
 
   const handleMarkAllRead = async () => {
     if (station) {
-      await markAllAsRead({ stationId: station._id })
+      await markAllAsRead({ stationId: station._id });
     }
-  }
+  };
 
   const handleDismiss = async (alertId: Id<"alerts">) => {
-    await dismissAlert({ alertId })
-  }
+    await dismissAlert({ alertId });
+  };
 
   const handleMarkRead = async (alertId: Id<"alerts">) => {
-    await markAsRead({ alertId })
-  }
+    await markAsRead({ alertId });
+  };
 
-  const count = alertCount ?? 0
+  const count = alertCount ?? 0;
 
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
@@ -100,7 +76,7 @@ export function AlertsDropdown() {
           {count > 0 && (
             <Badge
               variant="destructive"
-              className="absolute -right-1 -top-1 h-5 w-5 rounded-full p-0 text-xs flex items-center justify-center"
+              className="-right-1 -top-1 absolute flex h-5 w-5 items-center justify-center rounded-full p-0 text-xs"
             >
               {count > 9 ? "9+" : count}
             </Badge>
@@ -115,7 +91,7 @@ export function AlertsDropdown() {
             <Button
               variant="ghost"
               size="sm"
-              className="h-auto p-0 text-xs text-muted-foreground hover:text-foreground"
+              className="h-auto p-0 text-muted-foreground text-xs hover:text-foreground"
               onClick={handleMarkAllRead}
             >
               Tout marquer lu
@@ -125,46 +101,32 @@ export function AlertsDropdown() {
 
         {!alerts || alerts.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
-            <Bell className="h-8 w-8 mb-2 opacity-50" />
+            <Bell className="mb-2 h-8 w-8 opacity-50" />
             <p className="text-sm">Aucune alerte</p>
           </div>
         ) : (
           <ScrollArea className="h-[300px]">
             <div className="divide-y">
               {alerts.map((alert) => {
-                const Icon = alertIcons[alert.type as AlertType] || AlertTriangle
-                const colorClass = alertColors[alert.type as AlertType] || "text-muted-foreground"
+                const Icon = alertIcons[alert.type as AlertType] || AlertTriangle;
+                const colorClass = alertColors[alert.type as AlertType] || "text-muted-foreground";
 
                 return (
                   <div
                     key={alert._id}
-                    className={cn(
-                      "flex gap-3 p-4 hover:bg-muted/50 transition-colors",
-                      !alert.isRead && "bg-muted/30"
-                    )}
+                    className={cn("flex gap-3 p-4 transition-colors hover:bg-muted/50", !alert.isRead && "bg-muted/30")}
                   >
                     <div
                       className={cn(
                         "flex h-8 w-8 shrink-0 items-center justify-center rounded-full",
-                        alert.severity === "critical"
-                          ? "bg-red-500/10"
-                          : "bg-amber-500/10"
+                        alert.severity === "critical" ? "bg-red-500/10" : "bg-amber-500/10",
                       )}
                     >
-                      <Icon
-                        className={cn(
-                          "h-4 w-4",
-                          alert.severity === "critical"
-                            ? "text-red-500"
-                            : colorClass
-                        )}
-                      />
+                      <Icon className={cn("h-4 w-4", alert.severity === "critical" ? "text-red-500" : colorClass)} />
                     </div>
                     <div className="flex-1 space-y-1">
                       <div className="flex items-start justify-between gap-2">
-                        <p className="text-sm font-medium leading-tight">
-                          {alert.title}
-                        </p>
+                        <p className="font-medium text-sm leading-tight">{alert.title}</p>
                         <div className="flex items-center gap-1">
                           {!alert.isRead && (
                             <Button
@@ -186,10 +148,8 @@ export function AlertsDropdown() {
                           </Button>
                         </div>
                       </div>
-                      <p className="text-xs text-muted-foreground">
-                        {alert.message}
-                      </p>
-                      <p className="text-xs text-muted-foreground/70">
+                      <p className="text-muted-foreground text-xs">{alert.message}</p>
+                      <p className="text-muted-foreground/70 text-xs">
                         {formatDistanceToNow(alert.createdAt, {
                           addSuffix: true,
                           locale: fr,
@@ -197,12 +157,12 @@ export function AlertsDropdown() {
                       </p>
                     </div>
                   </div>
-                )
+                );
               })}
             </div>
           </ScrollArea>
         )}
       </PopoverContent>
     </Popover>
-  )
+  );
 }

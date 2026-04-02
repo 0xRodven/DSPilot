@@ -1,146 +1,148 @@
 // Generator for WhatsApp coaching messages by action type
 
-export type ActionType = "discussion" | "warning" | "training" | "suspension"
+export type ActionType = "discussion" | "warning" | "training" | "suspension";
 
 export interface CoachingActionData {
-  driverName: string
-  actionType: ActionType
-  dwcPercent: number
-  reason: string
-  followUpDate?: string
-  targetCategory?: string
+  driverName: string;
+  actionType: ActionType;
+  dwcPercent: number;
+  reason: string;
+  followUpDate?: string;
+  targetCategory?: string;
 }
 
 function formatDate(dateStr?: string): string {
-  if (!dateStr) return "A definir"
+  if (!dateStr) return "A definir";
   try {
-    const date = new Date(dateStr)
+    const date = new Date(dateStr);
     return date.toLocaleDateString("fr-FR", {
       weekday: "long",
       day: "numeric",
       month: "long",
-    })
+    });
   } catch {
-    return dateStr
+    return dateStr;
   }
 }
 
 function getActionEmoji(type: ActionType): string {
   switch (type) {
     case "discussion":
-      return ""
+      return "";
     case "warning":
-      return ""
+      return "";
     case "training":
-      return ""
+      return "";
     case "suspension":
-      return ""
+      return "";
   }
 }
 
 function getActionTitle(type: ActionType): string {
   switch (type) {
     case "discussion":
-      return "Discussion"
+      return "Discussion";
     case "warning":
-      return "Avertissement"
+      return "Avertissement";
     case "training":
-      return "Formation"
+      return "Formation";
     case "suspension":
-      return "Suspension"
+      return "Suspension";
   }
 }
 
 export function generateCoachingMessage(data: CoachingActionData): string {
-  const lines: string[] = []
-  const emoji = getActionEmoji(data.actionType)
-  const title = getActionTitle(data.actionType)
+  const lines: string[] = [];
+  const emoji = getActionEmoji(data.actionType);
+  const title = getActionTitle(data.actionType);
 
   switch (data.actionType) {
     case "discussion":
-      lines.push(`${emoji} *Coaching - ${title}*`)
-      lines.push("")
-      lines.push(`Bonjour ${data.driverName},`)
-      lines.push("")
-      lines.push(`J'aimerais discuter avec toi de tes performances recentes.`)
-      lines.push("")
-      lines.push(` DWC actuel: *${data.dwcPercent.toFixed(1)}%*`)
-      lines.push(` Sujet: ${data.reason}`)
+      lines.push(`${emoji} *Coaching - ${title}*`);
+      lines.push("");
+      lines.push(`Bonjour ${data.driverName},`);
+      lines.push("");
+      lines.push(`J'aimerais discuter avec toi de tes performances recentes.`);
+      lines.push("");
+      lines.push(` DWC actuel: *${data.dwcPercent.toFixed(1)}%*`);
+      lines.push(` Sujet: ${data.reason}`);
       if (data.targetCategory) {
-        lines.push(` Focus: ${data.targetCategory}`)
+        lines.push(` Focus: ${data.targetCategory}`);
       }
-      lines.push("")
-      lines.push(`On peut en parler cette semaine ?`)
+      lines.push("");
+      lines.push(`On peut en parler cette semaine ?`);
       if (data.followUpDate) {
-        lines.push(`RDV prevu: ${formatDate(data.followUpDate)}`)
+        lines.push(`RDV prevu: ${formatDate(data.followUpDate)}`);
       }
-      lines.push("")
-      lines.push(`Merci`)
-      break
+      lines.push("");
+      lines.push(`Merci`);
+      break;
 
     case "warning":
-      lines.push(`${emoji} *Avertissement Officiel*`)
-      lines.push("")
-      lines.push(`${data.driverName},`)
-      lines.push("")
-      lines.push(`Ton DWC est a *${data.dwcPercent.toFixed(1)}%* - en dessous du seuil requis.`)
-      lines.push("")
-      lines.push(` Raison: ${data.reason}`)
+      lines.push(`${emoji} *Avertissement Officiel*`);
+      lines.push("");
+      lines.push(`${data.driverName},`);
+      lines.push("");
+      lines.push(`Ton DWC est a *${data.dwcPercent.toFixed(1)}%* - en dessous du seuil requis.`);
+      lines.push("");
+      lines.push(` Raison: ${data.reason}`);
       if (data.targetCategory) {
-        lines.push(` Categorie concernee: ${data.targetCategory}`)
+        lines.push(` Categorie concernee: ${data.targetCategory}`);
       }
-      lines.push("")
-      lines.push(` Prochain point: ${formatDate(data.followUpDate)}`)
-      lines.push("")
-      lines.push(`Il faut agir rapidement pour eviter l'escalade.`)
-      break
+      lines.push("");
+      lines.push(` Prochain point: ${formatDate(data.followUpDate)}`);
+      lines.push("");
+      lines.push(`Il faut agir rapidement pour eviter l'escalade.`);
+      break;
 
     case "training":
-      lines.push(`${emoji} *Formation Prevue*`)
-      lines.push("")
-      lines.push(`Bonjour ${data.driverName},`)
-      lines.push("")
-      lines.push(`Une formation est prevue pour t'aider a ameliorer tes performances.`)
-      lines.push("")
-      lines.push(` DWC: *${data.dwcPercent.toFixed(1)}%*`)
-      lines.push(` Focus: ${data.reason}`)
+      lines.push(`${emoji} *Formation Prevue*`);
+      lines.push("");
+      lines.push(`Bonjour ${data.driverName},`);
+      lines.push("");
+      lines.push(`Une formation est prevue pour t'aider a ameliorer tes performances.`);
+      lines.push("");
+      lines.push(` DWC: *${data.dwcPercent.toFixed(1)}%*`);
+      lines.push(` Focus: ${data.reason}`);
       if (data.targetCategory) {
-        lines.push(` Categorie: ${data.targetCategory}`)
+        lines.push(` Categorie: ${data.targetCategory}`);
       }
-      lines.push("")
-      lines.push(` Date de suivi: ${formatDate(data.followUpDate)}`)
-      lines.push("")
-      lines.push(`On compte sur toi !`)
-      break
+      lines.push("");
+      lines.push(` Date de suivi: ${formatDate(data.followUpDate)}`);
+      lines.push("");
+      lines.push(`On compte sur toi !`);
+      break;
 
     case "suspension":
-      lines.push(`${emoji} *Suspension*`)
-      lines.push("")
-      lines.push(`${data.driverName},`)
-      lines.push("")
-      lines.push(`Suite aux problemes recurrents (DWC: *${data.dwcPercent.toFixed(1)}%*), une suspension est appliquee.`)
-      lines.push("")
-      lines.push(` Raison: ${data.reason}`)
-      lines.push("")
-      lines.push(`Contacte ton manager pour les prochaines etapes.`)
-      break
+      lines.push(`${emoji} *Suspension*`);
+      lines.push("");
+      lines.push(`${data.driverName},`);
+      lines.push("");
+      lines.push(
+        `Suite aux problemes recurrents (DWC: *${data.dwcPercent.toFixed(1)}%*), une suspension est appliquee.`,
+      );
+      lines.push("");
+      lines.push(` Raison: ${data.reason}`);
+      lines.push("");
+      lines.push(`Contacte ton manager pour les prochaines etapes.`);
+      break;
   }
 
-  return lines.join("\n")
+  return lines.join("\n");
 }
 
 export function generateQuickMessage(driverName: string, dwcPercent: number): string {
   if (dwcPercent >= 95) {
-    return ` Bravo ${driverName} ! Ton DWC de *${dwcPercent.toFixed(1)}%* est excellent. Continue comme ca !`
+    return ` Bravo ${driverName} ! Ton DWC de *${dwcPercent.toFixed(1)}%* est excellent. Continue comme ca !`;
   }
 
   if (dwcPercent >= 90) {
-    return ` Bien joue ${driverName} ! DWC a *${dwcPercent.toFixed(1)}%*. Tu es dans une bonne zone, continue pour viser le Fantastic !`
+    return ` Bien joue ${driverName} ! DWC a *${dwcPercent.toFixed(1)}%*. Tu es dans une bonne zone, continue pour viser le Fantastic !`;
   }
 
   if (dwcPercent >= 88) {
-    return ` ${driverName}, ton DWC est a *${dwcPercent.toFixed(1)}%*. Il faut remonter pour revenir au niveau Great !`
+    return ` ${driverName}, ton DWC est a *${dwcPercent.toFixed(1)}%*. Il faut remonter pour revenir au niveau Great !`;
   }
 
-  return ` ${driverName}, attention ! Ton DWC est a *${dwcPercent.toFixed(1)}%*. On doit en parler rapidement.`
+  return ` ${driverName}, attention ! Ton DWC est a *${dwcPercent.toFixed(1)}%*. On doit en parler rapidement.`;
 }

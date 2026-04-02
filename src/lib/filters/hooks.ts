@@ -1,31 +1,26 @@
-"use client"
+"use client";
 
 // src/lib/filters/hooks.ts
 // Hooks React pour le système de filtrage URL-first
 
-import { useQueryStates, useQueryState, parseAsString } from "nuqs"
-import { useCallback, useMemo } from "react"
-import { getISOWeek, getISOWeekYear } from "date-fns"
+import { useCallback, useMemo } from "react";
+
+import { getISOWeek, getISOWeekYear } from "date-fns";
+import { parseAsString, useQueryState, useQueryStates } from "nuqs";
+
+import { formatTimeDisplay, getTodayValues, isCurrentPeriod, navigateTime, normalizeTimeFilter } from "./normalization";
 import {
   filterParsers,
-  parseWeekString,
-  serializeWeek,
-  parseRangeString,
-  serializeRange,
-  type FilterValues,
   type PeriodMode,
-  type WeekValue,
+  parseRangeString,
+  parseWeekString,
   type RangeValue,
+  serializeRange,
+  serializeWeek,
   type TierFilter,
-} from "./parsers"
-import {
-  normalizeTimeFilter,
-  formatTimeDisplay,
-  navigateTime,
-  getTodayValues,
-  isCurrentPeriod,
-} from "./normalization"
-import type { NormalizedTimeFilter, NavigationDirection } from "./types"
+  type WeekValue,
+} from "./parsers";
+import type { NavigationDirection, NormalizedTimeFilter } from "./types";
 
 // ============================================================================
 // MAIN HOOK: useFilters
@@ -38,132 +33,110 @@ import type { NormalizedTimeFilter, NavigationDirection } from "./types"
 export function useFilters() {
   const [rawFilters, setRawFilters] = useQueryStates(filterParsers, {
     shallow: false,
-  })
+  });
 
   // Parse raw string values to typed values
-  const period = rawFilters.period as PeriodMode
+  const period = rawFilters.period as PeriodMode;
   // Fallback to CURRENT week (not week 1!) if parsing fails
-  const parsedWeek = parseWeekString(rawFilters.week)
+  const parsedWeek = parseWeekString(rawFilters.week);
   const week = parsedWeek ?? {
     year: getISOWeekYear(new Date()),
     week: getISOWeek(new Date()),
-  }
-  const date = rawFilters.date
-  const range = rawFilters.range ? parseRangeString(rawFilters.range) : null
-  const station = rawFilters.station
-  const tier = rawFilters.tier as TierFilter
-  const errorType = rawFilters.errorType
-  const search = rawFilters.search
+  };
+  const date = rawFilters.date;
+  const range = rawFilters.range ? parseRangeString(rawFilters.range) : null;
+  const station = rawFilters.station;
+  const tier = rawFilters.tier as TierFilter;
+  const errorType = rawFilters.errorType;
+  const search = rawFilters.search;
 
   // Temps normalisé pour l'API
   const normalizedTime = useMemo<NormalizedTimeFilter>(() => {
-    return normalizeTimeFilter(period, week, date, range)
-  }, [period, week, date, range])
+    return normalizeTimeFilter(period, week, date, range);
+  }, [period, week, date, range]);
 
   // Label d'affichage
   const displayLabel = useMemo(() => {
-    return formatTimeDisplay(period, week, date, range)
-  }, [period, week, date, range])
+    return formatTimeDisplay(period, week, date, range);
+  }, [period, week, date, range]);
 
   // Navigation ← →
   const navigate = useCallback(
     (direction: NavigationDirection) => {
-      const updates = navigateTime(direction, period, week, date, range)
+      const updates = navigateTime(direction, period, week, date, range);
       // Convert typed values back to strings for setRawFilters
-      const rawUpdates: Record<string, string | null> = {}
-      if (updates.period !== undefined) rawUpdates.period = updates.period
-      if (updates.week !== undefined) rawUpdates.week = serializeWeek(updates.week)
-      if (updates.date !== undefined) rawUpdates.date = updates.date
-      if (updates.range !== undefined) rawUpdates.range = updates.range ? serializeRange(updates.range) : null
-      setRawFilters(rawUpdates)
+      const rawUpdates: Record<string, string | null> = {};
+      if (updates.period !== undefined) rawUpdates.period = updates.period;
+      if (updates.week !== undefined) rawUpdates.week = serializeWeek(updates.week);
+      if (updates.date !== undefined) rawUpdates.date = updates.date;
+      if (updates.range !== undefined) rawUpdates.range = updates.range ? serializeRange(updates.range) : null;
+      setRawFilters(rawUpdates);
     },
-    [period, week, date, range, setRawFilters]
-  )
+    [period, week, date, range, setRawFilters],
+  );
 
   // Retour à aujourd'hui
   const goToToday = useCallback(() => {
-    const updates = getTodayValues(period)
-    const rawUpdates: Record<string, string | null> = {}
-    if (updates.period !== undefined) rawUpdates.period = updates.period
-    if (updates.week !== undefined) rawUpdates.week = serializeWeek(updates.week)
-    if (updates.date !== undefined) rawUpdates.date = updates.date
-    setRawFilters(rawUpdates)
-  }, [period, setRawFilters])
+    const updates = getTodayValues(period);
+    const rawUpdates: Record<string, string | null> = {};
+    if (updates.period !== undefined) rawUpdates.period = updates.period;
+    if (updates.week !== undefined) rawUpdates.week = serializeWeek(updates.week);
+    if (updates.date !== undefined) rawUpdates.date = updates.date;
+    setRawFilters(rawUpdates);
+  }, [period, setRawFilters]);
 
   // Est-ce la période courante?
   const isCurrent = useMemo(() => {
-    return isCurrentPeriod(period, week, date)
-  }, [period, week, date])
+    return isCurrentPeriod(period, week, date);
+  }, [period, week, date]);
 
   // Peut naviguer? (tous les modes peuvent naviguer)
-  const canNavigate = true
+  const canNavigate = true;
 
   // Helper to set filters with proper serialization
   const setFilters = useCallback(
-    (updates: Partial<{
-      period: PeriodMode
-      week: WeekValue
-      date: string
-      range: RangeValue | null
-      station: string
-      tier: TierFilter
-      errorType: string
-      search: string
-    }>) => {
-      const rawUpdates: Record<string, string | null> = {}
-      if (updates.period !== undefined) rawUpdates.period = updates.period
-      if (updates.week !== undefined) rawUpdates.week = serializeWeek(updates.week)
-      if (updates.date !== undefined) rawUpdates.date = updates.date
-      if (updates.range !== undefined) rawUpdates.range = updates.range ? serializeRange(updates.range) : null
-      if (updates.station !== undefined) rawUpdates.station = updates.station
-      if (updates.tier !== undefined) rawUpdates.tier = updates.tier
-      if (updates.errorType !== undefined) rawUpdates.errorType = updates.errorType
-      if (updates.search !== undefined) rawUpdates.search = updates.search
-      setRawFilters(rawUpdates)
+    (
+      updates: Partial<{
+        period: PeriodMode;
+        week: WeekValue;
+        date: string;
+        range: RangeValue | null;
+        station: string;
+        tier: TierFilter;
+        errorType: string;
+        search: string;
+      }>,
+    ) => {
+      const rawUpdates: Record<string, string | null> = {};
+      if (updates.period !== undefined) rawUpdates.period = updates.period;
+      if (updates.week !== undefined) rawUpdates.week = serializeWeek(updates.week);
+      if (updates.date !== undefined) rawUpdates.date = updates.date;
+      if (updates.range !== undefined) rawUpdates.range = updates.range ? serializeRange(updates.range) : null;
+      if (updates.station !== undefined) rawUpdates.station = updates.station;
+      if (updates.tier !== undefined) rawUpdates.tier = updates.tier;
+      if (updates.errorType !== undefined) rawUpdates.errorType = updates.errorType;
+      if (updates.search !== undefined) rawUpdates.search = updates.search;
+      setRawFilters(rawUpdates);
     },
-    [setRawFilters]
-  )
+    [setRawFilters],
+  );
 
   // Setters individuels
-  const setPeriod = useCallback(
-    (newPeriod: PeriodMode) => setFilters({ period: newPeriod }),
-    [setFilters]
-  )
+  const setPeriod = useCallback((newPeriod: PeriodMode) => setFilters({ period: newPeriod }), [setFilters]);
 
-  const setWeek = useCallback(
-    (newWeek: WeekValue) => setFilters({ week: newWeek }),
-    [setFilters]
-  )
+  const setWeek = useCallback((newWeek: WeekValue) => setFilters({ week: newWeek }), [setFilters]);
 
-  const setDate = useCallback(
-    (newDate: string) => setFilters({ date: newDate }),
-    [setFilters]
-  )
+  const setDate = useCallback((newDate: string) => setFilters({ date: newDate }), [setFilters]);
 
-  const setRange = useCallback(
-    (newRange: RangeValue | null) => setFilters({ range: newRange }),
-    [setFilters]
-  )
+  const setRange = useCallback((newRange: RangeValue | null) => setFilters({ range: newRange }), [setFilters]);
 
-  const setStation = useCallback(
-    (newStation: string) => setFilters({ station: newStation }),
-    [setFilters]
-  )
+  const setStation = useCallback((newStation: string) => setFilters({ station: newStation }), [setFilters]);
 
-  const setTier = useCallback(
-    (newTier: TierFilter) => setFilters({ tier: newTier }),
-    [setFilters]
-  )
+  const setTier = useCallback((newTier: TierFilter) => setFilters({ tier: newTier }), [setFilters]);
 
-  const setErrorType = useCallback(
-    (newErrorType: string) => setFilters({ errorType: newErrorType }),
-    [setFilters]
-  )
+  const setErrorType = useCallback((newErrorType: string) => setFilters({ errorType: newErrorType }), [setFilters]);
 
-  const setSearch = useCallback(
-    (newSearch: string) => setFilters({ search: newSearch }),
-    [setFilters]
-  )
+  const setSearch = useCallback((newSearch: string) => setFilters({ search: newSearch }), [setFilters]);
 
   return {
     // === Typed values ===
@@ -202,7 +175,7 @@ export function useFilters() {
     goToToday,
     isCurrent,
     canNavigate,
-  }
+  };
 }
 
 // ============================================================================
@@ -213,12 +186,12 @@ export function useFilters() {
  * Pour les pages qui n'utilisent pas le temps global (Coaching, Calendar)
  */
 export function useStationFilter() {
-  const [station, setStation] = useQueryState("station", parseAsString.withDefault(""))
+  const [station, setStation] = useQueryState("station", parseAsString.withDefault(""));
 
   return {
     station,
     setStation,
-  }
+  };
 }
 
 // ============================================================================
@@ -230,7 +203,7 @@ export function useStationFilter() {
  * @deprecated Utiliser useFilters() directement
  */
 export function useTimeParams() {
-  const f = useFilters()
+  const f = useFilters();
 
   return {
     time: {
@@ -249,7 +222,7 @@ export function useTimeParams() {
       week: f.weekNum,
       date: f.dateStr,
     },
-  }
+  };
 }
 
 // ============================================================================
@@ -261,54 +234,54 @@ export function useTimeParams() {
  * Utilisé par le sidebar pour la navigation
  */
 export function useFilteredHref(pathname: string): string {
-  const { period, week, date, range } = useFilters()
+  const { period, week, date, range } = useFilters();
 
   // Build query string with current time filters
-  const params = new URLSearchParams()
+  const params = new URLSearchParams();
 
   // Always include period
-  params.set("period", period)
+  params.set("period", period);
 
   // Include relevant time param based on period
   if (period === "week") {
-    params.set("week", serializeWeek(week))
+    params.set("week", serializeWeek(week));
   } else if (period === "day") {
-    params.set("date", date)
+    params.set("date", date);
   } else if (period === "range" && range) {
-    params.set("range", serializeRange(range))
+    params.set("range", serializeRange(range));
   }
 
-  return `${pathname}?${params.toString()}`
+  return `${pathname}?${params.toString()}`;
 }
 
 /**
  * Hook qui retourne une fonction pour construire des hrefs avec filtres
  */
 export function useBuildFilteredHref() {
-  const { period, week, date, range } = useFilters()
+  const { period, week, date, range } = useFilters();
 
   return useCallback(
     (pathname: string): string => {
-      const params = new URLSearchParams()
-      params.set("period", period)
+      const params = new URLSearchParams();
+      params.set("period", period);
 
       if (period === "week") {
-        params.set("week", serializeWeek(week))
+        params.set("week", serializeWeek(week));
       } else if (period === "day") {
-        params.set("date", date)
+        params.set("date", date);
       } else if (period === "range" && range) {
-        params.set("range", serializeRange(range))
+        params.set("range", serializeRange(range));
       }
 
-      return `${pathname}?${params.toString()}`
+      return `${pathname}?${params.toString()}`;
     },
-    [period, week, date, range]
-  )
+    [period, week, date, range],
+  );
 }
 
 // ============================================================================
 // RE-EXPORTS
 // ============================================================================
 
-export type { FilterValues, PeriodMode, WeekValue, RangeValue, TierFilter } from "./parsers"
-export type { NormalizedTimeFilter, NavigationDirection } from "./types"
+export type { FilterValues, PeriodMode, RangeValue, TierFilter, WeekValue } from "./parsers";
+export type { NavigationDirection, NormalizedTimeFilter } from "./types";

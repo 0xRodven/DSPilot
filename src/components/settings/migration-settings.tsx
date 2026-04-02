@@ -1,65 +1,56 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { useMutation } from "convex/react"
-import { useOrganization } from "@clerk/nextjs"
-import { toast } from "sonner"
-import { ArrowRightLeft, CheckCircle2, AlertCircle, Loader2 } from "lucide-react"
+import { useState } from "react";
 
-import { api } from "@convex/_generated/api"
-import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import {
-  Alert,
-  AlertDescription,
-  AlertTitle,
-} from "@/components/ui/alert"
+import { useOrganization } from "@clerk/nextjs";
+import { api } from "@convex/_generated/api";
+import { useMutation } from "convex/react";
+import { AlertCircle, ArrowRightLeft, CheckCircle2, Loader2 } from "lucide-react";
+import { toast } from "sonner";
+
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 export function MigrationSettings() {
-  const { organization } = useOrganization()
-  const [isLoading, setIsLoading] = useState(false)
+  const { organization } = useOrganization();
+  const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<{
-    migrated: string[]
-    skipped: string[]
-    totalMigrated: number
-    totalSkipped: number
-  } | null>(null)
+    migrated: string[];
+    skipped: string[];
+    totalMigrated: number;
+    totalSkipped: number;
+  } | null>(null);
 
-  const migrateStations = useMutation(api.stations.migrateStationsToOrganization)
+  const migrateStations = useMutation(api.stations.migrateStationsToOrganization);
 
   const handleMigration = async () => {
     if (!organization) {
-      toast.error("Vous devez d'abord créer ou rejoindre une organisation")
-      return
+      toast.error("Vous devez d'abord créer ou rejoindre une organisation");
+      return;
     }
 
-    setIsLoading(true)
-    setResult(null)
+    setIsLoading(true);
+    setResult(null);
 
     try {
-      const res = await migrateStations()
-      setResult(res)
+      const res = await migrateStations();
+      setResult(res);
 
       if (res.totalMigrated > 0) {
-        toast.success(`${res.totalMigrated} station(s) migrée(s) avec succès`)
+        toast.success(`${res.totalMigrated} station(s) migrée(s) avec succès`);
       } else if (res.totalSkipped > 0) {
-        toast.info("Toutes les stations sont déjà associées à une organisation")
+        toast.info("Toutes les stations sont déjà associées à une organisation");
       } else {
-        toast.info("Aucune station à migrer")
+        toast.info("Aucune station à migrer");
       }
     } catch (error) {
-      console.error("Migration error:", error)
-      toast.error(error instanceof Error ? error.message : "Erreur lors de la migration")
+      console.error("Migration error:", error);
+      toast.error(error instanceof Error ? error.message : "Erreur lors de la migration");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   if (!organization) {
     return (
@@ -69,22 +60,20 @@ export function MigrationSettings() {
             <ArrowRightLeft className="h-5 w-5" />
             Migration des Stations
           </CardTitle>
-          <CardDescription>
-            Associez vos stations existantes à votre organisation
-          </CardDescription>
+          <CardDescription>Associez vos stations existantes à votre organisation</CardDescription>
         </CardHeader>
         <CardContent>
           <Alert>
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Organisation requise</AlertTitle>
             <AlertDescription>
-              Vous devez d&apos;abord créer ou rejoindre une organisation pour migrer vos stations.
-              Utilisez le sélecteur d&apos;organisation dans la sidebar.
+              Vous devez d&apos;abord créer ou rejoindre une organisation pour migrer vos stations. Utilisez le
+              sélecteur d&apos;organisation dans la sidebar.
             </AlertDescription>
           </Alert>
         </CardContent>
       </Card>
-    )
+    );
   }
 
   return (
@@ -99,16 +88,12 @@ export function MigrationSettings() {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <p className="text-sm text-muted-foreground">
-          Cette action va lier toutes vos stations existantes (dont vous êtes propriétaire)
-          à votre organisation actuelle. Cela permettra à vos managers et viewers d&apos;y accéder.
+        <p className="text-muted-foreground text-sm">
+          Cette action va lier toutes vos stations existantes (dont vous êtes propriétaire) à votre organisation
+          actuelle. Cela permettra à vos managers et viewers d&apos;y accéder.
         </p>
 
-        <Button
-          onClick={handleMigration}
-          disabled={isLoading}
-          className="w-full sm:w-auto"
-        >
+        <Button onClick={handleMigration} disabled={isLoading} className="w-full sm:w-auto">
           {isLoading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -123,15 +108,13 @@ export function MigrationSettings() {
         </Button>
 
         {result && (
-          <div className="space-y-3 pt-4 border-t">
+          <div className="space-y-3 border-t pt-4">
             {result.totalMigrated > 0 && (
               <Alert className="border-green-500/50 bg-green-500/10">
                 <CheckCircle2 className="h-4 w-4 text-green-500" />
-                <AlertTitle className="text-green-500">
-                  {result.totalMigrated} station(s) migrée(s)
-                </AlertTitle>
+                <AlertTitle className="text-green-500">{result.totalMigrated} station(s) migrée(s)</AlertTitle>
                 <AlertDescription>
-                  <ul className="mt-2 list-disc list-inside text-sm">
+                  <ul className="mt-2 list-inside list-disc text-sm">
                     {result.migrated.map((name, i) => (
                       <li key={i}>{name}</li>
                     ))}
@@ -145,7 +128,7 @@ export function MigrationSettings() {
                 <AlertCircle className="h-4 w-4" />
                 <AlertTitle>{result.totalSkipped} station(s) ignorée(s)</AlertTitle>
                 <AlertDescription>
-                  <ul className="mt-2 list-disc list-inside text-sm text-muted-foreground">
+                  <ul className="mt-2 list-inside list-disc text-muted-foreground text-sm">
                     {result.skipped.map((name, i) => (
                       <li key={i}>{name}</li>
                     ))}
@@ -159,8 +142,7 @@ export function MigrationSettings() {
                 <AlertCircle className="h-4 w-4" />
                 <AlertTitle>Aucune station trouvée</AlertTitle>
                 <AlertDescription>
-                  Vous n&apos;avez pas de stations à migrer. Créez d&apos;abord une station
-                  en important des données.
+                  Vous n&apos;avez pas de stations à migrer. Créez d&apos;abord une station en important des données.
                 </AlertDescription>
               </Alert>
             )}
@@ -168,5 +150,5 @@ export function MigrationSettings() {
         )}
       </CardContent>
     </Card>
-  )
+  );
 }

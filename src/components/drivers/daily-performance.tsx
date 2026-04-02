@@ -1,24 +1,26 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-import type { DriverDetail } from "@/lib/types"
-import { ChevronDown, ChevronUp } from "lucide-react"
-import { cn } from "@/lib/utils"
+import { useState } from "react";
+
+import { ChevronDown, ChevronUp } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import type { DriverDetail } from "@/lib/types";
+import { cn } from "@/lib/utils";
 
 interface DailyPerformanceProps {
-  driver: DriverDetail
-  week: number
+  driver: DriverDetail;
+  week: number;
 }
 
 // Days of the week in order (Monday first)
-const weekDays = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"]
+const weekDays = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
 
 export function DailyPerformance({ driver, week }: DailyPerformanceProps) {
-  const [isOpen, setIsOpen] = useState(true)
+  const [isOpen, setIsOpen] = useState(true);
 
   const statusLabels = {
     excellent: "Excellent",
@@ -26,13 +28,13 @@ export function DailyPerformance({ driver, week }: DailyPerformanceProps) {
     bon: "Bon",
     moyen: "Moyen",
     "non-travaille": "Non travaillé",
-  }
+  };
 
   // Build full week with all 7 days
   const fullWeekPerformance = weekDays.map((dayName) => {
-    const existingDay = driver.dailyPerformance.find((d) => d.day === dayName)
+    const existingDay = driver.dailyPerformance.find((d) => d.day === dayName);
     if (existingDay) {
-      return existingDay
+      return existingDay;
     }
     // Return empty day for days without data
     return {
@@ -43,8 +45,8 @@ export function DailyPerformance({ driver, week }: DailyPerformanceProps) {
       deliveries: null,
       errors: null,
       status: "non-travaille" as const,
-    }
-  })
+    };
+  });
 
   const statusColors = {
     excellent: "text-emerald-400",
@@ -52,7 +54,7 @@ export function DailyPerformance({ driver, week }: DailyPerformanceProps) {
     bon: "text-blue-400",
     moyen: "text-amber-400",
     "non-travaille": "text-muted-foreground",
-  }
+  };
 
   const statusBgColors = {
     excellent: "bg-emerald-500/20",
@@ -60,16 +62,16 @@ export function DailyPerformance({ driver, week }: DailyPerformanceProps) {
     bon: "bg-blue-500/20",
     moyen: "bg-amber-500/20",
     "non-travaille": "bg-muted",
-  }
+  };
 
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
       <Card className="border-border bg-card">
         <CollapsibleTrigger asChild>
-          <CardHeader className="cursor-pointer flex flex-row items-center justify-between pb-2 hover:bg-muted/20 transition-colors">
+          <CardHeader className="flex cursor-pointer flex-row items-center justify-between pb-2 transition-colors hover:bg-muted/20">
             <div>
-              <CardTitle className="text-lg font-semibold text-card-foreground">Performance par jour</CardTitle>
-              <p className="text-sm text-muted-foreground">Semaine {week}</p>
+              <CardTitle className="font-semibold text-card-foreground text-lg">Performance par jour</CardTitle>
+              <p className="text-muted-foreground text-sm">Semaine {week}</p>
             </div>
             <Button variant="ghost" size="sm">
               {isOpen ? (
@@ -104,7 +106,7 @@ export function DailyPerformance({ driver, week }: DailyPerformanceProps) {
                       <TableCell>
                         <div>
                           <div className="font-medium text-card-foreground">{day.day}</div>
-                          {day.date && <div className="text-xs text-muted-foreground">{day.date}</div>}
+                          {day.date && <div className="text-muted-foreground text-xs">{day.date}</div>}
                         </div>
                       </TableCell>
                       <TableCell className="text-right font-medium text-card-foreground">
@@ -122,7 +124,7 @@ export function DailyPerformance({ driver, week }: DailyPerformanceProps) {
                       <TableCell>
                         <span
                           className={cn(
-                            "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium",
+                            "inline-flex items-center rounded-full px-2.5 py-0.5 font-medium text-xs",
                             statusBgColors[day.status],
                             statusColors[day.status],
                           )}
@@ -139,5 +141,5 @@ export function DailyPerformance({ driver, week }: DailyPerformanceProps) {
         </CollapsibleContent>
       </Card>
     </Collapsible>
-  )
+  );
 }

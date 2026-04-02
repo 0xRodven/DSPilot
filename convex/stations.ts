@@ -1,11 +1,12 @@
 import { v } from "convex/values";
+
 import { mutation, query } from "./_generated/server";
 import {
-  getUserContext,
-  getAccessibleStations,
   canAccessStation,
-  requireWriteAccess,
+  getAccessibleStations,
+  getUserContext,
   requireOwner,
+  requireWriteAccess,
 } from "./lib/permissions";
 import { slugify } from "./lib/utils";
 
@@ -177,7 +178,10 @@ export const getOrCreateStationForCurrentOrg = mutation({
     // Code = nom de l'org slugifié, ou fallback sur l'ancien format
     const stationCode = args.orgName
       ? slugify(args.orgName)
-      : orgId.substring(4, 14).toUpperCase().replace(/[^A-Z0-9]/g, "");
+      : orgId
+          .substring(4, 14)
+          .toUpperCase()
+          .replace(/[^A-Z0-9]/g, "");
 
     const stationId = await ctx.db.insert("stations", {
       code: stationCode,
@@ -336,9 +340,7 @@ export const grantStationAccess = mutation({
     role: v.union(v.literal("manager"), v.literal("viewer")),
   },
   handler: async () => {
-    throw new Error(
-      "Cette fonction est dépréciée. Utilisez Clerk pour inviter des membres à l'organisation."
-    );
+    throw new Error("Cette fonction est dépréciée. Utilisez Clerk pour inviter des membres à l'organisation.");
   },
 });
 
@@ -351,9 +353,7 @@ export const revokeStationAccess = mutation({
     userId: v.string(),
   },
   handler: async () => {
-    throw new Error(
-      "Cette fonction est dépréciée. Utilisez Clerk pour retirer des membres de l'organisation."
-    );
+    throw new Error("Cette fonction est dépréciée. Utilisez Clerk pour retirer des membres de l'organisation.");
   },
 });
 
@@ -432,7 +432,6 @@ export const forceReassignStationToCurrentOrg = mutation({
     };
   },
 });
-
 
 /**
  * Migration: Lie les stations existantes de l'utilisateur à son organisation
@@ -536,15 +535,16 @@ export const debugDataWithAuth = query({
   args: {},
   handler: async (ctx) => {
     const identity = await ctx.auth.getUserIdentity();
-    const orgId = identity ? (identity as Record<string, unknown>).org_id as string | undefined : null;
+    const orgId = identity ? ((identity as Record<string, unknown>).org_id as string | undefined) : null;
 
     // Toutes les stations
     const allStations = await ctx.db.query("stations").collect();
 
     // Station trouvée par organizationId
     const stationByOrg = orgId
-      ? await ctx.db.query("stations")
-          .withIndex("by_organization", q => q.eq("organizationId", orgId))
+      ? await ctx.db
+          .query("stations")
+          .withIndex("by_organization", (q) => q.eq("organizationId", orgId))
           .first()
       : null;
 
@@ -560,19 +560,21 @@ export const debugDataWithAuth = query({
 
     return {
       clerkOrgId: orgId || "PAS CONNECTÉ À UNE ORG",
-      allStations: allStations.map(s => ({
+      allStations: allStations.map((s) => ({
         _id: s._id,
         name: s.name,
         code: s.code,
         organizationId: s.organizationId || "MISSING!",
         matchesClerkOrg: s.organizationId === orgId,
       })),
-      stationFoundByOrgId: stationByOrg ? {
-        _id: stationByOrg._id,
-        name: stationByOrg.name,
-      } : "AUCUNE STATION TROUVÉE POUR CETTE ORG",
+      stationFoundByOrgId: stationByOrg
+        ? {
+            _id: stationByOrg._id,
+            name: stationByOrg.name,
+          }
+        : "AUCUNE STATION TROUVÉE POUR CETTE ORG",
       totalDrivers: allDrivers.length,
-      activeDrivers: allDrivers.filter(d => d.isActive).length,
+      activeDrivers: allDrivers.filter((d) => d.isActive).length,
       driversByStation,
     };
   },

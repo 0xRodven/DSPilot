@@ -302,7 +302,7 @@ function renderWeeklyHistoryChart(history: WeeklyHistoryEntry[]): string {
   const values = last8.map((h) => h.avgDwc);
   const minVal = Math.min(...values);
   const maxVal = Math.max(...values);
-  const range = Math.max(maxVal - minVal, 2); // at least 2pp range
+  const _range = Math.max(maxVal - minVal, 2); // at least 2pp range
   const chartMin = Math.max(minVal - 1, 70); // don't go below 70%
   const chartMax = Math.min(maxVal + 1, 100); // don't go above 100%
   const chartRange = chartMax - chartMin;
@@ -409,7 +409,7 @@ export function generateReportHtml(data: ReportData, options: ReportOptions = {}
   const allDrivers = data.allDrivers?.map((d) => ({ ...d, name: blur(d.name) }));
 
   const dist = data.dwcDistribution;
-  const distTotal = dist.above95 + dist.pct90to95 + dist.pct85to90 + dist.pct80to85 + dist.below80 || 1;
+  const _distTotal = dist.above95 + dist.pct90to95 + dist.pct85to90 + dist.pct80to85 + dist.below80 || 1;
   const versionLabel = blurNames ? " | Version Livreurs" : "";
 
   const driverRecos = data.driverRecommendations?.map((r) => ({ ...r, name: blur(r.name) })) ?? [];

@@ -125,7 +125,7 @@ export function StationObjectivesForm({ stationId }: StationObjectivesFormProps)
     const parsed = parseFloat(raw);
     setValues((prev) => ({
       ...prev,
-      [key]: isNaN(parsed) ? prev[key] : parsed,
+      [key]: Number.isNaN(parsed) ? prev[key] : parsed,
     }));
   };
 
@@ -157,7 +157,7 @@ export function StationObjectivesForm({ stationId }: StationObjectivesFormProps)
       <Card>
         <CardHeader>
           <Skeleton className="h-6 w-56" />
-          <Skeleton className="h-4 w-80 mt-1" />
+          <Skeleton className="mt-1 h-4 w-80" />
         </CardHeader>
         <CardContent className="space-y-4">
           {Array.from({ length: 5 }).map((_, i) => (
@@ -173,8 +173,8 @@ export function StationObjectivesForm({ stationId }: StationObjectivesFormProps)
     return (
       <Card>
         <CardContent className="p-6 text-center">
-          <Target className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-          <h3 className="text-lg font-medium mb-2">Aucune station sélectionnée</h3>
+          <Target className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
+          <h3 className="mb-2 font-medium text-lg">Aucune station sélectionnée</h3>
           <p className="text-muted-foreground">Sélectionnez une station pour configurer les objectifs.</p>
         </CardContent>
       </Card>
@@ -199,7 +199,7 @@ export function StationObjectivesForm({ stationId }: StationObjectivesFormProps)
           <div className="space-y-5">
             {FIELDS.map((field) => (
               <div key={field.key} className="space-y-1.5">
-                <Label htmlFor={`field-${field.key}`} className="text-sm font-medium">
+                <Label htmlFor={`field-${field.key}`} className="font-medium text-sm">
                   {field.label}
                 </Label>
                 <div className="flex items-center gap-3">
@@ -213,28 +213,28 @@ export function StationObjectivesForm({ stationId }: StationObjectivesFormProps)
                     onChange={(e) => handleChange(field.key, e.target.value)}
                     className="w-32"
                   />
-                  {field.unit && <span className="text-sm text-muted-foreground">{field.unit}</span>}
+                  {field.unit && <span className="text-muted-foreground text-sm">{field.unit}</span>}
                 </div>
-                <p className="text-xs text-muted-foreground">{field.description}</p>
+                <p className="text-muted-foreground text-xs">{field.description}</p>
               </div>
             ))}
           </div>
 
           {/* Disclaimer */}
-          <div className="flex items-start gap-2 rounded-md border border-border bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
-            <Info className="h-4 w-4 mt-0.5 shrink-0" />
+          <div className="flex items-start gap-2 rounded-md border border-border bg-muted/40 px-4 py-3 text-muted-foreground text-sm">
+            <Info className="mt-0.5 h-4 w-4 shrink-0" />
             <p>Ces objectifs sont propres à votre station. Ils ne correspondent pas aux seuils Amazon officiels.</p>
           </div>
 
           {/* Actions */}
           <div className="flex items-center justify-between pt-2">
             <Button variant="outline" size="sm" onClick={handleReset} disabled={isSaving}>
-              <RotateCcw className="h-4 w-4 mr-2" />
+              <RotateCcw className="mr-2 h-4 w-4" />
               Réinitialiser
             </Button>
 
             <Button onClick={handleSave} disabled={isSaving}>
-              <Save className="h-4 w-4 mr-2" />
+              <Save className="mr-2 h-4 w-4" />
               {isSaving ? "Enregistrement..." : "Enregistrer"}
             </Button>
           </div>

@@ -1,9 +1,14 @@
 import type { ReactNode } from "react";
 
 import { cookies } from "next/headers";
+
 import { UserButton } from "@clerk/nextjs";
 
 import { AppSidebar } from "@/app/(main)/dashboard/_components/sidebar/app-sidebar";
+import { AlertsDropdown } from "@/components/alerts/alerts-dropdown";
+import { DashboardProviders } from "@/components/dashboard/dashboard-providers";
+import { HeaderOrgSwitcher } from "@/components/dashboard/header-org-switcher";
+import { PeriodPicker } from "@/components/dashboard/period-picker";
 import { Separator } from "@/components/ui/separator";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { SIDEBAR_COLLAPSIBLE_VALUES, SIDEBAR_VARIANT_VALUES } from "@/lib/preferences/layout";
@@ -13,10 +18,6 @@ import { getPreference } from "@/server/server-actions";
 import { LayoutControls } from "./_components/sidebar/layout-controls";
 import { SearchDialog } from "./_components/sidebar/search-dialog";
 import { ThemeSwitcher } from "./_components/sidebar/theme-switcher";
-import { DashboardProviders } from "@/components/dashboard/dashboard-providers";
-import { HeaderOrgSwitcher } from "@/components/dashboard/header-org-switcher";
-import { PeriodPicker } from "@/components/dashboard/period-picker";
-import { AlertsDropdown } from "@/components/alerts/alerts-dropdown";
 
 export default async function Layout({ children }: Readonly<{ children: ReactNode }>) {
   const cookieStore = await cookies();
@@ -38,12 +39,12 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
         >
           <header
             className={cn(
-              "flex flex-col md:flex-row min-h-12 shrink-0 items-stretch md:items-center gap-2 border-b transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:min-h-12",
+              "flex min-h-12 shrink-0 flex-col items-stretch gap-2 border-b transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:min-h-12 md:flex-row md:items-center",
               "[html[data-navbar-style=sticky]_&]:sticky [html[data-navbar-style=sticky]_&]:top-0 [html[data-navbar-style=sticky]_&]:z-50 [html[data-navbar-style=sticky]_&]:overflow-hidden [html[data-navbar-style=sticky]_&]:rounded-t-[inherit] [html[data-navbar-style=sticky]_&]:bg-background/50 [html[data-navbar-style=sticky]_&]:backdrop-blur-md",
             )}
           >
             {/* Desktop: single row layout */}
-            <div className="hidden md:flex w-full items-center justify-between px-4 lg:px-6 h-12">
+            <div className="hidden h-12 w-full items-center justify-between px-4 md:flex lg:px-6">
               {/* Left section */}
               <div className="flex items-center gap-1 lg:gap-2">
                 <SidebarTrigger className="-ml-1" />
@@ -74,7 +75,7 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
             </div>
 
             {/* Mobile: two row layout */}
-            <div className="flex md:hidden flex-col gap-2 px-3 py-2">
+            <div className="flex flex-col gap-2 px-3 py-2 md:hidden">
               {/* Row 1: Sidebar trigger, search, user controls */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">

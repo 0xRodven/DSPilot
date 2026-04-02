@@ -1,36 +1,42 @@
-"use client"
+"use client";
 
-import { useState, useCallback } from "react"
-import { CalendarIcon, Check } from "lucide-react"
-import { format, startOfWeek, subWeeks, subDays, getWeek } from "date-fns"
-import { fr } from "date-fns/locale"
+import { useCallback, useState } from "react";
 
-import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
-import { Calendar } from "@/components/ui/calendar"
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover"
-import { Separator } from "@/components/ui/separator"
+import { format, getWeek, startOfWeek, subDays, subWeeks } from "date-fns";
+import { fr } from "date-fns/locale";
+import { CalendarIcon, Check } from "lucide-react";
 
-type Granularity = "day" | "week"
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
+
+type Granularity = "day" | "week";
 
 interface DatePresetPickerProps {
-  selectedDate: Date
-  onDateChange: (date: Date) => void
-  granularity: Granularity
-  className?: string
+  selectedDate: Date;
+  onDateChange: (date: Date) => void;
+  granularity: Granularity;
+  className?: string;
 }
 
-type PresetKey = "thisWeek" | "lastWeek" | "week2" | "week3" | "week4" | "today" | "yesterday" | "day2" | "day3" | "day7"
+type PresetKey =
+  | "thisWeek"
+  | "lastWeek"
+  | "week2"
+  | "week3"
+  | "week4"
+  | "today"
+  | "yesterday"
+  | "day2"
+  | "day3"
+  | "day7";
 
 interface Preset {
-  key: PresetKey
-  label: string
-  getDate: () => Date
-  granularity: Granularity
+  key: PresetKey;
+  label: string;
+  getDate: () => Date;
+  granularity: Granularity;
 }
 
 const PRESETS: Preset[] = [
@@ -96,71 +102,67 @@ const PRESETS: Preset[] = [
     getDate: () => subDays(new Date(), 7),
     granularity: "day",
   },
-]
+];
 
-export function DatePresetPicker({
-  selectedDate,
-  onDateChange,
-  granularity,
-  className,
-}: DatePresetPickerProps) {
-  const [open, setOpen] = useState(false)
-  const [tempDate, setTempDate] = useState<Date>(selectedDate)
+export function DatePresetPicker({ selectedDate, onDateChange, granularity, className }: DatePresetPickerProps) {
+  const [open, setOpen] = useState(false);
+  const [tempDate, setTempDate] = useState<Date>(selectedDate);
 
-  const filteredPresets = PRESETS.filter((p) => p.granularity === granularity)
+  const filteredPresets = PRESETS.filter((p) => p.granularity === granularity);
 
   const handleOpenChange = useCallback(
     (isOpen: boolean) => {
       if (isOpen) {
-        setTempDate(selectedDate)
+        setTempDate(selectedDate);
       }
-      setOpen(isOpen)
+      setOpen(isOpen);
     },
-    [selectedDate]
-  )
+    [selectedDate],
+  );
 
-  const handlePresetClick = useCallback((preset: Preset) => {
-    const newDate = preset.getDate()
-    setTempDate(newDate)
-    onDateChange(newDate)
-    setOpen(false)
-  }, [onDateChange])
+  const handlePresetClick = useCallback(
+    (preset: Preset) => {
+      const newDate = preset.getDate();
+      setTempDate(newDate);
+      onDateChange(newDate);
+      setOpen(false);
+    },
+    [onDateChange],
+  );
 
-  const handleCalendarSelect = useCallback((date: Date | undefined) => {
-    if (date) {
-      // For week mode, snap to start of week
-      const finalDate = granularity === "week"
-        ? startOfWeek(date, { weekStartsOn: 1 })
-        : date
-      setTempDate(finalDate)
-    }
-  }, [granularity])
+  const handleCalendarSelect = useCallback(
+    (date: Date | undefined) => {
+      if (date) {
+        // For week mode, snap to start of week
+        const finalDate = granularity === "week" ? startOfWeek(date, { weekStartsOn: 1 }) : date;
+        setTempDate(finalDate);
+      }
+    },
+    [granularity],
+  );
 
   const handleApply = useCallback(() => {
-    onDateChange(tempDate)
-    setOpen(false)
-  }, [tempDate, onDateChange])
+    onDateChange(tempDate);
+    setOpen(false);
+  }, [tempDate, onDateChange]);
 
   const isPresetSelected = (preset: Preset) => {
-    const presetDate = preset.getDate()
+    const presetDate = preset.getDate();
     if (granularity === "week") {
-      const presetWeek = getWeek(presetDate, { weekStartsOn: 1 })
-      const selectedWeek = getWeek(tempDate, { weekStartsOn: 1 })
-      return (
-        presetWeek === selectedWeek &&
-        presetDate.getFullYear() === tempDate.getFullYear()
-      )
+      const presetWeek = getWeek(presetDate, { weekStartsOn: 1 });
+      const selectedWeek = getWeek(tempDate, { weekStartsOn: 1 });
+      return presetWeek === selectedWeek && presetDate.getFullYear() === tempDate.getFullYear();
     }
-    return presetDate.toDateString() === tempDate.toDateString()
-  }
+    return presetDate.toDateString() === tempDate.toDateString();
+  };
 
   const formatTempDate = () => {
     if (granularity === "week") {
-      const weekNum = getWeek(tempDate, { weekStartsOn: 1 })
-      return `S${weekNum} - ${format(tempDate, "d MMM yyyy", { locale: fr })}`
+      const weekNum = getWeek(tempDate, { weekStartsOn: 1 });
+      return `S${weekNum} - ${format(tempDate, "d MMM yyyy", { locale: fr })}`;
     }
-    return format(tempDate, "EEEE d MMMM yyyy", { locale: fr })
-  }
+    return format(tempDate, "EEEE d MMMM yyyy", { locale: fr });
+  };
 
   return (
     <Popover open={open} onOpenChange={handleOpenChange}>
@@ -173,9 +175,7 @@ export function DatePresetPicker({
         <div className="flex">
           {/* Left column: Presets */}
           <div className="w-[160px] border-r p-3">
-            <p className="mb-2 text-xs font-medium text-muted-foreground uppercase tracking-wide">
-              Raccourcis
-            </p>
+            <p className="mb-2 font-medium text-muted-foreground text-xs uppercase tracking-wide">Raccourcis</p>
             <div className="space-y-1">
               {filteredPresets.map((preset) => (
                 <button
@@ -183,15 +183,11 @@ export function DatePresetPicker({
                   onClick={() => handlePresetClick(preset)}
                   className={cn(
                     "flex w-full items-center justify-between rounded-md px-2 py-1.5 text-sm transition-colors",
-                    isPresetSelected(preset)
-                      ? "bg-primary text-primary-foreground"
-                      : "hover:bg-muted"
+                    isPresetSelected(preset) ? "bg-primary text-primary-foreground" : "hover:bg-muted",
                   )}
                 >
                   {preset.label}
-                  {isPresetSelected(preset) && (
-                    <Check className="h-4 w-4" />
-                  )}
+                  {isPresetSelected(preset) && <Check className="h-4 w-4" />}
                 </button>
               ))}
             </div>
@@ -211,8 +207,8 @@ export function DatePresetPicker({
 
             {/* Selected date display */}
             <div className="mt-3 rounded-md bg-muted px-3 py-2">
-              <p className="text-xs text-muted-foreground">Sélection</p>
-              <p className="text-sm font-medium capitalize">{formatTempDate()}</p>
+              <p className="text-muted-foreground text-xs">Sélection</p>
+              <p className="font-medium text-sm capitalize">{formatTempDate()}</p>
             </div>
 
             {/* Action buttons */}
@@ -228,5 +224,5 @@ export function DatePresetPicker({
         </div>
       </PopoverContent>
     </Popover>
-  )
+  );
 }

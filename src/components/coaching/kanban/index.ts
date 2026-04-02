@@ -1,5 +1,6 @@
-export { CoachingKanban } from "./CoachingKanban"
-export { KanbanColumn } from "./KanbanColumn"
-export { DetectCard } from "./DetectCard"
-export { WaitingCard } from "./WaitingCard"
-export { EvaluateCard } from "./EvaluateCard"
+export { CoachingKanban } from "./CoachingKanban";
+export { DetectCard } from "./DetectCard";
+export { DoneCard } from "./DoneCard";
+export { EvaluateCard } from "./EvaluateCard";
+export { KanbanColumn } from "./KanbanColumn";
+export { WaitingCard } from "./WaitingCard";

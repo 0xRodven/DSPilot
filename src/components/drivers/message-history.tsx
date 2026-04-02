@@ -1,25 +1,19 @@
-"use client"
+"use client";
 
-import { useQuery } from "convex/react"
-import { api } from "@convex/_generated/api"
-import type { Id } from "@convex/_generated/dataModel"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Skeleton } from "@/components/ui/skeleton"
-import {
-  MessageCircle,
-  CheckCircle2,
-  XCircle,
-  Clock,
-  Send,
-  AlertCircle,
-} from "lucide-react"
-import { cn } from "@/lib/utils"
-import { format, formatDistanceToNow } from "date-fns"
-import { fr } from "date-fns/locale"
+import { api } from "@convex/_generated/api";
+import type { Id } from "@convex/_generated/dataModel";
+import { useQuery } from "convex/react";
+import { format, formatDistanceToNow } from "date-fns";
+import { fr } from "date-fns/locale";
+import { AlertCircle, CheckCircle2, Clock, MessageCircle, Send, XCircle } from "lucide-react";
+
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 
 interface MessageHistoryProps {
-  driverId: Id<"drivers">
+  driverId: Id<"drivers">;
 }
 
 const statusConfig = {
@@ -53,13 +47,13 @@ const statusConfig = {
     color: "text-orange-500",
     bgColor: "bg-orange-500/10",
   },
-}
+};
 
 export function MessageHistory({ driverId }: MessageHistoryProps) {
   const messages = useQuery(api.whatsapp.getDriverMessageHistory, {
     driverId,
     limit: 10,
-  })
+  });
 
   if (messages === undefined) {
     return (
@@ -76,7 +70,7 @@ export function MessageHistory({ driverId }: MessageHistoryProps) {
           ))}
         </CardContent>
       </Card>
-    )
+    );
   }
 
   if (messages.length === 0) {
@@ -90,15 +84,13 @@ export function MessageHistory({ driverId }: MessageHistoryProps) {
         </CardHeader>
         <CardContent>
           <div className="flex flex-col items-center justify-center py-6 text-center text-muted-foreground">
-            <MessageCircle className="h-8 w-8 mb-2 opacity-50" />
+            <MessageCircle className="mb-2 h-8 w-8 opacity-50" />
             <p className="text-sm">Aucun message envoyé</p>
-            <p className="text-xs mt-1">
-              Les récapitulatifs apparaîtront ici une fois envoyés
-            </p>
+            <p className="mt-1 text-xs">Les récapitulatifs apparaîtront ici une fois envoyés</p>
           </div>
         </CardContent>
       </Card>
-    )
+    );
   }
 
   return (
@@ -113,25 +105,22 @@ export function MessageHistory({ driverId }: MessageHistoryProps) {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
-        {messages.map((message: typeof messages[number]) => {
-          const status = statusConfig[message.status as keyof typeof statusConfig]
-          const StatusIcon = status.icon
+        {messages.map((message: (typeof messages)[number]) => {
+          const status = statusConfig[message.status as keyof typeof statusConfig];
+          const StatusIcon = status.icon;
 
           return (
             <div
               key={message._id}
-              className={cn(
-                "rounded-lg border p-3",
-                message.status === "failed" && "border-red-500/30"
-              )}
+              className={cn("rounded-lg border p-3", message.status === "failed" && "border-red-500/30")}
             >
               <div className="flex items-start justify-between gap-3">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
+                <div className="min-w-0 flex-1">
+                  <div className="mb-1 flex items-center gap-2">
                     <Badge variant="outline" className="text-xs">
                       S{message.week} {message.year}
                     </Badge>
-                    <span className="text-xs text-muted-foreground">
+                    <span className="text-muted-foreground text-xs">
                       {format(new Date(message.createdAt), "dd MMM yyyy HH:mm", {
                         locale: fr,
                       })}
@@ -139,25 +128,21 @@ export function MessageHistory({ driverId }: MessageHistoryProps) {
                   </div>
 
                   {/* Message preview */}
-                  <p className="text-sm text-muted-foreground line-clamp-2">
+                  <p className="line-clamp-2 text-muted-foreground text-sm">
                     {message.messageContent.slice(0, 100)}
                     {message.messageContent.length > 100 && "..."}
                   </p>
 
                   {/* Error message if failed */}
-                  {message.errorMessage && (
-                    <p className="text-xs text-red-500 mt-1">
-                      {message.errorMessage}
-                    </p>
-                  )}
+                  {message.errorMessage && <p className="mt-1 text-red-500 text-xs">{message.errorMessage}</p>}
                 </div>
 
                 {/* Status badge */}
                 <div
                   className={cn(
-                    "flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium",
+                    "flex items-center gap-1 rounded-full px-2 py-1 font-medium text-xs",
                     status.bgColor,
-                    status.color
+                    status.color,
                   )}
                 >
                   <StatusIcon className="h-3 w-3" />
@@ -166,7 +151,7 @@ export function MessageHistory({ driverId }: MessageHistoryProps) {
               </div>
 
               {/* Timestamps */}
-              <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
+              <div className="mt-2 flex items-center gap-4 text-muted-foreground text-xs">
                 {message.sentAt && (
                   <span>
                     Envoyé{" "}
@@ -187,9 +172,9 @@ export function MessageHistory({ driverId }: MessageHistoryProps) {
                 )}
               </div>
             </div>
-          )
+          );
         })}
       </CardContent>
     </Card>
-  )
+  );
 }

@@ -1,36 +1,26 @@
-"use client"
+"use client";
 
 // src/components/filters/filter-badge.tsx
 // Badge visuel indiquant le filtre temporel actif
 
-import { cn } from "@/lib/utils"
-import { formatTimeContext } from "@/lib/utils/time-context"
-import type { TimeContext } from "@/lib/types/filters"
-import {
-  Calendar,
-  CalendarDays,
-  CalendarRange,
-  Clock,
-  type LucideIcon,
-} from "lucide-react"
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip"
+import { Calendar, CalendarDays, CalendarRange, Clock, type LucideIcon } from "lucide-react";
+
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import type { TimeContext } from "@/lib/types/filters";
+import { cn } from "@/lib/utils";
+import { formatTimeContext } from "@/lib/utils/time-context";
 
 // ============================================================================
 // PROPS
 // ============================================================================
 
 interface FilterBadgeProps {
-  time: TimeContext
-  isOverridden?: boolean
-  showIcon?: boolean
-  showTooltip?: boolean
-  size?: "sm" | "md"
-  className?: string
+  time: TimeContext;
+  isOverridden?: boolean;
+  showIcon?: boolean;
+  showTooltip?: boolean;
+  size?: "sm" | "md";
+  className?: string;
 }
 
 // ============================================================================
@@ -40,26 +30,26 @@ interface FilterBadgeProps {
 function getTimeIcon(type: TimeContext["type"]): LucideIcon {
   switch (type) {
     case "day":
-      return CalendarDays
+      return CalendarDays;
     case "week":
-      return Calendar
+      return Calendar;
     case "range":
-      return CalendarRange
+      return CalendarRange;
     case "relative":
-      return Clock
+      return Clock;
   }
 }
 
 function getTimeTypeLabel(type: TimeContext["type"]): string {
   switch (type) {
     case "day":
-      return "Jour"
+      return "Jour";
     case "week":
-      return "Semaine"
+      return "Semaine";
     case "range":
-      return "Période"
+      return "Période";
     case "relative":
-      return "Période relative"
+      return "Période relative";
   }
 }
 
@@ -75,10 +65,10 @@ export function FilterBadge({
   size = "sm",
   className,
 }: FilterBadgeProps) {
-  const Icon = getTimeIcon(time.type)
-  const label = formatTimeContext(time, { short: size === "sm" })
-  const fullLabel = formatTimeContext(time, { short: false })
-  const typeLabel = getTimeTypeLabel(time.type)
+  const Icon = getTimeIcon(time.type);
+  const label = formatTimeContext(time, { short: size === "sm" });
+  const fullLabel = formatTimeContext(time, { short: false });
+  const typeLabel = getTimeTypeLabel(time.type);
 
   const badge = (
     <div
@@ -89,33 +79,29 @@ export function FilterBadge({
         size === "md" && "px-2.5 py-1 text-sm",
         // Style based on override state
         isOverridden
-          ? "bg-amber-500/15 text-amber-600 dark:text-amber-400 ring-1 ring-amber-500/30"
+          ? "bg-amber-500/15 text-amber-600 ring-1 ring-amber-500/30 dark:text-amber-400"
           : "bg-muted text-muted-foreground",
-        className
+        className,
       )}
     >
       {/* Pulse indicator for override */}
       {isOverridden && (
         <span className="relative flex h-1.5 w-1.5">
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
-          <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-amber-500" />
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-75" />
+          <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-amber-500" />
         </span>
       )}
 
       {/* Icon */}
-      {showIcon && (
-        <Icon
-          className={cn(size === "sm" ? "h-3 w-3" : "h-3.5 w-3.5")}
-        />
-      )}
+      {showIcon && <Icon className={cn(size === "sm" ? "h-3 w-3" : "h-3.5 w-3.5")} />}
 
       {/* Label */}
       <span>{label}</span>
     </div>
-  )
+  );
 
   if (!showTooltip) {
-    return badge
+    return badge;
   }
 
   return (
@@ -127,7 +113,7 @@ export function FilterBadge({
             <div className="font-medium">{typeLabel}</div>
             <div className="text-muted-foreground">{fullLabel}</div>
             {isOverridden && (
-              <div className="text-amber-600 dark:text-amber-400 text-[10px] mt-1">
+              <div className="mt-1 text-[10px] text-amber-600 dark:text-amber-400">
                 Filtre local (surcharge le filtre global)
               </div>
             )}
@@ -135,28 +121,22 @@ export function FilterBadge({
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>
-  )
+  );
 }
 
 // ============================================================================
 // SCOPE INDICATOR
 // ============================================================================
 
-type FilterScope = "global" | "section" | "component"
+type FilterScope = "global" | "section" | "component";
 
 interface FilterScopeIndicatorProps {
-  scope: FilterScope
-  className?: string
+  scope: FilterScope;
+  className?: string;
 }
 
-export function FilterScopeIndicator({
-  scope,
-  className,
-}: FilterScopeIndicatorProps) {
-  const config: Record<
-    FilterScope,
-    { icon: LucideIcon; label: string; className: string }
-  > = {
+export function FilterScopeIndicator({ scope, className }: FilterScopeIndicatorProps) {
+  const config: Record<FilterScope, { icon: LucideIcon; label: string; className: string }> = {
     global: {
       icon: Calendar,
       label: "Filtre global (header)",
@@ -172,9 +152,9 @@ export function FilterScopeIndicator({
       label: "Filtre local",
       className: "bg-gray-500/10 text-gray-600 border-gray-200",
     },
-  }
+  };
 
-  const { icon: Icon, label, className: scopeClassName } = config[scope]
+  const { icon: Icon, label, className: scopeClassName } = config[scope];
 
   return (
     <TooltipProvider>
@@ -182,12 +162,12 @@ export function FilterScopeIndicator({
         <TooltipTrigger asChild>
           <div
             className={cn(
-              "inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs border",
+              "inline-flex items-center gap-1 rounded border px-1.5 py-0.5 text-xs",
               scopeClassName,
-              className
+              className,
             )}
           >
-            <Icon className="w-3 h-3" />
+            <Icon className="h-3 w-3" />
           </div>
         </TooltipTrigger>
         <TooltipContent side="top" className="text-xs">
@@ -195,5 +175,5 @@ export function FilterScopeIndicator({
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>
-  )
+  );
 }

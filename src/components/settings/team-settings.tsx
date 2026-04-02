@@ -1,12 +1,13 @@
-"use client"
+"use client";
 
-import { OrganizationProfile, useOrganization } from "@clerk/nextjs"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Users, AlertCircle } from "lucide-react"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { OrganizationProfile, useOrganization } from "@clerk/nextjs";
+import { AlertCircle, Users } from "lucide-react";
+
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 export function TeamSettings() {
-  const { organization } = useOrganization()
+  const { organization } = useOrganization();
 
   if (!organization) {
     return (
@@ -16,9 +17,7 @@ export function TeamSettings() {
             <Users className="h-5 w-5" />
             Gestion de l&apos;équipe
           </CardTitle>
-          <CardDescription>
-            Invitez et gérez les membres de votre équipe
-          </CardDescription>
+          <CardDescription>Invitez et gérez les membres de votre équipe</CardDescription>
         </CardHeader>
         <CardContent>
           <Alert>
@@ -30,7 +29,7 @@ export function TeamSettings() {
           </Alert>
         </CardContent>
       </Card>
-    )
+    );
   }
 
   return (
@@ -40,12 +39,10 @@ export function TeamSettings() {
           <Users className="h-5 w-5" />
           Équipe - {organization.name}
         </CardTitle>
-        <CardDescription>
-          Invitez des managers et viewers pour accéder aux données de cette station
-        </CardDescription>
+        <CardDescription>Invitez des managers et viewers pour accéder aux données de cette station</CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="rounded-lg border bg-card overflow-hidden">
+        <div className="overflow-hidden rounded-lg border bg-card">
           <OrganizationProfile
             appearance={{
               elements: {
@@ -60,5 +57,5 @@ export function TeamSettings() {
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }

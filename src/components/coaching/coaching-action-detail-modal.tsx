@@ -1,48 +1,38 @@
-"use client"
+"use client";
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Card, CardContent } from "@/components/ui/card"
-import {
-  TrendingUp,
-  TrendingDown,
-  Calendar,
-  Clock,
-  MessageSquare,
-  AlertTriangle,
-  BookOpen,
-  Ban,
-} from "lucide-react"
-import { format } from "date-fns"
-import { fr } from "date-fns/locale"
-import Link from "next/link"
-import { cn } from "@/lib/utils"
-import type { CoachingActionType, CoachingStatus } from "@/lib/utils/status"
+import Link from "next/link";
+
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
+import { AlertTriangle, Ban, BookOpen, Calendar, Clock, MessageSquare, TrendingDown, TrendingUp } from "lucide-react";
+
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { cn } from "@/lib/utils";
+import type { CoachingActionType, CoachingStatus } from "@/lib/utils/status";
 
 interface CoachingActionData {
-  id: string
-  actionType: CoachingActionType
-  status: CoachingStatus
-  reason: string
-  dwcAtAction: number
-  dwcAfterAction?: number
-  followUpDate?: string
-  notes?: string
-  createdAt: number
+  id: string;
+  actionType: CoachingActionType;
+  status: CoachingStatus;
+  reason: string;
+  dwcAtAction: number;
+  dwcAfterAction?: number;
+  followUpDate?: string;
+  notes?: string;
+  createdAt: number;
 }
 
 interface CoachingActionDetailModalProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  action: CoachingActionData | null
-  driverName: string
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  action: CoachingActionData | null;
+  driverName: string;
 }
 
-const actionTypeConfig: Record<
-  CoachingActionType,
-  { label: string; icon: typeof MessageSquare; color: string }
-> = {
+const actionTypeConfig: Record<CoachingActionType, { label: string; icon: typeof MessageSquare; color: string }> = {
   discussion: {
     label: "Discussion",
     icon: MessageSquare,
@@ -63,7 +53,7 @@ const actionTypeConfig: Record<
     icon: Ban,
     color: "text-red-400",
   },
-}
+};
 
 const statusConfig: Record<CoachingStatus, { label: string; className: string }> = {
   pending: {
@@ -82,28 +72,20 @@ const statusConfig: Record<CoachingStatus, { label: string; className: string }>
     label: "Escaladé",
     className: "bg-purple-500/20 text-purple-400 border-purple-500/30",
   },
-}
+};
 
-export function CoachingActionDetailModal({
-  open,
-  onOpenChange,
-  action,
-  driverName,
-}: CoachingActionDetailModalProps) {
-  if (!action) return null
+export function CoachingActionDetailModal({ open, onOpenChange, action, driverName }: CoachingActionDetailModalProps) {
+  if (!action) return null;
 
-  const impact =
-    action.dwcAfterAction !== undefined
-      ? action.dwcAfterAction - action.dwcAtAction
-      : null
+  const impact = action.dwcAfterAction !== undefined ? action.dwcAfterAction - action.dwcAtAction : null;
 
-  const typeConfig = actionTypeConfig[action.actionType]
-  const TypeIcon = typeConfig.icon
-  const statusCfg = statusConfig[action.status]
+  const typeConfig = actionTypeConfig[action.actionType];
+  const TypeIcon = typeConfig.icon;
+  const statusCfg = statusConfig[action.status];
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg border-border bg-card">
+      <DialogContent className="border-border bg-card sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <TypeIcon className={cn("h-5 w-5", typeConfig.color)} />
@@ -116,7 +98,7 @@ export function CoachingActionDetailModal({
           <div className="flex items-center justify-between">
             <div>
               <p className="font-medium text-card-foreground">{driverName}</p>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-muted-foreground text-sm">
                 {format(new Date(action.createdAt), "d MMMM yyyy", { locale: fr })}
               </p>
             </div>
@@ -127,22 +109,18 @@ export function CoachingActionDetailModal({
 
           {/* Raison */}
           <div>
-            <p className="text-sm font-medium text-muted-foreground mb-1">Raison</p>
+            <p className="mb-1 font-medium text-muted-foreground text-sm">Raison</p>
             <p className="text-card-foreground">{action.reason}</p>
           </div>
 
           {/* Impact */}
-          <Card className="bg-muted/50 border-border">
+          <Card className="border-border bg-muted/50">
             <CardContent className="p-4">
-              <p className="text-sm font-medium text-muted-foreground mb-3">
-                Impact sur les performances
-              </p>
+              <p className="mb-3 font-medium text-muted-foreground text-sm">Impact sur les performances</p>
               <div className="flex items-center justify-around">
                 <div className="text-center">
-                  <p className="text-xs text-muted-foreground">Avant</p>
-                  <p className="text-2xl font-bold text-card-foreground">
-                    {action.dwcAtAction.toFixed(1)}%
-                  </p>
+                  <p className="text-muted-foreground text-xs">Avant</p>
+                  <p className="font-bold text-2xl text-card-foreground">{action.dwcAtAction.toFixed(1)}%</p>
                 </div>
 
                 {impact !== null ? (
@@ -157,21 +135,15 @@ export function CoachingActionDetailModal({
                       )}
                     </div>
                     <div className="text-center">
-                      <p className="text-xs text-muted-foreground">Après</p>
-                      <p className="text-2xl font-bold text-card-foreground">
-                        {action.dwcAfterAction?.toFixed(1)}%
-                      </p>
+                      <p className="text-muted-foreground text-xs">Après</p>
+                      <p className="font-bold text-2xl text-card-foreground">{action.dwcAfterAction?.toFixed(1)}%</p>
                     </div>
                     <div className="text-center">
-                      <p className="text-xs text-muted-foreground">Évolution</p>
+                      <p className="text-muted-foreground text-xs">Évolution</p>
                       <p
                         className={cn(
-                          "text-xl font-bold",
-                          impact > 0
-                            ? "text-emerald-400"
-                            : impact < 0
-                              ? "text-red-400"
-                              : "text-muted-foreground"
+                          "font-bold text-xl",
+                          impact > 0 ? "text-emerald-400" : impact < 0 ? "text-red-400" : "text-muted-foreground",
                         )}
                       >
                         {impact > 0 ? "+" : ""}
@@ -181,7 +153,7 @@ export function CoachingActionDetailModal({
                   </>
                 ) : (
                   <div className="text-center text-muted-foreground">
-                    <Clock className="h-6 w-6 mx-auto mb-1" />
+                    <Clock className="mx-auto mb-1 h-6 w-6" />
                     <p className="text-sm">En attente d&apos;évaluation</p>
                   </div>
                 )}
@@ -191,7 +163,7 @@ export function CoachingActionDetailModal({
 
           {/* Suivi prévu */}
           {action.followUpDate && (
-            <div className="flex items-center gap-2 text-sm text-card-foreground">
+            <div className="flex items-center gap-2 text-card-foreground text-sm">
               <Calendar className="h-4 w-4 text-muted-foreground" />
               <span>Suivi prévu le </span>
               <span className="font-medium">
@@ -203,14 +175,14 @@ export function CoachingActionDetailModal({
           {/* Notes */}
           {action.notes && (
             <div>
-              <p className="text-sm font-medium text-muted-foreground mb-1">Notes</p>
-              <p className="text-sm text-card-foreground">{action.notes}</p>
+              <p className="mb-1 font-medium text-muted-foreground text-sm">Notes</p>
+              <p className="text-card-foreground text-sm">{action.notes}</p>
             </div>
           )}
         </div>
 
         {/* Footer Actions */}
-        <div className="flex justify-between pt-4 border-t border-border">
+        <div className="flex justify-between border-border border-t pt-4">
           <Link href="/dashboard/coaching/calendar">
             <Button variant="outline" size="sm">
               <Calendar className="mr-2 h-4 w-4" />
@@ -221,5 +193,5 @@ export function CoachingActionDetailModal({
         </div>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

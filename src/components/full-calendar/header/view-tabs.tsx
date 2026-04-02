@@ -1,18 +1,13 @@
-import { motion, AnimatePresence } from "motion/react";
+import { memo } from "react";
+
+import { CalendarRange, Columns, Grid2X2, Grid3X3, List } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
 
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-
 import { cn } from "@/lib/utils";
+
 import { useCalendar } from "../contexts/calendar-context";
-import {
-  CalendarRange,
-  List,
-  Columns,
-  Grid3X3,
-  Grid2X2,
-} from "lucide-react";
-import { TCalendarView } from "../types";
-import { memo } from "react";
+import type { TCalendarView } from "../types";
 
 const tabs = [
   {
@@ -46,12 +41,8 @@ function Views() {
   const { view, setView } = useCalendar();
 
   return (
-    <Tabs
-      value={view}
-      onValueChange={(value) => setView(value as TCalendarView)}
-      className="gap-4 sm:w-auto w-full"
-    >
-      <TabsList className="h-auto gap-2 rounded-xl p-1 w-full">
+    <Tabs value={view} onValueChange={(value) => setView(value as TCalendarView)} className="w-full gap-4 sm:w-auto">
+      <TabsList className="h-auto w-full gap-2 rounded-xl p-1">
         {tabs.map(({ icon: Icon, name, value }) => {
           const isActive = view === value;
 
@@ -61,7 +52,7 @@ function Views() {
               layout
               className={cn(
                 "flex h-8 items-center justify-center overflow-hidden rounded-md",
-                isActive ? "flex-1" : "flex-none"
+                isActive ? "flex-1" : "flex-none",
               )}
               onClick={() => setView(value as TCalendarView)}
               initial={false}
@@ -76,7 +67,7 @@ function Views() {
             >
               <TabsTrigger value={value} asChild>
                 <motion.div
-                  className="flex h-8 w-full items-center justify-center cursor-pointer"
+                  className="flex h-8 w-full cursor-pointer items-center justify-center"
                   animate={{ filter: "blur(0px)" }}
                   exit={{ filter: "blur(2px)" }}
                   transition={{ duration: 0.25, ease: "easeOut" }}

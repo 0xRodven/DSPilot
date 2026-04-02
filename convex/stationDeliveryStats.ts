@@ -1,6 +1,7 @@
 import { v } from "convex/values";
+
 import { mutation, query } from "./_generated/server";
-import { requireWriteAccess, checkStationAccess } from "./lib/permissions";
+import { checkStationAccess, requireWriteAccess } from "./lib/permissions";
 
 /**
  * Bulk upsert delivery stats - idempotent
@@ -17,7 +18,7 @@ export const bulkUpsertDeliveryStats = mutation({
         week: v.number(),
         value: v.string(),
         numericValue: v.optional(v.number()),
-      })
+      }),
     ),
   },
   handler: async (ctx, args) => {
@@ -36,7 +37,7 @@ export const bulkUpsertDeliveryStats = mutation({
             .eq("stationId", args.stationId)
             .eq("metricName", stat.metricName)
             .eq("year", stat.year)
-            .eq("week", stat.week)
+            .eq("week", stat.week),
         )
         .first();
 
@@ -98,7 +99,7 @@ export const getDeliveryStatsByStation = query({
 
     // Sort weeks chronologically
     const weeks = Array.from(weeksSet.entries())
-      .sort(([keyA, a], [keyB, b]) => {
+      .sort(([_keyA, a], [_keyB, b]) => {
         if (a.year !== b.year) return a.year - b.year;
         return a.week - b.week;
       })
@@ -169,7 +170,7 @@ export const deleteDeliveryStatsForWeek = mutation({
     const stats = await ctx.db
       .query("stationDeliveryStats")
       .withIndex("by_station_week", (q) =>
-        q.eq("stationId", args.stationId).eq("year", args.year).eq("week", args.week)
+        q.eq("stationId", args.stationId).eq("year", args.year).eq("week", args.week),
       )
       .collect();
 

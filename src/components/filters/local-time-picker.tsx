@@ -1,26 +1,14 @@
-"use client"
+"use client";
 
 // src/components/filters/local-time-picker.tsx
 // Picker de période pour les FilterSection
 
-import { useState } from "react"
-import { cn } from "@/lib/utils"
-import { formatTimeContext } from "@/lib/utils/time-context"
-import type { TimeContext, TimePreset } from "@/lib/types/filters"
-import {
-  ChevronDown,
-  RotateCcw,
-  CalendarDays,
-  CalendarRange,
-  Calendar,
-  Clock,
-} from "lucide-react"
-import { Button } from "@/components/ui/button"
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover"
+import { useState } from "react";
+
+import { Calendar, CalendarDays, CalendarRange, ChevronDown, Clock, RotateCcw } from "lucide-react";
+
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Command,
   CommandEmpty,
@@ -29,21 +17,24 @@ import {
   CommandItem,
   CommandList,
   CommandSeparator,
-} from "@/components/ui/command"
-import { Badge } from "@/components/ui/badge"
+} from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import type { TimeContext, TimePreset } from "@/lib/types/filters";
+import { cn } from "@/lib/utils";
+import { formatTimeContext } from "@/lib/utils/time-context";
 
 // ============================================================================
 // PROPS
 // ============================================================================
 
 interface LocalTimePickerProps {
-  value: TimeContext | null
-  onChange: (time: TimeContext) => void
-  onReset: () => void
-  allowedModes?: TimeContext["type"][]
-  presets?: TimePreset[]
-  isOverridden?: boolean
-  className?: string
+  value: TimeContext | null;
+  onChange: (time: TimeContext) => void;
+  onReset: () => void;
+  allowedModes?: TimeContext["type"][];
+  presets?: TimePreset[];
+  isOverridden?: boolean;
+  className?: string;
 }
 
 // ============================================================================
@@ -76,7 +67,7 @@ const DEFAULT_PRESETS: TimePreset[] = [
     shortLabel: "6M",
     value: { type: "relative", anchor: "now", offset: -6, unit: "months" },
   },
-]
+];
 
 // ============================================================================
 // HELPERS
@@ -85,13 +76,13 @@ const DEFAULT_PRESETS: TimePreset[] = [
 function getPresetIcon(time: TimeContext) {
   switch (time.type) {
     case "day":
-      return CalendarDays
+      return CalendarDays;
     case "week":
-      return Calendar
+      return Calendar;
     case "range":
-      return CalendarRange
+      return CalendarRange;
     case "relative":
-      return Clock
+      return Clock;
   }
 }
 
@@ -108,22 +99,20 @@ export function LocalTimePicker({
   isOverridden = false,
   className,
 }: LocalTimePickerProps) {
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(false);
 
   // Filter presets based on allowed modes
-  const filteredPresets = presets.filter((p) =>
-    allowedModes.includes(p.value.type)
-  )
+  const filteredPresets = presets.filter((p) => allowedModes.includes(p.value.type));
 
   const handleSelect = (preset: TimePreset) => {
-    onChange(preset.value)
-    setOpen(false)
-  }
+    onChange(preset.value);
+    setOpen(false);
+  };
 
   const handleReset = () => {
-    onReset()
-    setOpen(false)
-  }
+    onReset();
+    setOpen(false);
+  };
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -134,10 +123,9 @@ export function LocalTimePicker({
           role="combobox"
           aria-expanded={open}
           className={cn(
-            "h-7 gap-1.5 text-xs font-normal",
-            isOverridden &&
-              "border-amber-500/50 bg-amber-500/5 hover:bg-amber-500/10",
-            className
+            "h-7 gap-1.5 font-normal text-xs",
+            isOverridden && "border-amber-500/50 bg-amber-500/5 hover:bg-amber-500/10",
+            className,
           )}
         >
           {value ? (
@@ -164,10 +152,7 @@ export function LocalTimePicker({
             {isOverridden && (
               <>
                 <CommandGroup>
-                  <CommandItem
-                    onSelect={handleReset}
-                    className="text-muted-foreground"
-                  >
+                  <CommandItem onSelect={handleReset} className="text-muted-foreground">
                     <RotateCcw className="mr-2 h-3.5 w-3.5" />
                     <span>Utiliser le filtre global</span>
                   </CommandItem>
@@ -182,11 +167,11 @@ export function LocalTimePicker({
                 {filteredPresets
                   .filter((p) => p.value.type === "relative")
                   .map((preset) => {
-                    const Icon = getPresetIcon(preset.value)
+                    const Icon = getPresetIcon(preset.value);
                     const isSelected =
                       value &&
                       value.type === preset.value.type &&
-                      JSON.stringify(value) === JSON.stringify(preset.value)
+                      JSON.stringify(value) === JSON.stringify(preset.value);
 
                     return (
                       <CommandItem
@@ -201,16 +186,13 @@ export function LocalTimePicker({
                         {preset.shortLabel && (
                           <Badge
                             variant="secondary"
-                            className={cn(
-                              "text-[10px] px-1.5",
-                              isSelected && "bg-amber-500/20 text-amber-600"
-                            )}
+                            className={cn("px-1.5 text-[10px]", isSelected && "bg-amber-500/20 text-amber-600")}
                           >
                             {preset.shortLabel}
                           </Badge>
                         )}
                       </CommandItem>
-                    )
+                    );
                   })}
               </CommandGroup>
             )}
@@ -221,7 +203,7 @@ export function LocalTimePicker({
                 {filteredPresets
                   .filter((p) => p.value.type === "range")
                   .map((preset) => {
-                    const Icon = getPresetIcon(preset.value)
+                    const Icon = getPresetIcon(preset.value);
                     return (
                       <CommandItem
                         key={preset.label}
@@ -231,7 +213,7 @@ export function LocalTimePicker({
                         <Icon className="h-3.5 w-3.5 text-muted-foreground" />
                         <span>{preset.label}</span>
                       </CommandItem>
-                    )
+                    );
                   })}
               </CommandGroup>
             )}
@@ -239,7 +221,7 @@ export function LocalTimePicker({
         </Command>
       </PopoverContent>
     </Popover>
-  )
+  );
 }
 
 // ============================================================================
@@ -247,43 +229,31 @@ export function LocalTimePicker({
 // ============================================================================
 
 interface PeriodToggleProps {
-  value: number
-  onChange: (weeks: number) => void
-  options?: number[]
-  className?: string
+  value: number;
+  onChange: (weeks: number) => void;
+  options?: number[];
+  className?: string;
 }
 
 /**
  * Toggle simple pour sélectionner le nombre de semaines (4W/8W/12W)
  * Alternative plus légère au LocalTimePicker pour les graphiques
  */
-export function PeriodToggle({
-  value,
-  onChange,
-  options = [4, 8, 12],
-  className,
-}: PeriodToggleProps) {
+export function PeriodToggle({ value, onChange, options = [4, 8, 12], className }: PeriodToggleProps) {
   return (
-    <div
-      className={cn(
-        "inline-flex items-center rounded-md border bg-muted p-0.5",
-        className
-      )}
-    >
+    <div className={cn("inline-flex items-center rounded-md border bg-muted p-0.5", className)}>
       {options.map((weeks) => (
         <button
           key={weeks}
           onClick={() => onChange(weeks)}
           className={cn(
-            "px-2 py-0.5 text-xs font-medium rounded-sm transition-colors",
-            value === weeks
-              ? "bg-background text-foreground shadow-sm"
-              : "text-muted-foreground hover:text-foreground"
+            "rounded-sm px-2 py-0.5 font-medium text-xs transition-colors",
+            value === weeks ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
           )}
         >
           {weeks}S
         </button>
       ))}
     </div>
-  )
+  );
 }

@@ -1,9 +1,9 @@
-"use client"
+"use client";
 
-import { BarChart3, FileUp, MessageSquare } from "lucide-react"
+import { BarChart3, FileUp, MessageSquare } from "lucide-react";
 
-import { AnimationContainer } from "@/components/global/animation-container"
-import { MagicCard } from "@/components/ui/magic-card"
+import { AnimationContainer } from "@/components/global/animation-container";
+import { MagicCard } from "@/components/ui/magic-card";
 
 const steps = [
   {
@@ -27,18 +27,16 @@ const steps = [
     description:
       "Planifiez des sessions de coaching ciblées, suivez les actions et mesurez l'amélioration dans le temps.",
   },
-]
+];
 
 export function Process() {
   return (
     <section className="py-20 md:py-32">
       <AnimationContainer className="mb-12 text-center">
-        <span className="text-sm font-medium text-blue-500">Comment ça marche</span>
-        <h2 className="mt-2 text-3xl font-bold tracking-tight text-foreground sm:text-4xl md:text-5xl">
+        <span className="font-medium text-blue-500 text-sm">Comment ça marche</span>
+        <h2 className="mt-2 font-bold text-3xl text-foreground tracking-tight sm:text-4xl md:text-5xl">
           Simple comme{" "}
-          <span className="bg-gradient-to-r from-blue-500 to-cyan-400 bg-clip-text text-transparent">
-            1, 2, 3
-          </span>
+          <span className="bg-gradient-to-r from-blue-500 to-cyan-400 bg-clip-text text-transparent">1, 2, 3</span>
         </h2>
         <p className="mx-auto mt-4 max-w-2xl text-lg text-muted-foreground">
           Commencez à optimiser les performances de votre station en quelques minutes.
@@ -50,17 +48,17 @@ export function Process() {
           {steps.map((step, i) => (
             <MagicCard key={i} className="flex flex-col gap-4">
               <div className="flex items-center gap-4">
-                <span className="text-4xl font-bold text-blue-500/20">{step.step}</span>
+                <span className="font-bold text-4xl text-blue-500/20">{step.step}</span>
                 <div className="flex size-12 items-center justify-center rounded-lg bg-blue-500/10 text-blue-400">
                   {step.icon}
                 </div>
               </div>
-              <h3 className="text-xl font-semibold text-foreground">{step.title}</h3>
+              <h3 className="font-semibold text-foreground text-xl">{step.title}</h3>
               <p className="text-muted-foreground">{step.description}</p>
             </MagicCard>
           ))}
         </div>
       </AnimationContainer>
     </section>
-  )
+  );
 }

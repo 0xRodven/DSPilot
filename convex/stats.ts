@@ -469,7 +469,8 @@ export const getDashboardKPIs = query({
         above95: currentStats.tierDistribution.fantastic,
         pct90to95: currentStats.tierDistribution.great,
         pct85to90: Math.floor(currentStats.tierDistribution.fair / 2),
-        pct80to85: Math.ceil(currentStats.tierDistribution.fair / 2) + Math.floor(currentStats.tierDistribution.poor / 2),
+        pct80to85:
+          Math.ceil(currentStats.tierDistribution.fair / 2) + Math.floor(currentStats.tierDistribution.poor / 2),
         below80: Math.ceil(currentStats.tierDistribution.poor / 2),
       },
       prevWeek,
@@ -1453,7 +1454,7 @@ export const getDashboardKPIsRange = query({
     for (const stat of filteredDailyStats) {
       const key = stat.driverId.toString();
       if (!byDriver.has(key)) byDriver.set(key, []);
-      byDriver.get(key)!.push(stat);
+      byDriver.get(key)?.push(stat);
     }
 
     const periodAlertsRaw = await Promise.all(
@@ -1543,7 +1544,7 @@ export const getDashboardDriversRange = query({
     for (const stat of filtered) {
       const key = stat.driverId.toString();
       if (!byDriver.has(key)) byDriver.set(key, []);
-      byDriver.get(key)!.push(stat);
+      byDriver.get(key)?.push(stat);
     }
 
     // 3. Pour chaque driver, sommer valeurs brutes et calculer %

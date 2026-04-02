@@ -1,92 +1,94 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { useQuery, useMutation } from "convex/react"
-import { useOrganization } from "@clerk/nextjs"
-import { api } from "@convex/_generated/api"
-import type { Id } from "@convex/_generated/dataModel"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Button } from "@/components/ui/button"
-import { Skeleton } from "@/components/ui/skeleton"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Lock, Loader2, Save, Building2, Calendar, ArrowRightLeft, CheckCircle2, AlertCircle } from "lucide-react"
-import { useDashboardStore } from "@/lib/store"
-import { withToast } from "@/lib/utils/mutation"
+import { useEffect, useState } from "react";
+
+import { useOrganization } from "@clerk/nextjs";
+import { api } from "@convex/_generated/api";
+import type { Id } from "@convex/_generated/dataModel";
+import { useMutation, useQuery } from "convex/react";
+import { AlertCircle, ArrowRightLeft, Building2, Calendar, CheckCircle2, Loader2, Lock, Save } from "lucide-react";
+
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useDashboardStore } from "@/lib/store";
+import { withToast } from "@/lib/utils/mutation";
 
 export function StationSettings() {
-  const { selectedStation, setSelectedStation } = useDashboardStore()
-  const { organization } = useOrganization()
+  const { selectedStation, setSelectedStation } = useDashboardStore();
+  const { organization } = useOrganization();
 
   // Get station from Convex
   const station = useQuery(
     api.stations.getStationByCode,
-    selectedStation.code ? { code: selectedStation.code } : "skip"
-  )
+    selectedStation.code ? { code: selectedStation.code } : "skip",
+  );
 
   // Form state
-  const [name, setName] = useState("")
-  const [code, setCode] = useState("")
-  const [isEditing, setIsEditing] = useState(false)
-  const [isSaving, setIsSaving] = useState(false)
-  const [isMigrating, setIsMigrating] = useState(false)
+  const [name, setName] = useState("");
+  const [code, setCode] = useState("");
+  const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isMigrating, setIsMigrating] = useState(false);
 
   // Update form when station loads
   useEffect(() => {
     if (station) {
-      setName(station.name)
-      setCode(station.code)
+      setName(station.name);
+      setCode(station.code);
     }
-  }, [station])
+  }, [station]);
 
   // Force reassign state
-  const [forceCode, setForceCode] = useState("")
-  const [isForceReassigning, setIsForceReassigning] = useState(false)
+  const [forceCode, setForceCode] = useState("");
+  const [isForceReassigning, setIsForceReassigning] = useState(false);
 
   // Mutations
-  const updateStation = useMutation(api.stations.updateStation)
-  const migrateStations = useMutation(api.stations.migrateStationsToOrganization)
-  const forceReassign = useMutation(api.stations.forceReassignStationToCurrentOrg)
+  const updateStation = useMutation(api.stations.updateStation);
+  const migrateStations = useMutation(api.stations.migrateStationsToOrganization);
+  const forceReassign = useMutation(api.stations.forceReassignStationToCurrentOrg);
 
   const handleForceReassign = async () => {
-    if (!organization || !forceCode.trim()) return
+    if (!organization || !forceCode.trim()) return;
 
-    setIsForceReassigning(true)
+    setIsForceReassigning(true);
     try {
-      const result = await forceReassign({ stationCode: forceCode.trim().toUpperCase() })
+      const result = await forceReassign({ stationCode: forceCode.trim().toUpperCase() });
       if (result.success) {
-        setForceCode("")
+        setForceCode("");
         // Refresh the page to pick up the new station
-        window.location.reload()
+        window.location.reload();
       }
     } catch (error) {
-      console.error("Force reassign error:", error)
+      console.error("Force reassign error:", error);
     } finally {
-      setIsForceReassigning(false)
+      setIsForceReassigning(false);
     }
-  }
+  };
 
   const handleMigrate = async () => {
-    if (!organization) return
+    if (!organization) return;
 
-    setIsMigrating(true)
+    setIsMigrating(true);
     try {
-      const result = await migrateStations()
+      const result = await migrateStations();
       if (result.totalMigrated > 0) {
         // Success - station is now linked to org
       }
     } catch (error) {
-      console.error("Migration error:", error)
+      console.error("Migration error:", error);
     } finally {
-      setIsMigrating(false)
+      setIsMigrating(false);
     }
-  }
+  };
 
   const handleSave = async () => {
-    if (!station) return
+    if (!station) return;
 
-    setIsSaving(true)
+    setIsSaving(true);
     const updated = await withToast(
       updateStation({
         stationId: station._id as Id<"stations">,
@@ -97,36 +99,36 @@ export function StationSettings() {
         loading: "Enregistrement...",
         success: "Station mise à jour",
         error: (err) => err.message || "Erreur lors de la mise à jour",
-      }
-    )
+      },
+    );
 
     if (updated) {
       setSelectedStation({
         id: updated._id,
         name: updated.name,
         code: updated.code,
-      })
-      setIsEditing(false)
+      });
+      setIsEditing(false);
     }
-    setIsSaving(false)
-  }
+    setIsSaving(false);
+  };
 
   const handleCancel = () => {
     if (station) {
-      setName(station.name)
-      setCode(station.code)
+      setName(station.name);
+      setCode(station.code);
     }
-    setIsEditing(false)
-  }
+    setIsEditing(false);
+  };
 
-  const hasChanges = station && (name !== station.name || code !== station.code)
+  const hasChanges = station && (name !== station.name || code !== station.code);
 
   // Check if station needs to be linked to current org
-  const needsMigration = organization && station && !station.organizationId
-  const isLinkedToCurrentOrg = organization && station?.organizationId === organization.id
+  const needsMigration = organization && station && !station.organizationId;
+  const isLinkedToCurrentOrg = organization && station?.organizationId === organization.id;
 
   // Distinguish "loading" from "query skipped"
-  const isQuerySkipped = !selectedStation.code
+  const isQuerySkipped = !selectedStation.code;
 
   // Loading state - only show skeleton if we're actually querying
   if (station === undefined && !isQuerySkipped) {
@@ -145,7 +147,7 @@ export function StationSettings() {
           </CardContent>
         </Card>
       </div>
-    )
+    );
   }
 
   // No station selected - show force reassign option
@@ -154,11 +156,9 @@ export function StationSettings() {
       <div className="space-y-6">
         <Card>
           <CardContent className="p-6 text-center">
-            <Building2 className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-            <h3 className="text-lg font-medium mb-2">Aucune station sélectionnée</h3>
-            <p className="text-muted-foreground">
-              Importez des données pour créer votre première station.
-            </p>
+            <Building2 className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
+            <h3 className="mb-2 font-medium text-lg">Aucune station sélectionnée</h3>
+            <p className="text-muted-foreground">Importez des données pour créer votre première station.</p>
           </CardContent>
         </Card>
 
@@ -182,32 +182,29 @@ export function StationSettings() {
                   onChange={(e) => setForceCode(e.target.value.toUpperCase())}
                   disabled={isForceReassigning}
                 />
-                <Button
-                  onClick={handleForceReassign}
-                  disabled={!forceCode.trim() || isForceReassigning}
-                >
+                <Button onClick={handleForceReassign} disabled={!forceCode.trim() || isForceReassigning}>
                   {isForceReassigning ? (
                     <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       En cours...
                     </>
                   ) : (
                     <>
-                      <ArrowRightLeft className="h-4 w-4 mr-2" />
+                      <ArrowRightLeft className="mr-2 h-4 w-4" />
                       Lier à {organization.name}
                     </>
                   )}
                 </Button>
               </div>
-              <p className="text-xs text-muted-foreground">
-                Entrez le code de votre station pour la lier à l&apos;organisation &quot;{organization.name}&quot;.
-                Vous devez être le propriétaire original de la station.
+              <p className="text-muted-foreground text-xs">
+                Entrez le code de votre station pour la lier à l&apos;organisation &quot;{organization.name}&quot;. Vous
+                devez être le propriétaire original de la station.
               </p>
             </CardContent>
           </Card>
         )}
       </div>
-    )
+    );
   }
 
   return (
@@ -219,9 +216,7 @@ export function StationSettings() {
             <Building2 className="h-5 w-5" />
             Informations de la station
           </CardTitle>
-          <CardDescription>
-            Modifiez les informations de base de votre station
-          </CardDescription>
+          <CardDescription>Modifiez les informations de base de votre station</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2">
@@ -231,15 +226,13 @@ export function StationSettings() {
                 id="stationCode"
                 value={code}
                 onChange={(e) => {
-                  setCode(e.target.value.toUpperCase())
-                  setIsEditing(true)
+                  setCode(e.target.value.toUpperCase());
+                  setIsEditing(true);
                 }}
                 placeholder="Ex: DIF1"
                 disabled={isSaving}
               />
-              <p className="text-xs text-muted-foreground">
-                Code unique de la station (ex: DIF1, DLY2)
-              </p>
+              <p className="text-muted-foreground text-xs">Code unique de la station (ex: DIF1, DLY2)</p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="stationName">Nom Station</Label>
@@ -247,8 +240,8 @@ export function StationSettings() {
                 id="stationName"
                 value={name}
                 onChange={(e) => {
-                  setName(e.target.value)
-                  setIsEditing(true)
+                  setName(e.target.value);
+                  setIsEditing(true);
                 }}
                 placeholder="Ex: Paris Denfert"
                 disabled={isSaving}
@@ -263,11 +256,9 @@ export function StationSettings() {
                 <Lock className="h-3 w-3" />
                 Plan
               </Label>
-              <div className="flex items-center gap-2 p-2 rounded-md bg-muted">
-                <span className="text-sm font-medium capitalize">{station.plan}</span>
-                {station.plan === "free" && (
-                  <span className="text-xs text-muted-foreground">(Limité)</span>
-                )}
+              <div className="flex items-center gap-2 rounded-md bg-muted p-2">
+                <span className="font-medium text-sm capitalize">{station.plan}</span>
+                {station.plan === "free" && <span className="text-muted-foreground text-xs">(Limité)</span>}
               </div>
             </div>
             <div className="space-y-2">
@@ -275,7 +266,7 @@ export function StationSettings() {
                 <Calendar className="h-3 w-3" />
                 Créée le
               </Label>
-              <div className="p-2 rounded-md bg-muted text-sm">
+              <div className="rounded-md bg-muted p-2 text-sm">
                 {new Date(station.createdAt).toLocaleDateString("fr-FR", {
                   day: "numeric",
                   month: "long",
@@ -292,18 +283,15 @@ export function StationSettings() {
                 Annuler
               </Button>
             )}
-            <Button
-              onClick={handleSave}
-              disabled={!hasChanges || isSaving}
-            >
+            <Button onClick={handleSave} disabled={!hasChanges || isSaving}>
               {isSaving ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Enregistrement...
                 </>
               ) : (
                 <>
-                  <Save className="h-4 w-4 mr-2" />
+                  <Save className="mr-2 h-4 w-4" />
                   Enregistrer
                 </>
               )}
@@ -320,9 +308,7 @@ export function StationSettings() {
               <ArrowRightLeft className="h-5 w-5" />
               Organisation
             </CardTitle>
-            <CardDescription>
-              Lien entre cette station et votre organisation
-            </CardDescription>
+            <CardDescription>Lien entre cette station et votre organisation</CardDescription>
           </CardHeader>
           <CardContent>
             {isLinkedToCurrentOrg ? (
@@ -330,8 +316,8 @@ export function StationSettings() {
                 <CheckCircle2 className="h-4 w-4 text-green-500" />
                 <AlertTitle className="text-green-500">Station liée</AlertTitle>
                 <AlertDescription>
-                  Cette station est liée à l&apos;organisation &quot;{organization.name}&quot;.
-                  Tous les membres de cette organisation peuvent y accéder.
+                  Cette station est liée à l&apos;organisation &quot;{organization.name}&quot;. Tous les membres de
+                  cette organisation peuvent y accéder.
                 </AlertDescription>
               </Alert>
             ) : needsMigration ? (
@@ -347,12 +333,12 @@ export function StationSettings() {
                 <Button onClick={handleMigrate} disabled={isMigrating}>
                   {isMigrating ? (
                     <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Migration en cours...
                     </>
                   ) : (
                     <>
-                      <ArrowRightLeft className="h-4 w-4 mr-2" />
+                      <ArrowRightLeft className="mr-2 h-4 w-4" />
                       Lier à {organization.name}
                     </>
                   )}
@@ -362,9 +348,7 @@ export function StationSettings() {
               <Alert>
                 <AlertCircle className="h-4 w-4" />
                 <AlertTitle>Autre organisation</AlertTitle>
-                <AlertDescription>
-                  Cette station appartient à une autre organisation.
-                </AlertDescription>
+                <AlertDescription>Cette station appartient à une autre organisation.</AlertDescription>
               </Alert>
             )}
           </CardContent>
@@ -378,13 +362,11 @@ export function StationSettings() {
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
-            <Label className="text-xs text-muted-foreground">ID Station</Label>
-            <code className="block p-2 rounded bg-muted text-xs font-mono break-all">
-              {station._id}
-            </code>
+            <Label className="text-muted-foreground text-xs">ID Station</Label>
+            <code className="block break-all rounded bg-muted p-2 font-mono text-xs">{station._id}</code>
           </div>
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

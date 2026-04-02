@@ -1,10 +1,7 @@
 import { v } from "convex/values";
-import { query, mutation } from "./_generated/server";
-import {
-  requireWriteAccess,
-  canAccessStation,
-  checkStationAccess,
-} from "./lib/permissions";
+
+import { mutation, query } from "./_generated/server";
+import { canAccessStation, checkStationAccess, requireWriteAccess } from "./lib/permissions";
 import { getTier } from "./lib/tier";
 
 // ============================================
@@ -90,7 +87,7 @@ export const listCoachingActions = query({
           escalationNote: action.escalationNote,
           waitingDays,
         };
-      })
+      }),
     );
 
     // Filter by search if provided
@@ -99,9 +96,7 @@ export const listCoachingActions = query({
     if (args.search) {
       const searchLower = args.search.toLowerCase();
       result = result.filter(
-        (a) =>
-          a.driverName.toLowerCase().includes(searchLower) ||
-          a.driverAmazonId.toLowerCase().includes(searchLower)
+        (a) => a.driverName.toLowerCase().includes(searchLower) || a.driverAmazonId.toLowerCase().includes(searchLower),
       );
     }
 
@@ -144,17 +139,12 @@ export const getCoachingStats = query({
     let avgImprovement = 0;
     const withImprovement = improved.filter((a) => a.dwcAfterAction !== undefined);
     if (withImprovement.length > 0) {
-      const totalImprovement = withImprovement.reduce(
-        (sum, a) => sum + ((a.dwcAfterAction || 0) - a.dwcAtAction),
-        0
-      );
+      const totalImprovement = withImprovement.reduce((sum, a) => sum + ((a.dwcAfterAction || 0) - a.dwcAtAction), 0);
       avgImprovement = totalImprovement / withImprovement.length;
     }
 
     // Count this month's improvements
-    const thisMonthImproved = improved.filter(
-      (a) => a.evaluatedAt && a.evaluatedAt > thirtyDaysAgo
-    ).length;
+    const thisMonthImproved = improved.filter((a) => a.evaluatedAt && a.evaluatedAt > thirtyDaysAgo).length;
 
     return {
       pending: { count: pending.length, overdueCount: overdue.length },
@@ -192,52 +182,51 @@ export const getCoachingEffectiveness = query({
       .collect();
 
     // Filter to actions within period that have been evaluated
-    const evaluated = actions.filter(
-      (a) => a.createdAt >= cutoff && a.status !== "pending"
-    );
+    const evaluated = actions.filter((a) => a.createdAt >= cutoff && a.status !== "pending");
 
     const improved = evaluated.filter((a) => a.status === "improved");
 
     // Calculate metrics
-    const successRate = evaluated.length > 0
-      ? Math.round((improved.length / evaluated.length) * 100)
-      : 0;
+    const successRate = evaluated.length > 0 ? Math.round((improved.length / evaluated.length) * 100) : 0;
 
     const withImprovement = improved.filter((a) => a.dwcAfterAction !== undefined);
-    const avgImprovement = withImprovement.length > 0
-      ? withImprovement.reduce((sum, a) => sum + ((a.dwcAfterAction || 0) - a.dwcAtAction), 0) / withImprovement.length
-      : 0;
+    const avgImprovement =
+      withImprovement.length > 0
+        ? withImprovement.reduce((sum, a) => sum + ((a.dwcAfterAction || 0) - a.dwcAtAction), 0) /
+          withImprovement.length
+        : 0;
 
     // Calculate average days to effect
     const withEvalTime = improved.filter((a) => a.evaluatedAt !== undefined);
-    const avgDaysToEffect = withEvalTime.length > 0
-      ? Math.round(
-          withEvalTime.reduce(
-            (sum, a) => sum + ((a.evaluatedAt! - a.createdAt) / (24 * 60 * 60 * 1000)),
-            0
-          ) / withEvalTime.length
-        )
-      : 0;
+    const avgDaysToEffect =
+      withEvalTime.length > 0
+        ? Math.round(
+            withEvalTime.reduce((sum, a) => sum + (a.evaluatedAt! - a.createdAt) / (24 * 60 * 60 * 1000), 0) /
+              withEvalTime.length,
+          )
+        : 0;
 
     // Group by type
     const actionTypes = ["discussion", "warning", "training", "suspension"] as const;
-    const byType = actionTypes.map((type) => {
-      const typeActions = evaluated.filter((a) => a.actionType === type);
-      const typeImproved = typeActions.filter((a) => a.status === "improved");
-      const typeWithImprovement = typeImproved.filter((a) => a.dwcAfterAction !== undefined);
+    const byType = actionTypes
+      .map((type) => {
+        const typeActions = evaluated.filter((a) => a.actionType === type);
+        const typeImproved = typeActions.filter((a) => a.status === "improved");
+        const typeWithImprovement = typeImproved.filter((a) => a.dwcAfterAction !== undefined);
 
-      return {
-        type,
-        successRate: typeActions.length > 0
-          ? Math.round((typeImproved.length / typeActions.length) * 100)
-          : 0,
-        successCount: typeImproved.length,
-        total: typeActions.length,
-        avgImprovement: typeWithImprovement.length > 0
-          ? typeWithImprovement.reduce((sum, a) => sum + ((a.dwcAfterAction || 0) - a.dwcAtAction), 0) / typeWithImprovement.length
-          : 0,
-      };
-    }).filter((t) => t.total > 0);
+        return {
+          type,
+          successRate: typeActions.length > 0 ? Math.round((typeImproved.length / typeActions.length) * 100) : 0,
+          successCount: typeImproved.length,
+          total: typeActions.length,
+          avgImprovement:
+            typeWithImprovement.length > 0
+              ? typeWithImprovement.reduce((sum, a) => sum + ((a.dwcAfterAction || 0) - a.dwcAtAction), 0) /
+                typeWithImprovement.length
+              : 0,
+        };
+      })
+      .filter((t) => t.total > 0);
 
     return {
       period: args.period,
@@ -266,7 +255,7 @@ export const getCoachingSuggestions = query({
     const weeklyStats = await ctx.db
       .query("driverWeeklyStats")
       .withIndex("by_station_week", (q) =>
-        q.eq("stationId", args.stationId).eq("year", args.year).eq("week", args.week)
+        q.eq("stationId", args.stationId).eq("year", args.year).eq("week", args.week),
       )
       .collect();
 
@@ -276,7 +265,7 @@ export const getCoachingSuggestions = query({
       .withIndex("by_station", (q) => q.eq("stationId", args.stationId))
       .collect();
     const driversWithPendingAction = new Set(
-      pendingActions.filter((a) => a.status === "pending").map((a) => a.driverId)
+      pendingActions.filter((a) => a.status === "pending").map((a) => a.driverId),
     );
 
     const suggestions = await Promise.all(
@@ -324,14 +313,15 @@ export const getCoachingSuggestions = query({
           driverTier: tier,
           driverDwc: dwcPercent,
           priority,
-          reason: tier === "poor"
-            ? `Performance critique: ${dwcPercent}% DWC`
-            : `Performance sous le seuil: ${dwcPercent}% DWC`,
+          reason:
+            tier === "poor"
+              ? `Performance critique: ${dwcPercent}% DWC`
+              : `Performance sous le seuil: ${dwcPercent}% DWC`,
           mainError: mainError.name,
           mainErrorCount: mainError.count,
           hasActiveAction,
         };
-      })
+      }),
     );
 
     // Filter and sort by priority
@@ -375,7 +365,7 @@ export const getDriverCoachingHistory = query({
       // Calculate week from createdAt
       const date = new Date(action.createdAt);
       const weekNum = getWeekNumber(date);
-      const year = date.getFullYear();
+      const _year = date.getFullYear();
 
       // Map status to result
       let result: "ameliore" | "complete" | "en-cours";
@@ -414,7 +404,7 @@ function getWeekNumber(date: Date): number {
   const dayNum = d.getUTCDay() || 7;
   d.setUTCDate(d.getUTCDate() + 4 - dayNum);
   const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-  return Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+  return Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
 }
 
 // ============================================
@@ -425,12 +415,7 @@ export const createCoachingAction = mutation({
   args: {
     stationId: v.id("stations"),
     driverId: v.id("drivers"),
-    actionType: v.union(
-      v.literal("discussion"),
-      v.literal("warning"),
-      v.literal("training"),
-      v.literal("suspension")
-    ),
+    actionType: v.union(v.literal("discussion"), v.literal("warning"), v.literal("training"), v.literal("suspension")),
     reason: v.string(),
     targetCategory: v.optional(v.string()),
     targetSubcategory: v.optional(v.string()),
@@ -468,11 +453,7 @@ export const createCoachingAction = mutation({
 export const evaluateCoachingAction = mutation({
   args: {
     actionId: v.id("coachingActions"),
-    result: v.union(
-      v.literal("improved"),
-      v.literal("no_effect"),
-      v.literal("escalated")
-    ),
+    result: v.union(v.literal("improved"), v.literal("no_effect"), v.literal("escalated")),
     dwcAfterAction: v.optional(v.number()),
     evaluationNotes: v.optional(v.string()),
     escalationNote: v.optional(v.string()),
@@ -564,7 +545,7 @@ export const getCalendarEvents = query({
             status: action.status,
             createdAt: new Date(action.createdAt).toISOString(),
           };
-        })
+        }),
     );
 
     return events.filter((e): e is NonNullable<typeof e> => e !== null);
@@ -681,17 +662,19 @@ export const getCoachingPipelineSuggestion = query({
     else if (lastAction?.status === "no_effect") {
       if (lastAction.actionType === "discussion") {
         suggestedAction = trainingCount === 0 ? "training" : "warning";
-        reason = trainingCount === 0
-          ? "Discussion sans effet - formation recommandée"
-          : "Discussions sans effet - avertissement recommandé";
+        reason =
+          trainingCount === 0
+            ? "Discussion sans effet - formation recommandée"
+            : "Discussions sans effet - avertissement recommandé";
       } else if (lastAction.actionType === "training") {
         suggestedAction = "warning";
         reason = `Formation sans effet - avertissement ${warningCount + 1}/3`;
       } else if (lastAction.actionType === "warning") {
         suggestedAction = warningCount >= 2 ? "suspension" : "warning";
-        reason = warningCount >= 2
-          ? "Avertissements sans effet - suspension recommandée"
-          : `Avertissement sans effet - avertissement ${warningCount + 1}/3`;
+        reason =
+          warningCount >= 2
+            ? "Avertissements sans effet - suspension recommandée"
+            : `Avertissement sans effet - avertissement ${warningCount + 1}/3`;
       } else {
         suggestedAction = "discussion";
         reason = "Nouvelle discussion recommandée";
@@ -754,7 +737,7 @@ export const getKanbanData = query({
   handler: async (ctx, args) => {
     // Vérifier l'accès à la station (sans throw si non authentifié)
     const hasAccess = await checkStationAccess(ctx, args.stationId);
-    if (!hasAccess) return { detect: [], waiting: [], evaluate: [] };
+    if (!hasAccess) return { detect: [], waiting: [], evaluate: [], done: [] };
 
     const today = new Date().toISOString().split("T")[0];
 
@@ -762,7 +745,7 @@ export const getKanbanData = query({
     const weeklyStats = await ctx.db
       .query("driverWeeklyStats")
       .withIndex("by_station_week", (q) =>
-        q.eq("stationId", args.stationId).eq("year", args.year).eq("week", args.week)
+        q.eq("stationId", args.stationId).eq("year", args.year).eq("week", args.week),
       )
       .collect();
 
@@ -776,7 +759,7 @@ export const getKanbanData = query({
     const driversWithPendingAction = new Set(pendingActions.map((a) => a.driverId));
 
     // 3. Calculate trend for each driver (last 14 days)
-    const trendCache = new Map<string, number>();
+    const _trendCache = new Map<string, number>();
 
     // Helper to get tier
     // COLUMN 1: DETECT - Drivers with DWC < 95% and no pending action
@@ -800,7 +783,7 @@ export const getKanbanData = query({
           const prevStats = await ctx.db
             .query("driverWeeklyStats")
             .withIndex("by_driver_week", (q) =>
-              q.eq("driverId", stat.driverId).eq("year", prevYear).eq("week", prevWeek)
+              q.eq("driverId", stat.driverId).eq("year", prevYear).eq("week", prevWeek),
             )
             .first();
 
@@ -829,7 +812,7 @@ export const getKanbanData = query({
             deliveries: total,
             errorsCount,
           };
-        })
+        }),
     );
 
     // COLUMN 2: WAITING - Pending actions with followUpDate > today
@@ -846,9 +829,7 @@ export const getKanbanData = query({
           // Calculate days until follow-up
           const followUpDate = new Date(action.followUpDate!);
           const todayDate = new Date(today);
-          const daysUntilFollowUp = Math.ceil(
-            (followUpDate.getTime() - todayDate.getTime()) / (24 * 60 * 60 * 1000)
-          );
+          const daysUntilFollowUp = Math.ceil((followUpDate.getTime() - todayDate.getTime()) / (24 * 60 * 60 * 1000));
 
           return {
             id: action._id,
@@ -861,7 +842,7 @@ export const getKanbanData = query({
             daysUntilFollowUp,
             createdAt: new Date(action.createdAt).toISOString(),
           };
-        })
+        }),
     );
 
     // COLUMN 3: EVALUATE - Pending actions with followUpDate <= today
@@ -895,8 +876,9 @@ export const getKanbanData = query({
           if (action.followUpDate) {
             const followUpDate = new Date(action.followUpDate);
             const todayDate = new Date(today);
-            daysOverdue = Math.ceil(
-              (todayDate.getTime() - followUpDate.getTime()) / (24 * 60 * 60 * 1000)
+            daysOverdue = Math.max(
+              0,
+              Math.ceil((todayDate.getTime() - followUpDate.getTime()) / (24 * 60 * 60 * 1000)),
             );
           }
 
@@ -913,7 +895,44 @@ export const getKanbanData = query({
             daysOverdue,
             createdAt: new Date(action.createdAt).toISOString(),
           };
-        })
+        }),
+    );
+
+    // COLUMN 4: DONE - Evaluated actions from last 30 days (max 10)
+    const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
+    const doneActions = allActions.filter(
+      (a) =>
+        (a.status === "improved" || a.status === "no_effect" || a.status === "escalated") &&
+        a.evaluatedAt &&
+        a.evaluatedAt > thirtyDaysAgo,
+    );
+
+    const doneCards = await Promise.all(
+      doneActions
+        .sort((a, b) => (b.evaluatedAt || 0) - (a.evaluatedAt || 0)) // Most recent first
+        .slice(0, 10) // Limit to 10
+        .map(async (action) => {
+          const driver = await ctx.db.get(action.driverId);
+          if (!driver) return null;
+
+          const dwcDelta =
+            action.dwcAfterAction !== undefined
+              ? Math.round((action.dwcAfterAction - action.dwcAtAction) * 10) / 10
+              : 0;
+
+          return {
+            id: action._id,
+            driverId: driver._id,
+            driverName: driver.name,
+            actionType: action.actionType,
+            status: action.status,
+            dwcAtAction: action.dwcAtAction,
+            dwcAfterAction: action.dwcAfterAction,
+            dwcDelta,
+            reason: action.reason,
+            evaluatedAt: action.evaluatedAt ? new Date(action.evaluatedAt).toISOString() : undefined,
+          };
+        }),
     );
 
     return {
@@ -926,6 +945,7 @@ export const getKanbanData = query({
       evaluate: evaluateCards
         .filter((c): c is NonNullable<typeof c> => c !== null)
         .sort((a, b) => b.daysOverdue - a.daysOverdue), // Most overdue first
+      done: doneCards.filter((c): c is NonNullable<typeof c> => c !== null),
     };
   },
 });

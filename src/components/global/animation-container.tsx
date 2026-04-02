@@ -1,23 +1,19 @@
-"use client"
+"use client";
 
-import { motion } from "framer-motion"
-import type { ReactNode } from "react"
+import type { ReactNode } from "react";
 
-import { cn } from "@/lib/utils"
+import { motion } from "framer-motion";
+
+import { cn } from "@/lib/utils";
 
 interface AnimationContainerProps {
-  children: ReactNode
-  className?: string
-  reverse?: boolean
-  delay?: number
+  children: ReactNode;
+  className?: string;
+  reverse?: boolean;
+  delay?: number;
 }
 
-export function AnimationContainer({
-  children,
-  className,
-  reverse = false,
-  delay = 0,
-}: AnimationContainerProps) {
+export function AnimationContainer({ children, className, reverse = false, delay = 0 }: AnimationContainerProps) {
   return (
     <motion.div
       className={cn(className)}
@@ -35,5 +31,5 @@ export function AnimationContainer({
     >
       {children}
     </motion.div>
-  )
+  );
 }

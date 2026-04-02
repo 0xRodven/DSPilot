@@ -6,8 +6,8 @@
 // - org:member (Membre standard)
 // Les rôles custom (org:manager, org:viewer) ne sont PAS disponibles en production.
 
-import type { QueryCtx, MutationCtx } from "../_generated/server";
 import type { Id } from "../_generated/dataModel";
+import type { MutationCtx, QueryCtx } from "../_generated/server";
 
 // Types de rôles Clerk Organizations (built-in uniquement - Free Plan compatible)
 export type OrgRole = "org:admin" | "org:member";
@@ -24,10 +24,7 @@ export type UserContext = {
  * Inclut l'organization ID et le rôle depuis le JWT Clerk
  * @param throwIfUnauthenticated - Si true, throw une erreur si non authentifié
  */
-export async function getUserContext(
-  ctx: QueryCtx | MutationCtx,
-  throwIfUnauthenticated = true
-): Promise<UserContext> {
+export async function getUserContext(ctx: QueryCtx | MutationCtx, throwIfUnauthenticated = true): Promise<UserContext> {
   const identity = await ctx.auth.getUserIdentity();
 
   if (!identity) {
@@ -61,7 +58,7 @@ export async function getUserContext(
 export async function canAccessStation(
   ctx: QueryCtx | MutationCtx,
   stationId: Id<"stations">,
-  throwIfUnauthenticated = false
+  throwIfUnauthenticated = false,
 ): Promise<boolean> {
   const { userId, orgId } = await getUserContext(ctx, throwIfUnauthenticated);
 
@@ -100,10 +97,7 @@ export async function canWrite(ctx: QueryCtx | MutationCtx): Promise<boolean> {
  * Vérifie si l'utilisateur peut écrire sur une station spécifique
  * Combine canAccessStation + canWrite
  */
-export async function canWriteStation(
-  ctx: QueryCtx | MutationCtx,
-  stationId: Id<"stations">
-): Promise<boolean> {
+export async function canWriteStation(ctx: QueryCtx | MutationCtx, stationId: Id<"stations">): Promise<boolean> {
   const hasAccess = await canAccessStation(ctx, stationId);
   if (!hasAccess) return false;
 
@@ -160,10 +154,7 @@ export async function getAccessibleStations(ctx: QueryCtx | MutationCtx) {
  * Retourne true si accès autorisé, false sinon (sans throw)
  * Utilisé dans les queries pour retourner des résultats vides si pas d'accès
  */
-export async function checkStationAccess(
-  ctx: QueryCtx | MutationCtx,
-  stationId: Id<"stations">
-): Promise<boolean> {
+export async function checkStationAccess(ctx: QueryCtx | MutationCtx, stationId: Id<"stations">): Promise<boolean> {
   const identity = await ctx.auth.getUserIdentity();
   if (!identity) return false;
 
@@ -175,10 +166,7 @@ export async function checkStationAccess(
  * Throw une erreur si l'accès est refusé
  * ATTENTION: Préférer checkStationAccess pour les queries et retourner null/empty si pas d'accès
  */
-export async function requireStationAccess(
-  ctx: QueryCtx | MutationCtx,
-  stationId: Id<"stations">
-): Promise<void> {
+export async function requireStationAccess(ctx: QueryCtx | MutationCtx, stationId: Id<"stations">): Promise<void> {
   const identity = await ctx.auth.getUserIdentity();
   if (!identity) {
     throw new Error("Non authentifié");
@@ -194,10 +182,7 @@ export async function requireStationAccess(
  * Wrapper pour les mutations qui nécessitent un accès en écriture à une station
  * Throw une erreur si l'accès est refusé
  */
-export async function requireWriteAccess(
-  ctx: MutationCtx,
-  stationId: Id<"stations">
-): Promise<void> {
+export async function requireWriteAccess(ctx: MutationCtx, stationId: Id<"stations">): Promise<void> {
   const canModify = await canWriteStation(ctx, stationId);
   if (!canModify) {
     throw new Error("Vous n'avez pas les droits pour modifier cette station");

@@ -1,9 +1,9 @@
-import { toast as sonnerToast } from "sonner"
+import { toast as sonnerToast } from "sonner";
 
 interface ToastOptions {
-  title: string
-  description?: string
-  variant?: "default" | "destructive"
+  title: string;
+  description?: string;
+  variant?: "default" | "destructive";
 }
 
 export function useToast() {
@@ -11,13 +11,13 @@ export function useToast() {
     if (variant === "destructive") {
       sonnerToast.error(title, {
         description,
-      })
+      });
     } else {
       sonnerToast.success(title, {
         description,
-      })
+      });
     }
-  }
+  };
 
-  return { toast }
+  return { toast };
 }

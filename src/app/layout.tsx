@@ -1,18 +1,18 @@
 import type { ReactNode } from "react";
 
 import { Inter } from "next/font/google";
-import { ClerkProvider } from "@clerk/nextjs";
+
 import { frFR } from "@clerk/localizations";
+import { ClerkProvider } from "@clerk/nextjs";
+import type { Metadata } from "next";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 
-import type { Metadata } from "next";
-
 import { Toaster } from "@/components/ui/sonner";
+import { clerkAppearance } from "@/lib/clerk-appearance";
 import { PREFERENCE_DEFAULTS } from "@/lib/preferences/preferences-config";
+import { ConvexClientProvider } from "@/providers/convex-client-provider";
 import { ThemeBootScript } from "@/scripts/theme-boot";
 import { PreferencesStoreProvider } from "@/stores/preferences/preferences-provider";
-import { ConvexClientProvider } from "@/providers/convex-client-provider";
-import { clerkAppearance } from "@/lib/clerk-appearance";
 
 import "./globals.css";
 

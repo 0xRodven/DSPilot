@@ -1,4 +1,4 @@
-import type { Appearance } from "@clerk/types"
+import type { Appearance } from "@clerk/types";
 
 /**
  * Configuration d'apparence Clerk pour supporter le dark mode
@@ -29,8 +29,7 @@ export const clerkAppearance: Appearance = {
     formFieldLabel: "text-foreground",
 
     // Organization switcher trigger (header)
-    organizationSwitcherTrigger:
-      "bg-transparent border-0 text-foreground hover:bg-accent/50 transition-colors",
+    organizationSwitcherTrigger: "bg-transparent border-0 text-foreground hover:bg-accent/50 transition-colors",
     organizationPreviewMainIdentifier: "text-foreground font-medium",
     organizationSwitcherTriggerIcon: "text-muted-foreground",
 
@@ -86,4 +85,4 @@ export const clerkAppearance: Appearance = {
     modalBackdrop: "bg-background/80 backdrop-blur-sm",
     modalContent: "bg-card border border-border",
   },
-}
+};

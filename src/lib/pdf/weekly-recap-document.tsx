@@ -1,12 +1,6 @@
-"use client"
+"use client";
 
-import {
-  Document,
-  Page,
-  Text,
-  View,
-  StyleSheet,
-} from "@react-pdf/renderer"
+import { Document, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
 
 // Styles du PDF
 const styles = StyleSheet.create({
@@ -163,45 +157,45 @@ const styles = StyleSheet.create({
     fontSize: 9,
     color: "#64748b",
   },
-})
+});
 
 // Types
 export interface PDFDriver {
-  rank: number
-  name: string
-  amazonId: string
-  dwcPercent: number
-  iadcPercent: number
-  tier: "fantastic" | "great" | "fair" | "poor"
-  daysWorked: number
+  rank: number;
+  name: string;
+  amazonId: string;
+  dwcPercent: number;
+  iadcPercent: number;
+  tier: "fantastic" | "great" | "fair" | "poor";
+  daysWorked: number;
 }
 
 export interface PDFKPIs {
-  avgDwc: number
-  avgIadc: number
-  totalDrivers: number
-  activeDrivers: number
-  dwcChange?: number
-  iadcChange?: number
+  avgDwc: number;
+  avgIadc: number;
+  totalDrivers: number;
+  activeDrivers: number;
+  dwcChange?: number;
+  iadcChange?: number;
 }
 
 export interface PDFTierDistribution {
-  fantastic: number
-  great: number
-  fair: number
-  poor: number
+  fantastic: number;
+  great: number;
+  fair: number;
+  poor: number;
 }
 
 export interface WeeklyRecapData {
-  stationName: string
-  stationCode: string
-  week: number
-  year: number
-  generatedAt: string
-  kpis: PDFKPIs
-  tierDistribution: PDFTierDistribution
-  topDrivers: PDFDriver[]
-  bottomDrivers: PDFDriver[]
+  stationName: string;
+  stationCode: string;
+  week: number;
+  year: number;
+  generatedAt: string;
+  kpis: PDFKPIs;
+  tierDistribution: PDFTierDistribution;
+  topDrivers: PDFDriver[];
+  bottomDrivers: PDFDriver[];
 }
 
 /**
@@ -209,27 +203,27 @@ export interface WeeklyRecapData {
  * Uses fixed thresholds instead of tier names for gradient-based coloring
  */
 function getDwcStyle(dwcPercent: number) {
-  if (dwcPercent >= 95) return styles.tierFantastic
-  if (dwcPercent >= 90) return styles.tierGreat
-  if (dwcPercent >= 85) return styles.tierFair
-  return styles.tierPoor
+  if (dwcPercent >= 95) return styles.tierFantastic;
+  if (dwcPercent >= 90) return styles.tierGreat;
+  if (dwcPercent >= 85) return styles.tierFair;
+  return styles.tierPoor;
 }
 
 /**
  * Format DWC% as badge label for PDF
  */
 function getDwcLabel(dwcPercent: number) {
-  return `${dwcPercent.toFixed(1)}%`
+  return `${dwcPercent.toFixed(1)}%`;
 }
 
 function formatPercent(value: number) {
-  return `${value.toFixed(1)}%`
+  return `${value.toFixed(1)}%`;
 }
 
 function formatChange(value?: number) {
-  if (value === undefined) return null
-  const sign = value >= 0 ? "+" : ""
-  return `${sign}${value.toFixed(1)}%`
+  if (value === undefined) return null;
+  const sign = value >= 0 ? "+" : "";
+  return `${sign}${value.toFixed(1)}%`;
 }
 
 /**
@@ -239,13 +233,13 @@ function blurName(name: string): string {
   return name
     .split(" ")
     .map((part) => (part.length > 0 ? `${part[0]}***` : ""))
-    .join(" ")
+    .join(" ");
 }
 
 interface WeeklyRecapDocumentProps {
-  data: WeeklyRecapData
+  data: WeeklyRecapData;
   /** If true, driver names will be blurred for privacy (RECAP LIVREURS version) */
-  blurDriverNames?: boolean
+  blurDriverNames?: boolean;
 }
 
 export function WeeklyRecapDocument({ data, blurDriverNames = false }: WeeklyRecapDocumentProps) {
@@ -256,7 +250,7 @@ export function WeeklyRecapDocument({ data, blurDriverNames = false }: WeeklyRec
         topDrivers: data.topDrivers.map((d) => ({ ...d, name: blurName(d.name) })),
         bottomDrivers: data.bottomDrivers.map((d) => ({ ...d, name: blurName(d.name) })),
       }
-    : data
+    : data;
   return (
     <Document>
       <Page size="A4" style={styles.page}>
@@ -291,7 +285,9 @@ export function WeeklyRecapDocument({ data, blurDriverNames = false }: WeeklyRec
               <Text style={styles.kpiLabel}>Score IADC</Text>
               <Text style={styles.kpiValue}>{formatPercent(processedData.kpis.avgIadc)}</Text>
               {processedData.kpis.iadcChange !== undefined && (
-                <Text style={[styles.kpiChange, processedData.kpis.iadcChange >= 0 ? styles.positive : styles.negative]}>
+                <Text
+                  style={[styles.kpiChange, processedData.kpis.iadcChange >= 0 ? styles.positive : styles.negative]}
+                >
                   {formatChange(processedData.kpis.iadcChange)} vs sem. préc.
                 </Text>
               )}
@@ -299,16 +295,15 @@ export function WeeklyRecapDocument({ data, blurDriverNames = false }: WeeklyRec
             <View style={styles.kpiCard}>
               <Text style={styles.kpiLabel}>Livreurs Actifs</Text>
               <Text style={styles.kpiValue}>{processedData.kpis.activeDrivers}</Text>
-              <Text style={[styles.kpiChange, { color: "#64748b" }]}>
-                sur {processedData.kpis.totalDrivers} total
-              </Text>
+              <Text style={[styles.kpiChange, { color: "#64748b" }]}>sur {processedData.kpis.totalDrivers} total</Text>
             </View>
             <View style={styles.kpiCard}>
               <Text style={styles.kpiLabel}>Taux Fantastic</Text>
               <Text style={styles.kpiValue}>
                 {processedData.kpis.activeDrivers > 0
                   ? Math.round((processedData.tierDistribution.fantastic / processedData.kpis.activeDrivers) * 100)
-                  : 0}%
+                  : 0}
+                %
               </Text>
               <Text style={[styles.kpiChange, { color: "#64748b" }]}>
                 {processedData.tierDistribution.fantastic} livreurs
@@ -364,9 +359,7 @@ export function WeeklyRecapDocument({ data, blurDriverNames = false }: WeeklyRec
               <View key={index} style={styles.tableRow}>
                 <Text style={[styles.tableCell, styles.col1]}>{driver.rank}</Text>
                 <Text style={[styles.tableCell, styles.col2]}>{driver.name}</Text>
-                <Text style={[styles.tableCell, styles.col3, styles.positive]}>
-                  {formatPercent(driver.dwcPercent)}
-                </Text>
+                <Text style={[styles.tableCell, styles.col3, styles.positive]}>{formatPercent(driver.dwcPercent)}</Text>
                 <Text style={[styles.tableCell, styles.col4, styles.positive]}>
                   {formatPercent(driver.iadcPercent)}
                 </Text>
@@ -423,5 +416,5 @@ export function WeeklyRecapDocument({ data, blurDriverNames = false }: WeeklyRec
         </View>
       </Page>
     </Document>
-  )
+  );
 }

@@ -6,20 +6,19 @@
 // =============================================================================
 
 /** Extraction des CSV base64 depuis le HTML (download avant href) */
-export const CSV_HREF_REGEX =
-  /download="([^"]+)"\s+href="data:text\/csv;base64,([A-Za-z0-9+/=]+)"/g
+export const CSV_HREF_REGEX = /download="([^"]+)"\s+href="data:text\/csv;base64,([A-Za-z0-9+/=]+)"/g;
 
 /** Parsing du nom de fichier pour période daily */
-export const DAILY_FILENAME_REGEX = /_Day:\s*(\d{4})-(\d{2})-(\d{2})\.csv$/
+export const DAILY_FILENAME_REGEX = /_Day:\s*(\d{4})-(\d{2})-(\d{2})\.csv$/;
 
 /** Parsing du nom de fichier pour période weekly */
-export const WEEKLY_FILENAME_REGEX = /_Week:\s*(\d{4})-(\d{1,2})\.csv$/
+export const WEEKLY_FILENAME_REGEX = /_Week:\s*(\d{4})-(\d{1,2})\.csv$/;
 
 /** Extraction du code station depuis le download attribute */
-export const STATION_FROM_DOWNLOAD_REGEX = /^([A-Z0-9-]+)_DWC_IADC_/
+export const STATION_FROM_DOWNLOAD_REGEX = /^([A-Z0-9-]+)_DWC_IADC_/;
 
 /** Extraction semaine depuis le titre HTML */
-export const TITLE_WEEK_REGEX = /Report\s+(\d{4})-(\d{1,2})/
+export const TITLE_WEEK_REGEX = /Report\s+(\d{4})-(\d{1,2})/;
 
 // =============================================================================
 // TYPES DWC (colonne "Type")
@@ -37,7 +36,7 @@ export const DWC_TYPES = {
 
   /** IADC uniquement (pas compté dans DWC) */
   IADC: "In-app Delivery Workflow (IADC)",
-} as const
+} as const;
 
 // =============================================================================
 // BREAKDOWN DWC (colonne "Group" quand Type = DELIVERY_MISSES)
@@ -48,17 +47,17 @@ export const DWC_BREAKDOWN_GROUPS = {
   PHOTO_DEFECT: "Photo Defect",
   NO_PHOTO: "No Photo",
   OTP_MISS: "OTP Miss",
-} as const
+} as const;
 
 // =============================================================================
 // IADC GROUPS (colonne "Group" quand Type = IADC)
 // =============================================================================
 
 /** Préfixe pour les livraisons IADC conformes */
-export const IADC_COMPLIANT_PREFIX = "Compliant with"
+export const IADC_COMPLIANT_PREFIX = "Compliant with";
 
 /** Préfixe pour les livraisons IADC non-conformes */
-export const IADC_NON_COMPLIANT_PREFIX = "Not Compliant with"
+export const IADC_NON_COMPLIANT_PREFIX = "Not Compliant with";
 
 /** Catégories IADC pour breakdown */
 export const IADC_BREAKDOWN_KEYWORDS = {
@@ -66,7 +65,7 @@ export const IADC_BREAKDOWN_KEYWORDS = {
   UNATTENDED: "Unattended",
   SAFE_PLACE: "Safe Place",
   ATTENDED: "Attended",
-} as const
+} as const;
 
 // =============================================================================
 // CSV COLUMNS (indices)
@@ -78,4 +77,4 @@ export const CSV_COLUMNS = {
   GROUP: 2,
   SHIPMENT_REASON: 3,
   TOTAL: 4,
-} as const
+} as const;

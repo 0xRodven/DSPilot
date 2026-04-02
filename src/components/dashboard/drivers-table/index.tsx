@@ -1,51 +1,55 @@
-"use client"
+"use client";
 
-import { useMemo } from "react"
-import { useRouter } from "next/navigation"
-import { useQuery } from "convex/react"
-import { api } from "@convex/_generated/api"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Skeleton } from "@/components/ui/skeleton"
-import { useDashboardStore } from "@/lib/store"
-import { useFilters, useBuildFilteredHref } from "@/lib/filters"
-import { DataTable } from "./data-table"
-import { createColumns, type DashboardDriver } from "./columns"
+import { useMemo } from "react";
+
+import { useRouter } from "next/navigation";
+
+import { api } from "@convex/_generated/api";
+import { useQuery } from "convex/react";
+
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useBuildFilteredHref, useFilters } from "@/lib/filters";
+import { useDashboardStore } from "@/lib/store";
+
+import { createColumns, type DashboardDriver } from "./columns";
+import { DataTable } from "./data-table";
 
 export function DriversTable() {
-  const router = useRouter()
-  const { selectedStation } = useDashboardStore()
-  const { period, year, weekNum, date, displayLabel, normalizedTime } = useFilters()
-  const buildHref = useBuildFilteredHref()
+  const router = useRouter();
+  const { selectedStation } = useDashboardStore();
+  const { period, year, weekNum, date, displayLabel, normalizedTime } = useFilters();
+  const buildHref = useBuildFilteredHref();
 
   // Get station from Convex - skip if no code yet (prevents race condition on navigation)
   const station = useQuery(
     api.stations.getStationByCode,
-    selectedStation.code ? { code: selectedStation.code } : "skip"
-  )
+    selectedStation.code ? { code: selectedStation.code } : "skip",
+  );
 
   // Get drivers from Convex - choose query based on mode
   const driversWeekly = useQuery(
     api.stats.getDashboardDrivers,
-    station && period === "week" ? { stationId: station._id, year, week: weekNum } : "skip"
-  )
+    station && period === "week" ? { stationId: station._id, year, week: weekNum } : "skip",
+  );
 
   const driversDaily = useQuery(
     api.stats.getDashboardDriversDaily,
-    station && period === "day" ? { stationId: station._id, date } : "skip"
-  )
+    station && period === "day" ? { stationId: station._id, date } : "skip",
+  );
 
   const driversRange = useQuery(
     api.stats.getDashboardDriversRange,
     station && period === "range"
       ? { stationId: station._id, startDate: normalizedTime.start, endDate: normalizedTime.end }
-      : "skip"
-  )
+      : "skip",
+  );
 
-  const driversData = period === "day" ? driversDaily : period === "range" ? driversRange : driversWeekly
+  const driversData = period === "day" ? driversDaily : period === "range" ? driversRange : driversWeekly;
 
   // Transform data for the table
   const drivers: DashboardDriver[] = useMemo(() => {
-    if (!driversData) return []
+    if (!driversData) return [];
     return driversData.map((d) => ({
       id: d.id,
       name: d.name,
@@ -55,18 +59,18 @@ export function DriversTable() {
       totalDeliveries: d.totalDeliveries,
       daysActive: d.daysActive,
       tier: d.tier,
-    }))
-  }, [driversData])
+    }));
+  }, [driversData]);
 
   // Create columns with callbacks
   const columns = useMemo(
     () =>
       createColumns({
         onViewDriver: (driverId) => router.push(buildHref(`/dashboard/drivers/${driverId}`)),
-        onPlanCoaching: (driverId) => router.push(buildHref(`/dashboard/coaching`) + `&driverId=${driverId}`),
+        onPlanCoaching: (driverId) => router.push(`${buildHref(`/dashboard/coaching`)}&driverId=${driverId}`),
       }),
-    [router, buildHref]
-  )
+    [router, buildHref],
+  );
 
   // Loading state
   if (!station || driversData === undefined) {
@@ -76,7 +80,7 @@ export function DriversTable() {
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <Skeleton className="h-6 w-32" />
-              <Skeleton className="h-4 w-40 mt-1" />
+              <Skeleton className="mt-1 h-4 w-40" />
             </div>
             <Skeleton className="h-9 w-24" />
           </div>
@@ -87,12 +91,12 @@ export function DriversTable() {
           </div>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="border-t border-border">
+          <div className="border-border border-t">
             {/* Header */}
-            <div className="flex items-center gap-4 px-6 py-3 border-b border-border">
+            <div className="flex items-center gap-4 border-border border-b px-6 py-3">
               <Skeleton className="h-4 w-8" />
               <Skeleton className="h-4 w-32" />
-              <Skeleton className="h-4 w-24 ml-auto" />
+              <Skeleton className="ml-auto h-4 w-24" />
               <Skeleton className="h-4 w-16" />
               <Skeleton className="h-4 w-16" />
               <Skeleton className="h-4 w-12" />
@@ -100,13 +104,13 @@ export function DriversTable() {
             </div>
             {/* Rows */}
             {[...Array(5)].map((_, i) => (
-              <div key={i} className="flex items-center gap-4 px-6 py-3 border-b border-border last:border-0">
+              <div key={i} className="flex items-center gap-4 border-border border-b px-6 py-3 last:border-0">
                 <Skeleton className="h-4 w-8" />
                 <div className="flex items-center gap-3">
                   <Skeleton className="h-8 w-8 rounded-full" />
                   <Skeleton className="h-4 w-32" />
                 </div>
-                <Skeleton className="h-4 w-20 ml-auto" />
+                <Skeleton className="ml-auto h-4 w-20" />
                 <Skeleton className="h-4 w-12" />
                 <Skeleton className="h-4 w-12" />
                 <Skeleton className="h-4 w-8" />
@@ -116,7 +120,7 @@ export function DriversTable() {
           </div>
         </CardContent>
       </Card>
-    )
+    );
   }
 
   return (
@@ -124,8 +128,10 @@ export function DriversTable() {
       <CardHeader className="pb-4">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <CardTitle className="text-lg font-semibold text-card-foreground">Tous les Drivers</CardTitle>
-            <p className="text-sm text-muted-foreground">{drivers.length} drivers • {displayLabel}</p>
+            <CardTitle className="font-semibold text-card-foreground text-lg">Tous les Drivers</CardTitle>
+            <p className="text-muted-foreground text-sm">
+              {drivers.length} drivers • {displayLabel}
+            </p>
           </div>
         </div>
       </CardHeader>
@@ -139,5 +145,5 @@ export function DriversTable() {
         />
       </CardContent>
     </Card>
-  )
+  );
 }

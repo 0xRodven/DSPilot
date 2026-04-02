@@ -1,35 +1,30 @@
-"use client"
+"use client";
 
-import { Menu, X } from "lucide-react"
-import Image from "next/image"
-import Link from "next/link"
-import { useState } from "react"
+import { useState } from "react";
 
-import { Button } from "@/components/ui/button"
-import { cn } from "@/lib/utils"
+import Image from "next/image";
+import Link from "next/link";
+
+import { Menu, X } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 const navLinks = [
   { name: "Fonctionnalités", href: "#features" },
   { name: "Tarifs", href: "#pricing" },
   { name: "Témoignages", href: "#reviews" },
-]
+];
 
 export function Navbar() {
-  const [isOpen, setIsOpen] = useState(false)
+  const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/80 backdrop-blur-lg">
+    <header className="sticky top-0 z-50 w-full border-border/40 border-b bg-background/80 backdrop-blur-lg">
       <nav className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 md:px-8">
         {/* Logo */}
         <Link href="/">
-          <Image
-            src="/logo/DSPilot_Full.png"
-            alt="DSPilot"
-            width={180}
-            height={68}
-            className="h-10 w-auto"
-            priority
-          />
+          <Image src="/logo/DSPilot_Full.png" alt="DSPilot" width={180} height={68} className="h-10 w-auto" priority />
         </Link>
 
         {/* Desktop Nav */}
@@ -38,7 +33,7 @@ export function Navbar() {
             <Link
               key={link.name}
               href={link.href}
-              className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+              className="text-muted-foreground text-sm transition-colors hover:text-foreground"
             >
               {link.name}
             </Link>
@@ -65,13 +60,8 @@ export function Navbar() {
       </nav>
 
       {/* Mobile menu */}
-      <div
-        className={cn(
-          "md:hidden",
-          isOpen ? "block" : "hidden"
-        )}
-      >
-        <div className="space-y-1 border-t border-border/40 bg-background/95 px-4 py-4 backdrop-blur-lg">
+      <div className={cn("md:hidden", isOpen ? "block" : "hidden")}>
+        <div className="space-y-1 border-border/40 border-t bg-background/95 px-4 py-4 backdrop-blur-lg">
           {navLinks.map((link) => (
             <Link
               key={link.name}
@@ -93,5 +83,5 @@ export function Navbar() {
         </div>
       </div>
     </header>
-  )
+  );
 }

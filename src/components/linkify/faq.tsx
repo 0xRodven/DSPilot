@@ -1,10 +1,11 @@
-"use client"
+"use client";
 
-import { ChevronDown } from "lucide-react"
-import { useState } from "react"
+import { useState } from "react";
 
-import { AnimationContainer } from "@/components/global/animation-container"
-import { cn } from "@/lib/utils"
+import { ChevronDown } from "lucide-react";
+
+import { AnimationContainer } from "@/components/global/animation-container";
+import { cn } from "@/lib/utils";
 
 const faqs = [
   {
@@ -37,7 +38,7 @@ const faqs = [
     answer:
       "Le module de coaching vous permet de planifier des sessions avec vos livreurs, de définir des objectifs basés sur leurs métriques et de suivre leur progression. Vous pouvez ajouter des notes, des actions correctives et mesurer l'impact de chaque intervention.",
   },
-]
+];
 
 function FAQItem({
   question,
@@ -45,49 +46,36 @@ function FAQItem({
   isOpen,
   onToggle,
 }: {
-  question: string
-  answer: string
-  isOpen: boolean
-  onToggle: () => void
+  question: string;
+  answer: string;
+  isOpen: boolean;
+  onToggle: () => void;
 }) {
   return (
-    <div className="border-b border-border/40">
-      <button
-        onClick={onToggle}
-        className="flex w-full items-center justify-between py-4 text-left"
-      >
-        <span className="text-base font-medium text-foreground">{question}</span>
+    <div className="border-border/40 border-b">
+      <button onClick={onToggle} className="flex w-full items-center justify-between py-4 text-left">
+        <span className="font-medium text-base text-foreground">{question}</span>
         <ChevronDown
-          className={cn(
-            "size-5 text-muted-foreground transition-transform duration-200",
-            isOpen && "rotate-180"
-          )}
+          className={cn("size-5 text-muted-foreground transition-transform duration-200", isOpen && "rotate-180")}
         />
       </button>
-      <div
-        className={cn(
-          "overflow-hidden transition-all duration-200",
-          isOpen ? "max-h-96 pb-4" : "max-h-0"
-        )}
-      >
+      <div className={cn("overflow-hidden transition-all duration-200", isOpen ? "max-h-96 pb-4" : "max-h-0")}>
         <p className="text-muted-foreground">{answer}</p>
       </div>
     </div>
-  )
+  );
 }
 
 export function FAQ() {
-  const [openIndex, setOpenIndex] = useState<number | null>(0)
+  const [openIndex, setOpenIndex] = useState<number | null>(0);
 
   return (
     <section id="faq" className="py-20 md:py-32">
       <AnimationContainer className="mb-12 text-center">
-        <span className="text-sm font-medium text-blue-500">FAQ</span>
-        <h2 className="mt-2 text-3xl font-bold tracking-tight text-foreground sm:text-4xl md:text-5xl">
+        <span className="font-medium text-blue-500 text-sm">FAQ</span>
+        <h2 className="mt-2 font-bold text-3xl text-foreground tracking-tight sm:text-4xl md:text-5xl">
           Questions{" "}
-          <span className="bg-gradient-to-r from-blue-500 to-cyan-400 bg-clip-text text-transparent">
-            fréquentes
-          </span>
+          <span className="bg-gradient-to-r from-blue-500 to-cyan-400 bg-clip-text text-transparent">fréquentes</span>
         </h2>
         <p className="mx-auto mt-4 max-w-2xl text-lg text-muted-foreground">
           Tout ce que vous devez savoir sur DSPilot.
@@ -108,5 +96,5 @@ export function FAQ() {
         </div>
       </AnimationContainer>
     </section>
-  )
+  );
 }

@@ -1,96 +1,96 @@
 interface DriverWeeklyComparison {
-  name: string
+  name: string;
   current: {
-    deliveries: number
-    dwc: number
-    iadc: number
-  }
+    deliveries: number;
+    dwc: number;
+    iadc: number;
+  };
   diff: {
-    deliveries: number
-    dwc: number
-    iadc: number
-  }
+    deliveries: number;
+    dwc: number;
+    iadc: number;
+  };
 }
 
 function formatDiff(value: number): string {
-  if (value > 0) return `+${value}`
-  return value.toString()
+  if (value > 0) return `+${value}`;
+  return value.toString();
 }
 
 export function generateWhatsAppRecap(driver: DriverWeeklyComparison, week: number): string {
-  const lines: string[] = []
+  const lines: string[] = [];
 
   // Header
-  lines.push(`*Recap Semaine ${week}* - ${driver.name}`)
-  lines.push("")
+  lines.push(`*Recap Semaine ${week}* - ${driver.name}`);
+  lines.push("");
 
   // Deliveries
-  lines.push(`*${driver.current.deliveries} colis* livres (${formatDiff(driver.diff.deliveries)})`)
-  lines.push("")
+  lines.push(`*${driver.current.deliveries} colis* livres (${formatDiff(driver.diff.deliveries)})`);
+  lines.push("");
 
   // DWC
-  let dwcEmoji = ""
+  let dwcEmoji = "";
   if (driver.current.dwc >= 95) {
-    dwcEmoji = ""
+    dwcEmoji = "";
   } else if (driver.current.dwc >= 90) {
-    dwcEmoji = ""
+    dwcEmoji = "";
   } else if (driver.diff.dwc < -2) {
-    dwcEmoji = ""
+    dwcEmoji = "";
   } else {
-    dwcEmoji = ""
+    dwcEmoji = "";
   }
-  lines.push(`${dwcEmoji} DWC: *${driver.current.dwc}%* (${formatDiff(driver.diff.dwc)}%)`)
+  lines.push(`${dwcEmoji} DWC: *${driver.current.dwc}%* (${formatDiff(driver.diff.dwc)}%)`);
 
   // IADC (only if not 100%)
   if (driver.current.iadc < 100) {
-    const iadcEmoji = driver.diff.iadc >= 0 ? "" : ""
-    lines.push(`${iadcEmoji} IADC: *${driver.current.iadc}%* (${formatDiff(driver.diff.iadc)}%)`)
+    const iadcEmoji = driver.diff.iadc >= 0 ? "" : "";
+    lines.push(`${iadcEmoji} IADC: *${driver.current.iadc}%* (${formatDiff(driver.diff.iadc)}%)`);
   }
 
-  lines.push("")
+  lines.push("");
 
   // Personalized message
-  lines.push(getPersonalizedMessage(driver))
+  lines.push(getPersonalizedMessage(driver));
 
-  return lines.join("\n")
+  return lines.join("\n");
 }
 
 function getPersonalizedMessage(driver: DriverWeeklyComparison): string {
   // Excellent week
   if (driver.current.dwc >= 95 && driver.current.iadc >= 99) {
-    return " Excellente semaine, continue comme ca !"
+    return " Excellente semaine, continue comme ca !";
   }
 
   // Good progress
   if (driver.diff.dwc > 3) {
-    return " Belle progression cette semaine !"
+    return " Belle progression cette semaine !";
   }
 
   // Good week
   if (driver.current.dwc >= 90) {
-    return " Bonne semaine, reste focus !"
+    return " Bonne semaine, reste focus !";
   }
 
   // Struggling week
   if (driver.diff.dwc < -3) {
-    return " Semaine difficile, on en parle ?"
+    return " Semaine difficile, on en parle ?";
   }
 
   // Below threshold
   if (driver.current.dwc < 90) {
-    return " Attention, il faut remonter rapidement. Besoin d'aide ?"
+    return " Attention, il faut remonter rapidement. Besoin d'aide ?";
   }
 
   // Default
-  return " Continue tes efforts !"
+  return " Continue tes efforts !";
 }
 
 export function generateAllRecaps(
   drivers: DriverWeeklyComparison[],
-  week: number
+  week: number,
 ): { name: string; message: string }[] {
   return drivers.map((driver) => ({
     name: driver.name,
     message: generateWhatsAppRecap(driver, week),
-  }))
+  }));
 }

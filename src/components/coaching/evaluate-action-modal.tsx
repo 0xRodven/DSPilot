@@ -1,37 +1,38 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { useQuery, useMutation } from "convex/react"
-import { api } from "@convex/_generated/api"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Input } from "@/components/ui/input"
+import { useEffect, useState } from "react";
+
+import { api } from "@convex/_generated/api";
+import { useMutation, useQuery } from "convex/react";
+import { addDays, format } from "date-fns";
 import {
-  MessageSquare,
   AlertTriangle,
-  BookOpen,
-  Ban,
-  TrendingUp,
-  TrendingDown,
-  CheckCircle,
-  XCircle,
   ArrowRight,
+  Ban,
+  BookOpen,
+  CheckCircle,
   Loader2,
-} from "lucide-react"
-import { cn } from "@/lib/utils"
-import { toast } from "sonner"
-import { format, addDays } from "date-fns"
-import type { CoachingActionFull } from "@/lib/types"
-import { getActionTypeLabel } from "@/lib/utils/status"
+  MessageSquare,
+  TrendingDown,
+  TrendingUp,
+  XCircle,
+} from "lucide-react";
+import { toast } from "sonner";
+
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import type { CoachingActionFull } from "@/lib/types";
+import { cn } from "@/lib/utils";
+import { getActionTypeLabel } from "@/lib/utils/status";
 
 interface EvaluateActionModalProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  action: CoachingActionFull | null
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  action: CoachingActionFull | null;
 }
 
 const actionIcons = {
@@ -39,61 +40,63 @@ const actionIcons = {
   warning: AlertTriangle,
   training: BookOpen,
   suspension: Ban,
-}
+};
 
 const actionColors = {
   discussion: "text-blue-400",
   warning: "text-amber-400",
   training: "text-emerald-400",
   suspension: "text-red-400",
-}
+};
 
 export function EvaluateActionModal({ open, onOpenChange, action }: EvaluateActionModalProps) {
-  const [result, setResult] = useState<"improved" | "no_effect">("improved")
-  const [notes, setNotes] = useState("")
-  const [nextActionType, setNextActionType] = useState<"discussion" | "warning" | "training" | "suspension">("discussion")
-  const [followUpDays, setFollowUpDays] = useState("14")
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [result, setResult] = useState<"improved" | "no_effect">("improved");
+  const [notes, setNotes] = useState("");
+  const [nextActionType, setNextActionType] = useState<"discussion" | "warning" | "training" | "suspension">(
+    "discussion",
+  );
+  const [followUpDays, setFollowUpDays] = useState("14");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Mutations
-  const evaluateAction = useMutation(api.coaching.evaluateCoachingAction)
-  const createAction = useMutation(api.coaching.createCoachingAction)
+  const evaluateAction = useMutation(api.coaching.evaluateCoachingAction);
+  const createAction = useMutation(api.coaching.createCoachingAction);
 
   // Get pipeline suggestion for escalation
   const pipelineSuggestion = useQuery(
     api.coaching.getCoachingPipelineSuggestion,
-    action ? { driverId: action.driverId as any } : "skip"
-  )
+    action ? { driverId: action.driverId as any } : "skip",
+  );
 
   // Reset form when modal opens
   useEffect(() => {
     if (open && action) {
-      setResult("improved")
-      setNotes("")
-      setFollowUpDays("14")
+      setResult("improved");
+      setNotes("");
+      setFollowUpDays("14");
       // Pre-fill with suggested next action
       if (pipelineSuggestion) {
-        setNextActionType(pipelineSuggestion.suggestedAction)
+        setNextActionType(pipelineSuggestion.suggestedAction);
       }
     }
-  }, [open, action, pipelineSuggestion])
+  }, [open, action, pipelineSuggestion]);
 
   // Pre-fill next action from pipeline suggestion
   useEffect(() => {
     if (pipelineSuggestion && result === "no_effect") {
-      setNextActionType(pipelineSuggestion.suggestedAction)
+      setNextActionType(pipelineSuggestion.suggestedAction);
     }
-  }, [pipelineSuggestion, result])
+  }, [pipelineSuggestion, result]);
 
-  if (!action) return null
+  if (!action) return null;
 
-  const currentDwc = action.driverDwc
-  const improvement = currentDwc - action.dwcAtAction
-  const TrendIcon = improvement >= 0 ? TrendingUp : TrendingDown
-  const Icon = actionIcons[action.actionType]
+  const currentDwc = action.driverDwc;
+  const improvement = currentDwc - action.dwcAtAction;
+  const TrendIcon = improvement >= 0 ? TrendingUp : TrendingDown;
+  const Icon = actionIcons[action.actionType];
 
   const handleSubmit = async () => {
-    setIsSubmitting(true)
+    setIsSubmitting(true);
     try {
       // 1. Evaluate current action
       await evaluateAction({
@@ -101,35 +104,36 @@ export function EvaluateActionModal({ open, onOpenChange, action }: EvaluateActi
         result: result,
         dwcAfterAction: currentDwc,
         evaluationNotes: notes || undefined,
-      })
+      });
 
-      // 2. If no effect, create escalation action
+      // 2. If no effect, create escalation action using the selected nextActionType
       if (result === "no_effect") {
-        const followUpDate = format(addDays(new Date(), parseInt(followUpDays)), "yyyy-MM-dd")
+        const followUpDate = format(addDays(new Date(), parseInt(followUpDays, 10)), "yyyy-MM-dd");
 
+        // Use the user-selected nextActionType from the form, not the pipeline suggestion
         await createAction({
           stationId: action.stationId as any,
           driverId: action.driverId as any,
-          actionType: nextActionType,
+          actionType: nextActionType, // Uses the state value from the Select component
           reason: `Escalade: ${action.reason}`,
           dwcAtAction: currentDwc,
           followUpDate,
           createdBy: "system",
-        })
+        });
 
-        toast.success(`Action évaluée et escalade créée (${getActionTypeLabel(nextActionType)})`)
+        toast.success(`Action évaluée et escalade créée (${getActionTypeLabel(nextActionType)})`);
       } else {
-        toast.success("Action évaluée avec succès")
+        toast.success("Action évaluée avec succès");
       }
 
-      onOpenChange(false)
+      onOpenChange(false);
     } catch (error) {
-      console.error("Error evaluating action:", error)
-      toast.error("Erreur lors de l'évaluation")
+      console.error("Error evaluating action:", error);
+      toast.error("Erreur lors de l'évaluation");
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -147,32 +151,38 @@ export function EvaluateActionModal({ open, onOpenChange, action }: EvaluateActi
             <div className="flex items-start justify-between">
               <div>
                 <p className="font-medium text-foreground">{action.driverName}</p>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-muted-foreground text-sm">
                   {getActionTypeLabel(action.actionType)} • {action.createdAt.split("T")[0]}
                 </p>
               </div>
             </div>
-            <p className="mt-2 text-sm text-muted-foreground">{action.reason}</p>
+            <p className="mt-2 text-muted-foreground text-sm">{action.reason}</p>
           </div>
 
           {/* DWC Evolution */}
           <div className="rounded-lg border border-border bg-muted/50 p-4">
-            <h4 className="mb-4 text-sm font-medium text-foreground">Évolution DWC</h4>
+            <h4 className="mb-4 font-medium text-foreground text-sm">Évolution DWC</h4>
             <div className="flex items-center justify-around">
               <div className="text-center">
-                <p className="text-xs text-muted-foreground">Début</p>
-                <p className="text-2xl font-bold text-foreground">{action.dwcAtAction}%</p>
+                <p className="text-muted-foreground text-xs">Début</p>
+                <p className="font-bold text-2xl text-foreground">{action.dwcAtAction}%</p>
               </div>
               <ArrowRight className="h-5 w-5 text-muted-foreground" />
               <div className="text-center">
-                <p className="text-xs text-muted-foreground">Actuel</p>
-                <p className="text-2xl font-bold text-foreground">{currentDwc}%</p>
+                <p className="text-muted-foreground text-xs">Actuel</p>
+                <p className="font-bold text-2xl text-foreground">{currentDwc}%</p>
               </div>
               <div className="text-center">
-                <p className="text-xs text-muted-foreground">Delta</p>
-                <p className={cn("text-2xl font-bold flex items-center gap-1", improvement >= 0 ? "text-emerald-500" : "text-red-500")}>
+                <p className="text-muted-foreground text-xs">Delta</p>
+                <p
+                  className={cn(
+                    "flex items-center gap-1 font-bold text-2xl",
+                    improvement >= 0 ? "text-emerald-500" : "text-red-500",
+                  )}
+                >
                   <TrendIcon className="h-5 w-5" />
-                  {improvement > 0 ? "+" : ""}{improvement.toFixed(1)}%
+                  {improvement > 0 ? "+" : ""}
+                  {improvement.toFixed(1)}%
                 </p>
               </div>
             </div>
@@ -185,30 +195,34 @@ export function EvaluateActionModal({ open, onOpenChange, action }: EvaluateActi
               <div
                 className={cn(
                   "flex cursor-pointer items-center gap-3 rounded-lg border p-4 transition-colors",
-                  result === "improved" ? "border-emerald-500 bg-emerald-500/10" : "border-border"
+                  result === "improved" ? "border-emerald-500 bg-emerald-500/10" : "border-border",
                 )}
                 onClick={() => setResult("improved")}
               >
                 <RadioGroupItem value="improved" id="improved" />
                 <CheckCircle className="h-5 w-5 text-emerald-500" />
                 <div>
-                  <Label htmlFor="improved" className="cursor-pointer font-medium">Amélioré</Label>
-                  <p className="text-sm text-muted-foreground">Le driver a progressé</p>
+                  <Label htmlFor="improved" className="cursor-pointer font-medium">
+                    Amélioré
+                  </Label>
+                  <p className="text-muted-foreground text-sm">Le driver a progressé</p>
                 </div>
               </div>
 
               <div
                 className={cn(
                   "flex cursor-pointer items-center gap-3 rounded-lg border p-4 transition-colors",
-                  result === "no_effect" ? "border-amber-500 bg-amber-500/10" : "border-border"
+                  result === "no_effect" ? "border-amber-500 bg-amber-500/10" : "border-border",
                 )}
                 onClick={() => setResult("no_effect")}
               >
                 <RadioGroupItem value="no_effect" id="no_effect" />
                 <XCircle className="h-5 w-5 text-amber-500" />
                 <div>
-                  <Label htmlFor="no_effect" className="cursor-pointer font-medium">Sans effet</Label>
-                  <p className="text-sm text-muted-foreground">Pas d'amélioration → Escalade</p>
+                  <Label htmlFor="no_effect" className="cursor-pointer font-medium">
+                    Sans effet
+                  </Label>
+                  <p className="text-muted-foreground text-sm">Pas d'amélioration → Escalade</p>
                 </div>
               </div>
             </RadioGroup>
@@ -220,9 +234,7 @@ export function EvaluateActionModal({ open, onOpenChange, action }: EvaluateActi
               <h4 className="font-medium text-foreground">Escalade automatique</h4>
 
               {pipelineSuggestion && (
-                <p className="text-sm text-muted-foreground">
-                  Suggestion: {pipelineSuggestion.reason}
-                </p>
+                <p className="text-muted-foreground text-sm">Suggestion: {pipelineSuggestion.reason}</p>
               )}
 
               <div className="grid grid-cols-2 gap-4">
@@ -282,5 +294,5 @@ export function EvaluateActionModal({ open, onOpenChange, action }: EvaluateActi
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

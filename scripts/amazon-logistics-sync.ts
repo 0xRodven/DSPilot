@@ -543,7 +543,10 @@ async function discoverSupplementaryPaths(options: CliOptions, year: number, wee
     ...files.filter((filePath) => {
       const filename = path.basename(filePath).toLowerCase();
       return (
-        filename.endsWith(".html") && (filename.includes(associateWeekTag) || filename.includes("associate-overview") || filename.includes("associate_overview"))
+        filename.endsWith(".html") &&
+        (filename.includes(associateWeekTag) ||
+          filename.includes("associate-overview") ||
+          filename.includes("associate_overview"))
       );
     }),
   ]);

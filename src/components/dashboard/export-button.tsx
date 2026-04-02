@@ -72,7 +72,7 @@ export function ExportButton() {
         .filter((d) => d.dwcPercent < 85)
         .slice(-5)
         .reverse()
-        .map((d, i) => ({
+        .map((d, _i) => ({
           rank: sortedDrivers.findIndex((sd) => sd.amazonId === d.amazonId) + 1,
           name: d.name,
           dwcPercent: d.dwcPercent,

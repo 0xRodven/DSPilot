@@ -1,6 +1,6 @@
-"use client"
+"use client";
 
-import { OrganizationSwitcher } from "@clerk/nextjs"
+import { OrganizationSwitcher } from "@clerk/nextjs";
 
 /**
  * OrganizationSwitcher compact pour le header
@@ -28,8 +28,7 @@ export function HeaderOrgSwitcher() {
             "text-foreground hover:bg-accent [&>span]:text-foreground [&_svg]:text-foreground",
           organizationSwitcherPopoverActionButtonText: "text-foreground",
           organizationSwitcherPopoverActionButtonIcon: "text-foreground",
-          organizationSwitcherPopoverActionButtonIconBox:
-            "text-foreground bg-muted [&_svg]:text-foreground",
+          organizationSwitcherPopoverActionButtonIconBox: "text-foreground bg-muted [&_svg]:text-foreground",
           organizationPreview: "hover:bg-accent",
           organizationPreviewTextContainer: "[&_*]:text-foreground",
           // Manage org button (gear icon)
@@ -38,5 +37,5 @@ export function HeaderOrgSwitcher() {
         },
       }}
     />
-  )
+  );
 }

@@ -1,6 +1,7 @@
 import { v } from "convex/values";
-import { internalAction, internalQuery } from "./_generated/server";
+
 import { internal } from "./_generated/api";
+import { internalAction, internalQuery } from "./_generated/server";
 
 /**
  * Vérifie quelles stations doivent envoyer leurs récaps WhatsApp
@@ -10,9 +11,7 @@ export const checkAndSendRecaps = internalAction({
   args: {},
   handler: async (ctx) => {
     // Get all stations with WhatsApp enabled
-    const stationsToCheck = await ctx.runQuery(
-      internal.whatsappCron.getStationsToSend
-    );
+    const stationsToCheck = await ctx.runQuery(internal.whatsappCron.getStationsToSend);
 
     if (stationsToCheck.length === 0) {
       console.log("[WhatsApp Cron] No stations to send recaps to");
@@ -24,10 +23,9 @@ export const checkAndSendRecaps = internalAction({
     for (const station of stationsToCheck) {
       try {
         // Get eligible drivers for this station
-        const drivers = await ctx.runQuery(
-          internal.whatsappCron.getEligibleDriversForStation,
-          { stationId: station.stationId }
-        );
+        const drivers = await ctx.runQuery(internal.whatsappCron.getEligibleDriversForStation, {
+          stationId: station.stationId,
+        });
 
         if (drivers.length === 0) {
           console.log(`[WhatsApp Cron] No eligible drivers for station ${station.stationId}`);
@@ -93,10 +91,7 @@ export const getStationsToSend = internalQuery({
       // This is simplified - in production you'd want proper timezone handling
       const targetHourUTC = convertToUTC(settings.sendHour, settings.timezone);
 
-      return (
-        settings.sendDay === currentDayUTC &&
-        targetHourUTC === currentHourUTC
-      );
+      return settings.sendDay === currentDayUTC && targetHourUTC === currentHourUTC;
     });
 
     return stationsToSend;
@@ -113,15 +108,11 @@ export const getEligibleDriversForStation = internalQuery({
   handler: async (ctx, args) => {
     const drivers = await ctx.db
       .query("drivers")
-      .withIndex("by_station_active", (q) =>
-        q.eq("stationId", args.stationId).eq("isActive", true)
-      )
+      .withIndex("by_station_active", (q) => q.eq("stationId", args.stationId).eq("isActive", true))
       .collect();
 
     // Filter to those with phone and opt-in
-    return drivers.filter(
-      (d) => d.phoneNumber && d.whatsappOptIn === true
-    );
+    return drivers.filter((d) => d.phoneNumber && d.whatsappOptIn === true);
   },
 });
 
@@ -137,20 +128,26 @@ function getWeekNumber(date: Date): number {
   const dayNum = d.getUTCDay() || 7;
   d.setUTCDate(d.getUTCDate() + 4 - dayNum);
   const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-  return Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+  return Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
 }
 
 /**
- * Convert local hour to UTC (simplified)
- * In production, use a proper timezone library like date-fns-tz
+ * Convert local hour to UTC with basic DST handling
+ * Uses a simplified approximation: DST is active from March to October
+ * In production, consider using a proper timezone library like date-fns-tz
  */
 function convertToUTC(hour: number, timezone: string): number {
-  // Simplified offset mapping
+  // Check if we're roughly in DST period (March-October for Northern Hemisphere)
+  const now = new Date();
+  const month = now.getUTCMonth(); // 0-11
+  const isDST = month >= 2 && month <= 9; // March (2) to October (9) approximation
+
+  // Offset mapping with DST consideration
   const offsets: Record<string, number> = {
-    "Europe/Paris": 1, // CET (simplified, doesn't account for DST)
-    "Europe/London": 0,
-    "Europe/Berlin": 1,
-    "America/New_York": -5,
+    "Europe/Paris": isDST ? 2 : 1, // CET/CEST
+    "Europe/London": isDST ? 1 : 0, // GMT/BST
+    "Europe/Berlin": isDST ? 2 : 1, // CET/CEST
+    "America/New_York": isDST ? -4 : -5, // EST/EDT
   };
 
   const offset = offsets[timezone] ?? 0;

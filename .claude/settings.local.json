@@ -150,9 +150,7 @@
     ]
   },
   "enableAllProjectMcpServers": true,
-  "enabledMcpjsonServers": [
-    "supabase"
-  ],
+  "enabledMcpjsonServers": ["supabase"],
   "hooks": {
     "UserPromptSubmit": [
       {

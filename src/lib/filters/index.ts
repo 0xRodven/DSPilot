@@ -3,47 +3,43 @@
 
 // Hooks
 export {
+  useBuildFilteredHref,
+  useFilteredHref,
   useFilters,
   useStationFilter,
   useTimeParams, // Legacy compat
-  useFilteredHref,
-  useBuildFilteredHref,
-} from "./hooks"
-
-// Parsers & helpers
+} from "./hooks";
+// Normalization helpers
 export {
-  filterParsers,
-  parseWeekString,
-  serializeWeek,
-  parseRangeString,
-  serializeRange,
-} from "./parsers"
-
+  formatTimeDisplay,
+  getTodayValues,
+  isCurrentPeriod,
+  navigateTime,
+  normalizeTimeFilter,
+} from "./normalization";
 // Types from parsers
 export type {
   FilterValues,
-  RawFilterValues,
   PeriodMode,
+  RangeValue,
+  RawFilterValues,
   TierFilter,
   WeekValue,
-  RangeValue,
-} from "./parsers"
-
+} from "./parsers";
+// Parsers & helpers
+export {
+  filterParsers,
+  parseRangeString,
+  parseWeekString,
+  serializeRange,
+  serializeWeek,
+} from "./parsers";
 // Types from types file
 export type {
+  NavigationDirection,
   NormalizedTimeFilter,
   QueryFilters,
-  URLFilterState,
-  NavigationDirection,
   Station,
   TimeGranularity,
-} from "./types"
-
-// Normalization helpers
-export {
-  normalizeTimeFilter,
-  formatTimeDisplay,
-  navigateTime,
-  getTodayValues,
-  isCurrentPeriod,
-} from "./normalization"
+  URLFilterState,
+} from "./types";

@@ -1,19 +1,21 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
-import { cn } from "@/lib/utils"
-import { AlertCircle, TrendingUp } from "lucide-react"
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
-import type { ErrorTrendData } from "@/lib/types"
+import { useState } from "react";
+
+import { AlertCircle, TrendingUp } from "lucide-react";
+import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import type { ErrorTrendData } from "@/lib/types";
+import { cn } from "@/lib/utils";
 
 interface ErrorTrendChartProps {
-  data: ErrorTrendData[]
+  data: ErrorTrendData[];
 }
 
-type PeriodOption = "4W" | "8W" | "12W"
+type PeriodOption = "4W" | "8W" | "12W";
 
 const lineConfigs = [
   { key: "total", label: "Total", color: "#ef4444", defaultChecked: true },
@@ -22,38 +24,38 @@ const lineConfigs = [
   { key: "noPhoto", label: "No Photo", color: "#22c55e", defaultChecked: false },
   { key: "otpMiss", label: "OTP Miss", color: "#3b82f6", defaultChecked: false },
   { key: "failedAttempts", label: "MS - Tentatives échouées", color: "#8b5cf6", defaultChecked: false },
-]
+];
 
 export function ErrorTrendChart({ data }: ErrorTrendChartProps) {
-  const [period, setPeriod] = useState<PeriodOption>("8W")
+  const [period, setPeriod] = useState<PeriodOption>("8W");
   const [visibleLines, setVisibleLines] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(lineConfigs.map((c) => [c.key, c.defaultChecked])),
-  )
+  );
 
-  const periodWeeks = { "4W": 4, "8W": 8, "12W": 12 }
-  const filteredData = data.slice(-periodWeeks[period])
+  const periodWeeks = { "4W": 4, "8W": 8, "12W": 12 };
+  const filteredData = data.slice(-periodWeeks[period]);
 
   const toggleLine = (key: string) => {
-    setVisibleLines((prev) => ({ ...prev, [key]: !prev[key] }))
-  }
+    setVisibleLines((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
 
   // Calculate insight
-  const firstWeek = filteredData[0]
-  const lastWeek = filteredData[filteredData.length - 1]
-  const contactMissChange = ((lastWeek.contactMiss - firstWeek.contactMiss) / firstWeek.contactMiss) * 100
+  const firstWeek = filteredData[0];
+  const lastWeek = filteredData[filteredData.length - 1];
+  const contactMissChange = ((lastWeek.contactMiss - firstWeek.contactMiss) / firstWeek.contactMiss) * 100;
   const insight =
     contactMissChange > 15
       ? `Contact Miss en hausse de +${contactMissChange.toFixed(0)}% sur ${periodWeeks[period]} semaines.`
       : contactMissChange < -10
         ? `Contact Miss en amélioration de ${contactMissChange.toFixed(0)}% sur ${periodWeeks[period]} semaines.`
-        : `Contact Miss stable sur ${periodWeeks[period]} semaines.`
+        : `Contact Miss stable sur ${periodWeeks[period]} semaines.`;
 
   return (
     <Card className="border-border bg-card">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <div>
-          <CardTitle className="text-base font-medium">Évolution des erreurs</CardTitle>
-          <p className="text-sm text-muted-foreground">{periodWeeks[period]} dernières semaines</p>
+          <CardTitle className="font-medium text-base">Évolution des erreurs</CardTitle>
+          <p className="text-muted-foreground text-sm">{periodWeeks[period]} dernières semaines</p>
         </div>
         <div className="flex gap-1 rounded-lg border border-border p-1">
           {(["4W", "8W", "12W"] as PeriodOption[]).map((p) => (
@@ -103,7 +105,7 @@ export function ErrorTrendChart({ data }: ErrorTrendChartProps) {
           </ResponsiveContainer>
         </div>
 
-        <div className="mt-4 flex flex-wrap gap-4 border-t border-border pt-4">
+        <div className="mt-4 flex flex-wrap gap-4 border-border border-t pt-4">
           {lineConfigs.map((config) => (
             <label key={config.key} className="flex cursor-pointer items-center gap-2">
               <Checkbox
@@ -129,5 +131,5 @@ export function ErrorTrendChart({ data }: ErrorTrendChartProps) {
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }

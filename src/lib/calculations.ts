@@ -31,11 +31,7 @@ export interface TierDistribution {
  * Calcule le DWC% depuis les volumes
  * DWC = Compliant / (Compliant + Misses + FailedAttempts)
  */
-export const calculateDwcPercent = (
-  compliant: number,
-  misses: number,
-  failedAttempts: number
-): number => {
+export const calculateDwcPercent = (compliant: number, misses: number, failedAttempts: number): number => {
   const total = compliant + misses + failedAttempts;
   if (total === 0) return 0;
   return (compliant / total) * 100;
@@ -45,10 +41,7 @@ export const calculateDwcPercent = (
  * Calcule le IADC% depuis les volumes
  * IADC = Compliant / (Compliant + NonCompliant)
  */
-export const calculateIadcPercent = (
-  compliant: number,
-  nonCompliant: number
-): number => {
+export const calculateIadcPercent = (compliant: number, nonCompliant: number): number => {
   const total = compliant + nonCompliant;
   if (total === 0) return 0;
   return (compliant / total) * 100;
@@ -57,21 +50,14 @@ export const calculateIadcPercent = (
 /**
  * Calcule le dénominateur total DWC (nombre de livraisons)
  */
-export const getDwcTotal = (
-  compliant: number,
-  misses: number,
-  failedAttempts: number
-): number => {
+export const getDwcTotal = (compliant: number, misses: number, failedAttempts: number): number => {
   return compliant + misses + failedAttempts;
 };
 
 /**
  * Calcule le dénominateur total IADC
  */
-export const getIadcTotal = (
-  compliant: number,
-  nonCompliant: number
-): number => {
+export const getIadcTotal = (compliant: number, nonCompliant: number): number => {
   return compliant + nonCompliant;
 };
 
@@ -147,7 +133,7 @@ export const calculateFleetDwcPercent = (
     dwcCompliant: number;
     dwcMisses: number;
     failedAttempts: number;
-  }>
+  }>,
 ): number => {
   const items = drivers.map((d) => ({
     numerator: d.dwcCompliant,
@@ -163,7 +149,7 @@ export const calculateFleetIadcPercent = (
   drivers: Array<{
     iadcCompliant: number;
     iadcNonCompliant: number;
-  }>
+  }>,
 ): number => {
   const items = drivers.map((d) => ({
     numerator: d.iadcCompliant,
@@ -186,10 +172,7 @@ export const calculateTrend = (current: number, previous: number): number => {
 /**
  * Calcule le trend en pourcentage
  */
-export const calculateTrendPercent = (
-  current: number,
-  previous: number
-): number => {
+export const calculateTrendPercent = (current: number, previous: number): number => {
   if (previous === 0) return 0;
   return ((current - previous) / previous) * 100;
 };
@@ -201,9 +184,7 @@ export const calculateTrendPercent = (
 /**
  * Calcule la distribution des tiers depuis une liste de DWC%
  */
-export const calculateTierDistribution = (
-  dwcPercents: number[]
-): TierDistribution => {
+export const calculateTierDistribution = (dwcPercents: number[]): TierDistribution => {
   const distribution: TierDistribution = {
     fantastic: 0,
     great: 0,
@@ -222,20 +203,12 @@ export const calculateTierDistribution = (
 /**
  * Calcule le % de high performers (Fantastic + Great)
  */
-export const calculateHighPerformersPercent = (
-  tierDistribution: TierDistribution
-): number => {
-  const total =
-    tierDistribution.fantastic +
-    tierDistribution.great +
-    tierDistribution.fair +
-    tierDistribution.poor;
+export const calculateHighPerformersPercent = (tierDistribution: TierDistribution): number => {
+  const total = tierDistribution.fantastic + tierDistribution.great + tierDistribution.fair + tierDistribution.poor;
 
   if (total === 0) return 0;
 
-  return (
-    ((tierDistribution.fantastic + tierDistribution.great) / total) * 100
-  );
+  return ((tierDistribution.fantastic + tierDistribution.great) / total) * 100;
 };
 
 // ============================================
@@ -245,9 +218,7 @@ export const calculateHighPerformersPercent = (
 /**
  * Agrège plusieurs breakdowns DWC
  */
-export const aggregateDwcBreakdowns = (
-  breakdowns: DwcBreakdown[]
-): DwcBreakdown => {
+export const aggregateDwcBreakdowns = (breakdowns: DwcBreakdown[]): DwcBreakdown => {
   return breakdowns.reduce(
     (acc, b) => ({
       contactMiss: acc.contactMiss + b.contactMiss,
@@ -256,16 +227,14 @@ export const aggregateDwcBreakdowns = (
       otpMiss: acc.otpMiss + b.otpMiss,
       other: acc.other + b.other,
     }),
-    { contactMiss: 0, photoDefect: 0, noPhoto: 0, otpMiss: 0, other: 0 }
+    { contactMiss: 0, photoDefect: 0, noPhoto: 0, otpMiss: 0, other: 0 },
   );
 };
 
 /**
  * Agrège plusieurs breakdowns IADC
  */
-export const aggregateIadcBreakdowns = (
-  breakdowns: IadcBreakdown[]
-): IadcBreakdown => {
+export const aggregateIadcBreakdowns = (breakdowns: IadcBreakdown[]): IadcBreakdown => {
   return breakdowns.reduce(
     (acc, b) => ({
       mailbox: acc.mailbox + b.mailbox,
@@ -273,7 +242,7 @@ export const aggregateIadcBreakdowns = (
       safePlace: acc.safePlace + b.safePlace,
       other: acc.other + b.other,
     }),
-    { mailbox: 0, unattended: 0, safePlace: 0, other: 0 }
+    { mailbox: 0, unattended: 0, safePlace: 0, other: 0 },
   );
 };
 
@@ -324,7 +293,7 @@ export const formatNumber = (value: number): string => {
 /**
  * Formate une semaine ISO (ex: "S50" ou "2025-W50")
  */
-export const formatWeek = (year: number, week: number): string => {
+export const formatWeek = (_year: number, week: number): string => {
   return `S${week.toString().padStart(2, "0")}`;
 };
 

@@ -1,30 +1,32 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { useQuery, useMutation } from "convex/react"
-import { useUser } from "@clerk/nextjs"
-import { api } from "@convex/_generated/api"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Label } from "@/components/ui/label"
-import { Button } from "@/components/ui/button"
-import { Switch } from "@/components/ui/switch"
-import { Skeleton } from "@/components/ui/skeleton"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { useEffect, useState } from "react";
+
+import { useUser } from "@clerk/nextjs";
+import { api } from "@convex/_generated/api";
+import { useMutation, useQuery } from "convex/react";
 import {
-  MessageCircle,
-  Loader2,
-  Save,
-  Clock,
-  Calendar,
-  Globe,
-  Users,
-  CheckCircle2,
   AlertCircle,
+  Calendar,
+  CheckCircle2,
+  Clock,
+  Globe,
   Info,
-} from "lucide-react"
-import { useDashboardStore } from "@/lib/store"
-import { withToast } from "@/lib/utils/mutation"
+  Loader2,
+  MessageCircle,
+  Save,
+  Users,
+} from "lucide-react";
+
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Switch } from "@/components/ui/switch";
+import { useDashboardStore } from "@/lib/store";
+import { withToast } from "@/lib/utils/mutation";
 
 const DAYS = [
   { value: "0", label: "Dimanche" },
@@ -34,73 +36,67 @@ const DAYS = [
   { value: "4", label: "Jeudi" },
   { value: "5", label: "Vendredi" },
   { value: "6", label: "Samedi" },
-]
+];
 
 const HOURS = Array.from({ length: 24 }, (_, i) => ({
   value: String(i),
   label: `${i.toString().padStart(2, "0")}:00`,
-}))
+}));
 
 const TIMEZONES = [
   { value: "Europe/Paris", label: "Paris (CET/CEST)" },
   { value: "Europe/London", label: "Londres (GMT/BST)" },
   { value: "Europe/Berlin", label: "Berlin (CET/CEST)" },
   { value: "America/New_York", label: "New York (EST/EDT)" },
-]
+];
 
 export function WhatsappSettings() {
-  const { selectedStation } = useDashboardStore()
-  const { user } = useUser()
+  const { selectedStation } = useDashboardStore();
+  const { user } = useUser();
 
   // Get station from Convex
   const station = useQuery(
     api.stations.getStationByCode,
-    selectedStation.code ? { code: selectedStation.code } : "skip"
-  )
+    selectedStation.code ? { code: selectedStation.code } : "skip",
+  );
 
   // Get WhatsApp settings
-  const settings = useQuery(
-    api.whatsapp.getWhatsappSettings,
-    station ? { stationId: station._id } : "skip"
-  )
+  const settings = useQuery(api.whatsapp.getWhatsappSettings, station ? { stationId: station._id } : "skip");
 
   // Get eligible drivers count
-  const eligibleDrivers = useQuery(
-    api.whatsapp.getEligibleDrivers,
-    station ? { stationId: station._id } : "skip"
-  )
+  const eligibleDrivers = useQuery(api.whatsapp.getEligibleDrivers, station ? { stationId: station._id } : "skip");
 
   // Form state
-  const [enabled, setEnabled] = useState(false)
-  const [sendDay, setSendDay] = useState("1")
-  const [sendHour, setSendHour] = useState("8")
-  const [timezone, setTimezone] = useState("Europe/Paris")
-  const [isEditing, setIsEditing] = useState(false)
-  const [isSaving, setIsSaving] = useState(false)
+  const [enabled, setEnabled] = useState(false);
+  const [sendDay, setSendDay] = useState("1");
+  const [sendHour, setSendHour] = useState("8");
+  const [timezone, setTimezone] = useState("Europe/Paris");
+  const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Update form when settings load
   useEffect(() => {
     if (settings) {
-      setEnabled(settings.enabled)
-      setSendDay(String(settings.sendDay))
-      setSendHour(String(settings.sendHour))
-      setTimezone(settings.timezone)
+      setEnabled(settings.enabled);
+      setSendDay(String(settings.sendDay));
+      setSendHour(String(settings.sendHour));
+      setTimezone(settings.timezone);
     }
-  }, [settings])
+  }, [settings]);
 
   // Mutation
-  const updateSettings = useMutation(api.whatsapp.updateWhatsappSettings)
+  const updateSettings = useMutation(api.whatsapp.updateWhatsappSettings);
 
   const handleSave = async () => {
-    if (!station || !user) return
+    if (!station || !user) return;
 
-    setIsSaving(true)
+    setIsSaving(true);
     await withToast(
       updateSettings({
         stationId: station._id,
         enabled,
-        sendDay: parseInt(sendDay),
-        sendHour: parseInt(sendHour),
+        sendDay: parseInt(sendDay, 10),
+        sendHour: parseInt(sendHour, 10),
         timezone,
         userId: user.id,
       }),
@@ -108,28 +104,28 @@ export function WhatsappSettings() {
         loading: "Enregistrement...",
         success: "Paramètres WhatsApp mis à jour",
         error: (err) => err.message || "Erreur lors de la mise à jour",
-      }
-    )
-    setIsEditing(false)
-    setIsSaving(false)
-  }
+      },
+    );
+    setIsEditing(false);
+    setIsSaving(false);
+  };
 
   const handleCancel = () => {
     if (settings) {
-      setEnabled(settings.enabled)
-      setSendDay(String(settings.sendDay))
-      setSendHour(String(settings.sendHour))
-      setTimezone(settings.timezone)
+      setEnabled(settings.enabled);
+      setSendDay(String(settings.sendDay));
+      setSendHour(String(settings.sendHour));
+      setTimezone(settings.timezone);
     }
-    setIsEditing(false)
-  }
+    setIsEditing(false);
+  };
 
   const hasChanges =
     settings &&
     (enabled !== settings.enabled ||
       sendDay !== String(settings.sendDay) ||
       sendHour !== String(settings.sendHour) ||
-      timezone !== settings.timezone)
+      timezone !== settings.timezone);
 
   // Loading state
   if (settings === undefined || station === undefined) {
@@ -145,7 +141,7 @@ export function WhatsappSettings() {
           </CardContent>
         </Card>
       </div>
-    )
+    );
   }
 
   // No station selected
@@ -153,14 +149,12 @@ export function WhatsappSettings() {
     return (
       <Card>
         <CardContent className="p-6 text-center">
-          <MessageCircle className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-          <h3 className="text-lg font-medium mb-2">Aucune station sélectionnée</h3>
-          <p className="text-muted-foreground">
-            Sélectionnez une station pour configurer les envois WhatsApp.
-          </p>
+          <MessageCircle className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
+          <h3 className="mb-2 font-medium text-lg">Aucune station sélectionnée</h3>
+          <p className="text-muted-foreground">Sélectionnez une station pour configurer les envois WhatsApp.</p>
         </CardContent>
       </Card>
-    )
+    );
   }
 
   return (
@@ -180,10 +174,10 @@ export function WhatsappSettings() {
           {/* Enable/Disable Toggle */}
           <div className="flex items-center justify-between rounded-lg border p-4">
             <div className="space-y-0.5">
-              <Label htmlFor="whatsapp-enabled" className="text-base font-medium">
+              <Label htmlFor="whatsapp-enabled" className="font-medium text-base">
                 Activer les envois WhatsApp
               </Label>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-muted-foreground text-sm">
                 Envoyer automatiquement les récaps hebdomadaires aux conducteurs
               </p>
             </div>
@@ -191,8 +185,8 @@ export function WhatsappSettings() {
               id="whatsapp-enabled"
               checked={enabled}
               onCheckedChange={(value) => {
-                setEnabled(value)
-                setIsEditing(true)
+                setEnabled(value);
+                setIsEditing(true);
               }}
             />
           </div>
@@ -200,7 +194,7 @@ export function WhatsappSettings() {
           {/* Schedule Settings */}
           {enabled && (
             <div className="space-y-4 rounded-lg border p-4">
-              <h4 className="font-medium flex items-center gap-2">
+              <h4 className="flex items-center gap-2 font-medium">
                 <Clock className="h-4 w-4" />
                 Planification
               </h4>
@@ -215,8 +209,8 @@ export function WhatsappSettings() {
                   <Select
                     value={sendDay}
                     onValueChange={(value) => {
-                      setSendDay(value)
-                      setIsEditing(true)
+                      setSendDay(value);
+                      setIsEditing(true);
                     }}
                   >
                     <SelectTrigger id="send-day">
@@ -241,8 +235,8 @@ export function WhatsappSettings() {
                   <Select
                     value={sendHour}
                     onValueChange={(value) => {
-                      setSendHour(value)
-                      setIsEditing(true)
+                      setSendHour(value);
+                      setIsEditing(true);
                     }}
                   >
                     <SelectTrigger id="send-hour">
@@ -267,8 +261,8 @@ export function WhatsappSettings() {
                   <Select
                     value={timezone}
                     onValueChange={(value) => {
-                      setTimezone(value)
-                      setIsEditing(true)
+                      setTimezone(value);
+                      setIsEditing(true);
                     }}
                   >
                     <SelectTrigger id="timezone">
@@ -285,10 +279,9 @@ export function WhatsappSettings() {
                 </div>
               </div>
 
-              <p className="text-sm text-muted-foreground">
-                Les récapitulatifs seront envoyés chaque{" "}
-                <strong>{DAYS.find((d) => d.value === sendDay)?.label}</strong> à{" "}
-                <strong>{HOURS.find((h) => h.value === sendHour)?.label}</strong> (
+              <p className="text-muted-foreground text-sm">
+                Les récapitulatifs seront envoyés chaque <strong>{DAYS.find((d) => d.value === sendDay)?.label}</strong>{" "}
+                à <strong>{HOURS.find((h) => h.value === sendHour)?.label}</strong> (
                 {TIMEZONES.find((t) => t.value === timezone)?.label}).
               </p>
             </div>
@@ -304,12 +297,12 @@ export function WhatsappSettings() {
             <Button onClick={handleSave} disabled={!hasChanges || isSaving}>
               {isSaving ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Enregistrement...
                 </>
               ) : (
                 <>
-                  <Save className="h-4 w-4 mr-2" />
+                  <Save className="mr-2 h-4 w-4" />
                   Enregistrer
                 </>
               )}
@@ -325,9 +318,7 @@ export function WhatsappSettings() {
             <Users className="h-5 w-5" />
             Conducteurs éligibles
           </CardTitle>
-          <CardDescription>
-            Conducteurs avec numéro de téléphone et opt-in activé
-          </CardDescription>
+          <CardDescription>Conducteurs avec numéro de téléphone et opt-in activé</CardDescription>
         </CardHeader>
         <CardContent>
           {eligibleDrivers === undefined ? (
@@ -342,15 +333,13 @@ export function WhatsappSettings() {
               <AlertDescription>
                 Ces conducteurs recevront le récapitulatif hebdomadaire.
                 <ul className="mt-2 space-y-1">
-                  {eligibleDrivers.slice(0, 5).map((driver: typeof eligibleDrivers[number]) => (
+                  {eligibleDrivers.slice(0, 5).map((driver: (typeof eligibleDrivers)[number]) => (
                     <li key={driver._id} className="text-sm">
                       {driver.name} - {driver.phoneNumber}
                     </li>
                   ))}
                   {eligibleDrivers.length > 5 && (
-                    <li className="text-sm text-muted-foreground">
-                      ... et {eligibleDrivers.length - 5} autres
-                    </li>
+                    <li className="text-muted-foreground text-sm">... et {eligibleDrivers.length - 5} autres</li>
                   )}
                 </ul>
               </AlertDescription>
@@ -360,8 +349,8 @@ export function WhatsappSettings() {
               <AlertCircle className="h-4 w-4" />
               <AlertTitle>Aucun conducteur éligible</AlertTitle>
               <AlertDescription>
-                Aucun conducteur n&apos;a de numéro de téléphone avec opt-in activé. Ajoutez les
-                numéros depuis les pages individuelles des conducteurs.
+                Aucun conducteur n&apos;a de numéro de téléphone avec opt-in activé. Ajoutez les numéros depuis les
+                pages individuelles des conducteurs.
               </AlertDescription>
             </Alert>
           )}
@@ -376,20 +365,20 @@ export function WhatsappSettings() {
             Configuration Twilio requise
           </CardTitle>
         </CardHeader>
-        <CardContent className="text-sm text-muted-foreground space-y-2">
+        <CardContent className="space-y-2 text-muted-foreground text-sm">
           <p>
-            Pour activer l&apos;envoi WhatsApp, vous devez configurer les variables d&apos;environnement
-            Twilio dans Convex :
+            Pour activer l&apos;envoi WhatsApp, vous devez configurer les variables d&apos;environnement Twilio dans
+            Convex :
           </p>
-          <ul className="list-disc list-inside space-y-1">
+          <ul className="list-inside list-disc space-y-1">
             <li>
-              <code className="bg-muted px-1 py-0.5 rounded">TWILIO_ACCOUNT_SID</code>
+              <code className="rounded bg-muted px-1 py-0.5">TWILIO_ACCOUNT_SID</code>
             </li>
             <li>
-              <code className="bg-muted px-1 py-0.5 rounded">TWILIO_AUTH_TOKEN</code>
+              <code className="rounded bg-muted px-1 py-0.5">TWILIO_AUTH_TOKEN</code>
             </li>
             <li>
-              <code className="bg-muted px-1 py-0.5 rounded">TWILIO_WHATSAPP_NUMBER</code>
+              <code className="rounded bg-muted px-1 py-0.5">TWILIO_WHATSAPP_NUMBER</code>
             </li>
           </ul>
           <p className="pt-2">
@@ -407,5 +396,5 @@ export function WhatsappSettings() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

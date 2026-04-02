@@ -1,27 +1,44 @@
-"use client"
+"use client";
 
-import type { ColumnDef } from "@tanstack/react-table"
-import { Button } from "@/components/ui/button"
-import { ArrowUpDown, MoreHorizontal, User, Eye, GraduationCap, History, FileDown, TrendingUp, TrendingDown, Minus } from "lucide-react"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { getDwcTextClass, getDwcBadgeClass } from "@/lib/utils/performance-color"
-import { cn } from "@/lib/utils"
+import type { ColumnDef } from "@tanstack/react-table";
+import {
+  ArrowUpDown,
+  Eye,
+  FileDown,
+  GraduationCap,
+  History,
+  Minus,
+  MoreHorizontal,
+  TrendingDown,
+  TrendingUp,
+  User,
+} from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utils";
+import { getDwcBadgeClass, getDwcTextClass } from "@/lib/utils/performance-color";
 
 export interface DriversListDriver {
-  id: string
-  name: string
-  amazonId: string
-  dwcPercent: number
-  iadcPercent: number
-  daysActive: number
-  tier: "fantastic" | "great" | "fair" | "poor"
-  trend: number | null
+  id: string;
+  name: string;
+  amazonId: string;
+  dwcPercent: number;
+  iadcPercent: number;
+  daysActive: number;
+  tier: "fantastic" | "great" | "fair" | "poor";
+  trend: number | null;
 }
 
 interface ColumnsProps {
-  onViewDriver: (driverId: string) => void
-  onPlanCoaching?: (driverId: string) => void
-  periodMode: "week" | "day"
+  onViewDriver: (driverId: string) => void;
+  onPlanCoaching?: (driverId: string) => void;
+  periodMode: "week" | "day";
 }
 
 export const createColumns = ({
@@ -36,7 +53,7 @@ export const createColumns = ({
         <Button
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          className="h-8 px-2 -ml-2"
+          className="-ml-2 h-8 px-2"
         >
           Driver
           <ArrowUpDown className="ml-2 h-4 w-4" />
@@ -49,7 +66,7 @@ export const createColumns = ({
           </div>
           <div>
             <div className="font-medium text-card-foreground">{row.getValue("name")}</div>
-            <div className="font-mono text-xs text-muted-foreground">{row.original.amazonId}</div>
+            <div className="font-mono text-muted-foreground text-xs">{row.original.amazonId}</div>
           </div>
         </div>
       ),
@@ -69,12 +86,12 @@ export const createColumns = ({
         </div>
       ),
       cell: ({ row }) => {
-        const dwcPercent = row.original.dwcPercent
+        const dwcPercent = row.original.dwcPercent;
         return (
           <div className={cn("text-right font-semibold tabular-nums", getDwcTextClass(dwcPercent))}>
             {row.getValue("dwcPercent")}%
           </div>
-        )
+        );
       },
     },
     {
@@ -92,15 +109,15 @@ export const createColumns = ({
         </div>
       ),
       cell: ({ row }) => {
-        const trend = row.getValue("trend") as number | null
+        const trend = row.getValue("trend") as number | null;
         if (trend === null) {
-          return <span className="text-sm text-muted-foreground text-right block">—</span>
+          return <span className="block text-right text-muted-foreground text-sm">—</span>;
         }
         return (
           <span
             className={cn(
-              "inline-flex items-center justify-end text-sm font-medium w-full tabular-nums",
-              trend > 0 ? "text-emerald-400" : trend < 0 ? "text-red-400" : "text-muted-foreground"
+              "inline-flex w-full items-center justify-end font-medium text-sm tabular-nums",
+              trend > 0 ? "text-emerald-400" : trend < 0 ? "text-red-400" : "text-muted-foreground",
             )}
           >
             {trend > 0 ? (
@@ -110,14 +127,15 @@ export const createColumns = ({
             ) : (
               <Minus className="mr-1 h-3 w-3" />
             )}
-            {trend > 0 ? "+" : ""}{trend.toFixed(1)}
+            {trend > 0 ? "+" : ""}
+            {trend.toFixed(1)}
           </span>
-        )
+        );
       },
       sortingFn: (a, b) => {
-        const aTrend = a.original.trend ?? -Infinity
-        const bTrend = b.original.trend ?? -Infinity
-        return aTrend - bTrend
+        const aTrend = a.original.trend ?? -Infinity;
+        const bTrend = b.original.trend ?? -Infinity;
+        return aTrend - bTrend;
       },
     },
     {
@@ -135,12 +153,10 @@ export const createColumns = ({
         </div>
       ),
       cell: ({ row }) => (
-        <div className="text-right font-medium text-card-foreground tabular-nums">
-          {row.getValue("iadcPercent")}%
-        </div>
+        <div className="text-right font-medium text-card-foreground tabular-nums">{row.getValue("iadcPercent")}%</div>
       ),
     },
-  ]
+  ];
 
   // Add daysActive column only for week mode
   if (periodMode === "week") {
@@ -159,11 +175,9 @@ export const createColumns = ({
         </div>
       ),
       cell: ({ row }) => (
-        <div className="text-center text-card-foreground tabular-nums">
-          {row.getValue("daysActive")}/7
-        </div>
+        <div className="text-center text-card-foreground tabular-nums">{row.getValue("daysActive")}/7</div>
       ),
-    })
+    });
   }
 
   // Add DWC badge and actions columns
@@ -173,36 +187,46 @@ export const createColumns = ({
       id: "dwcBadge",
       header: "DWC",
       cell: ({ row }) => {
-        const dwcPercent = row.original.dwcPercent
+        const dwcPercent = row.original.dwcPercent;
         return (
           <div className="text-center">
             <span
               className={cn(
-                "inline-flex items-center justify-center rounded-full px-2.5 py-0.5 text-xs font-medium tabular-nums",
-                getDwcBadgeClass(dwcPercent)
+                "inline-flex items-center justify-center rounded-full px-2.5 py-0.5 font-medium text-xs tabular-nums",
+                getDwcBadgeClass(dwcPercent),
               )}
             >
               {dwcPercent.toFixed(1)}%
             </span>
           </div>
-        )
+        );
       },
       filterFn: (row, _id, value) => {
-        if (value === "all") return true
-        const dwc = row.original.dwcPercent
+        if (value === "all") return true;
+        const dwc = row.original.dwcPercent;
         // Filter by DWC% ranges
         switch (value) {
-          case "above95": return dwc >= 95
-          case "pct90to95": return dwc >= 90 && dwc < 95
-          case "pct85to90": return dwc >= 85 && dwc < 90
-          case "pct80to85": return dwc >= 80 && dwc < 85
-          case "below80": return dwc < 80
+          case "above95":
+            return dwc >= 95;
+          case "pct90to95":
+            return dwc >= 90 && dwc < 95;
+          case "pct85to90":
+            return dwc >= 85 && dwc < 90;
+          case "pct80to85":
+            return dwc >= 80 && dwc < 85;
+          case "below80":
+            return dwc < 80;
           // Legacy tier filters for backward compat
-          case "fantastic": return dwc >= 95
-          case "great": return dwc >= 90 && dwc < 95
-          case "fair": return dwc >= 88 && dwc < 90
-          case "poor": return dwc < 88
-          default: return true
+          case "fantastic":
+            return dwc >= 95;
+          case "great":
+            return dwc >= 90 && dwc < 95;
+          case "fair":
+            return dwc >= 88 && dwc < 90;
+          case "poor":
+            return dwc < 88;
+          default:
+            return true;
         }
       },
     },
@@ -237,8 +261,8 @@ export const createColumns = ({
           </DropdownMenuContent>
         </DropdownMenu>
       ),
-    }
-  )
+    },
+  );
 
-  return columns
-}
+  return columns;
+};

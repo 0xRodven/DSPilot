@@ -1,57 +1,56 @@
-"use client"
+"use client";
 
-import { useState, useMemo } from "react"
-import { useQuery } from "convex/react"
-import { api } from "@convex/_generated/api"
-import { useDashboardStore } from "@/lib/store"
-import { useFilters } from "@/lib/filters"
-import { startOfWeek, endOfWeek, format } from "date-fns"
-import { fr } from "date-fns/locale"
-import { getDateFromWeek } from "@/lib/utils/time-context"
-import { MessageSquare } from "lucide-react"
-import { Card, CardContent } from "@/components/ui/card"
-import { Skeleton } from "@/components/ui/skeleton"
-import { DataTable } from "@/components/coaching/recaps/data-table"
-import { createColumns, type DriverComparison } from "@/components/coaching/recaps/columns"
-import { RecapModal } from "@/components/coaching/recaps/RecapModal"
+import { useMemo, useState } from "react";
+
+import { api } from "@convex/_generated/api";
+import { useQuery } from "convex/react";
+import { endOfWeek, format, startOfWeek } from "date-fns";
+import { fr } from "date-fns/locale";
+import { MessageSquare } from "lucide-react";
+
+import { createColumns, type DriverComparison } from "@/components/coaching/recaps/columns";
+import { DataTable } from "@/components/coaching/recaps/data-table";
+import { RecapModal } from "@/components/coaching/recaps/RecapModal";
+import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useFilters } from "@/lib/filters";
+import { useDashboardStore } from "@/lib/store";
+import { getDateFromWeek } from "@/lib/utils/time-context";
 
 export default function RecapsPage() {
-  const { selectedStation } = useDashboardStore()
-  const { year, weekNum } = useFilters()
+  const { selectedStation } = useDashboardStore();
+  const { year, weekNum } = useFilters();
 
   // Get station from Convex - skip if no code yet (prevents race condition on navigation)
   const station = useQuery(
     api.stations.getStationByCode,
-    selectedStation.code ? { code: selectedStation.code } : "skip"
-  )
+    selectedStation.code ? { code: selectedStation.code } : "skip",
+  );
 
   // Get weekly comparison data
   const comparisons = useQuery(
     api.stats.getWeeklyComparison,
-    station ? { stationId: station._id, year, week: weekNum } : "skip"
-  )
+    station ? { stationId: station._id, year, week: weekNum } : "skip",
+  );
 
   // State
-  const [selectedDriver, setSelectedDriver] = useState<DriverComparison | null>(null)
-  const [modalOpen, setModalOpen] = useState(false)
+  const [selectedDriver, setSelectedDriver] = useState<DriverComparison | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
 
   // Week date range - compute from year/week
-  const selectedDate = getDateFromWeek(year, weekNum)
-  const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 })
-  const weekEnd = endOfWeek(selectedDate, { weekStartsOn: 1 })
-  const weekRange = `${format(weekStart, "d", { locale: fr })} - ${format(weekEnd, "d MMM", { locale: fr })}`
+  const selectedDate = getDateFromWeek(year, weekNum);
+  const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 });
+  const weekEnd = endOfWeek(selectedDate, { weekStartsOn: 1 });
+  const weekRange = `${format(weekStart, "d", { locale: fr })} - ${format(weekEnd, "d MMM", { locale: fr })}`;
 
   // Handle generate single
   const handleGenerateRecap = (driver: DriverComparison) => {
-    setSelectedDriver(driver)
-    setModalOpen(true)
-  }
+    setSelectedDriver(driver);
+    setModalOpen(true);
+  };
 
   // Create columns with callback
-  const columns = useMemo(
-    () => createColumns(handleGenerateRecap),
-    []
-  )
+  const columns = useMemo(() => createColumns(handleGenerateRecap), [handleGenerateRecap]);
 
   // Loading state
   if (!station || comparisons === undefined) {
@@ -62,8 +61,8 @@ export default function RecapsPage() {
             <div className="flex items-center gap-3">
               <MessageSquare className="h-8 w-8 text-primary" />
               <div>
-                <h1 className="text-2xl font-bold text-foreground">Recapitulatifs</h1>
-                <p className="text-sm text-muted-foreground">Chargement...</p>
+                <h1 className="font-bold text-2xl text-foreground">Recapitulatifs</h1>
+                <p className="text-muted-foreground text-sm">Chargement...</p>
               </div>
             </div>
           </div>
@@ -73,7 +72,7 @@ export default function RecapsPage() {
           </div>
         </div>
       </main>
-    )
+    );
   }
 
   return (
@@ -84,8 +83,8 @@ export default function RecapsPage() {
           <div className="flex items-center gap-3">
             <MessageSquare className="h-8 w-8 text-primary" />
             <div>
-              <h1 className="text-2xl font-bold text-foreground">Recapitulatifs Hebdomadaires</h1>
-              <p className="text-sm text-muted-foreground">
+              <h1 className="font-bold text-2xl text-foreground">Recapitulatifs Hebdomadaires</h1>
+              <p className="text-muted-foreground text-sm">
                 Semaine {weekNum} ({weekRange})
               </p>
             </div>
@@ -101,12 +100,7 @@ export default function RecapsPage() {
       </div>
 
       {/* Modal */}
-      <RecapModal
-        open={modalOpen}
-        onOpenChange={setModalOpen}
-        driver={selectedDriver}
-        week={weekNum}
-      />
+      <RecapModal open={modalOpen} onOpenChange={setModalOpen} driver={selectedDriver} week={weekNum} />
     </main>
-  )
+  );
 }

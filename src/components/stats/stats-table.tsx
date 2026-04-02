@@ -1,13 +1,6 @@
 "use client";
 
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 
 interface StatsTableData {
@@ -69,23 +62,16 @@ export function StatsTable({ data }: StatsTableProps) {
   }
 
   return (
-    <div className="rounded-lg border overflow-hidden">
+    <div className="overflow-hidden rounded-lg border">
       <div className="overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow className="bg-muted/50">
-              <TableHead className="sticky left-0 bg-muted/50 z-10 min-w-[250px]">
-                Métrique
-              </TableHead>
+              <TableHead className="sticky left-0 z-10 min-w-[250px] bg-muted/50">Métrique</TableHead>
               {data.weeks.map((week) => (
-                <TableHead
-                  key={week.key}
-                  className="text-center min-w-[100px]"
-                >
+                <TableHead key={week.key} className="min-w-[100px] text-center">
                   <div className="font-medium">S{week.week}</div>
-                  <div className="text-xs text-muted-foreground font-normal">
-                    {week.year}
-                  </div>
+                  <div className="font-normal text-muted-foreground text-xs">{week.year}</div>
                 </TableHead>
               ))}
             </TableRow>
@@ -96,35 +82,20 @@ export function StatsTable({ data }: StatsTableProps) {
               const isKey = KEY_METRICS.includes(metricName);
 
               return (
-                <TableRow
-                  key={metricName}
-                  className={cn(
-                    isKey && "bg-primary/5",
-                    "hover:bg-muted/50"
-                  )}
-                >
+                <TableRow key={metricName} className={cn(isKey && "bg-primary/5", "hover:bg-muted/50")}>
                   <TableCell
-                    className={cn(
-                      "sticky left-0 bg-background z-10 font-medium",
-                      isKey && "bg-primary/5 text-primary"
-                    )}
+                    className={cn("sticky left-0 z-10 bg-background font-medium", isKey && "bg-primary/5 text-primary")}
                   >
                     {metricName}
                   </TableCell>
                   {data.weeks.map((week) => {
                     const value = data.data[metricName]?.[week.key] || "-";
-                    const percentColor = isPercentage
-                      ? getPercentageColor(value)
-                      : "";
+                    const percentColor = isPercentage ? getPercentageColor(value) : "";
 
                     return (
                       <TableCell
                         key={week.key}
-                        className={cn(
-                          "text-center tabular-nums",
-                          percentColor,
-                          isKey && "font-medium"
-                        )}
+                        className={cn("text-center tabular-nums", percentColor, isKey && "font-medium")}
                       >
                         {value}
                       </TableCell>

@@ -1,8 +1,9 @@
 "use client";
 
 import Image from "next/image";
-import { useShallow } from "zustand/react/shallow";
+
 import { UserButton, useOrganization } from "@clerk/nextjs";
+import { useShallow } from "zustand/react/shallow";
 
 import {
   Sidebar,
@@ -40,16 +41,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <SidebarMenu>
           <SidebarMenuItem>
             <div className="flex items-center gap-2 px-2 py-1.5">
-              <Image
-                src="/logo/DSPilot_Icon.png"
-                alt="DSPilot"
-                width={32}
-                height={32}
-                className="shrink-0"
-              />
-              <span className="font-semibold text-xl mt-1.5 group-data-[collapsible=icon]:hidden">
-                DSPilot
-              </span>
+              <Image src="/logo/DSPilot_Icon.png" alt="DSPilot" width={32} height={32} className="shrink-0" />
+              <span className="mt-1.5 font-semibold text-xl group-data-[collapsible=icon]:hidden">DSPilot</span>
             </div>
           </SidebarMenuItem>
         </SidebarMenu>

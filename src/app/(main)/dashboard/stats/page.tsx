@@ -1,27 +1,22 @@
 "use client";
 
 import { useCallback } from "react";
+
 import { useOrganization } from "@clerk/nextjs";
-import { useQuery, useMutation } from "convex/react";
 import { api } from "@convex/_generated/api";
-import { useDashboardStore } from "@/lib/store";
+import type { Id } from "@convex/_generated/dataModel";
+import { useMutation, useQuery } from "convex/react";
 import { BarChart3, Database, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import type { Id } from "@convex/_generated/dataModel";
-import { isValidConvexId } from "@/lib/utils";
 
 import { StatsDropzone } from "@/components/stats/stats-dropzone";
 import { StatsTable } from "@/components/stats/stats-table";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { DeliveryMetricData } from "@/lib/parser/delivery-overview-csv";
+import { useDashboardStore } from "@/lib/store";
+import { isValidConvexId } from "@/lib/utils";
 
 export default function StatsPage() {
   const { organization } = useOrganization();
@@ -33,7 +28,7 @@ export default function StatsPage() {
   // Query for existing stats - only when we have a valid station
   const statsData = useQuery(
     api.stationDeliveryStats.getDeliveryStatsByStation,
-    hasValidStation ? { stationId: selectedStation!.id as Id<"stations"> } : "skip"
+    hasValidStation ? { stationId: selectedStation?.id as Id<"stations"> } : "skip",
   );
 
   // Mutations
@@ -58,11 +53,9 @@ export default function StatsPage() {
         })),
       });
 
-      toast.success(
-        `${result.inserted} nouvelles entrées, ${result.updated} mises à jour`
-      );
+      toast.success(`${result.inserted} nouvelles entrées, ${result.updated} mises à jour`);
     },
-    [selectedStation, bulkUpsert]
+    [selectedStation, bulkUpsert],
   );
 
   // Handle delete all
@@ -96,14 +89,12 @@ export default function StatsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-primary/10">
+          <div className="rounded-lg bg-primary/10 p-2">
             <BarChart3 className="h-6 w-6 text-primary" />
           </div>
           <div>
-            <h1 className="text-2xl font-semibold">{orgName} Stats</h1>
-            <p className="text-sm text-muted-foreground">
-              Statistiques Delivery Overview par semaine
-            </p>
+            <h1 className="font-semibold text-2xl">{orgName} Stats</h1>
+            <p className="text-muted-foreground text-sm">Statistiques Delivery Overview par semaine</p>
           </div>
         </div>
         {hasData && (
@@ -111,9 +102,9 @@ export default function StatsPage() {
             variant="outline"
             size="sm"
             onClick={handleDeleteAll}
-            className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
+            className="text-red-400 hover:bg-red-500/10 hover:text-red-300"
           >
-            <Trash2 className="h-4 w-4 mr-2" />
+            <Trash2 className="mr-2 h-4 w-4" />
             Tout supprimer
           </Button>
         )}
@@ -140,9 +131,7 @@ export default function StatsPage() {
               Statistiques ({statsData.weeks.length} semaine
               {statsData.weeks.length > 1 ? "s" : ""})
             </CardTitle>
-            <CardDescription>
-              {statsData.metrics.length} métriques importées
-            </CardDescription>
+            <CardDescription>{statsData.metrics.length} métriques importées</CardDescription>
           </CardHeader>
           <CardContent className="p-0">
             <StatsTable data={statsData} />
@@ -151,13 +140,12 @@ export default function StatsPage() {
       ) : (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-            <div className="p-4 rounded-full bg-muted mb-4">
+            <div className="mb-4 rounded-full bg-muted p-4">
               <Database className="h-8 w-8 text-muted-foreground" />
             </div>
-            <h3 className="text-lg font-medium mb-2">Aucune donnée</h3>
-            <p className="text-sm text-muted-foreground max-w-md">
-              Importez un fichier CSV "Delivery Overview" pour commencer à suivre vos
-              statistiques de livraison.
+            <h3 className="mb-2 font-medium text-lg">Aucune donnée</h3>
+            <p className="max-w-md text-muted-foreground text-sm">
+              Importez un fichier CSV "Delivery Overview" pour commencer à suivre vos statistiques de livraison.
             </p>
           </CardContent>
         </Card>

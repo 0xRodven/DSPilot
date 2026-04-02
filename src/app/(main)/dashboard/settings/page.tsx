@@ -13,7 +13,7 @@ export default function SettingsPage() {
       <div className="p-6">
         {/* Page title */}
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-foreground">Paramètres</h1>
+          <h1 className="font-bold text-2xl text-foreground">Paramètres</h1>
         </div>
 
         {/* Tabs */}

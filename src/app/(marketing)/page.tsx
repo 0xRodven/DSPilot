@@ -1,30 +1,21 @@
-import type { Metadata } from "next"
+import type { Metadata } from "next";
 
-import { MaxWidthWrapper } from "@/components/global/max-width-wrapper"
-import { CTA } from "@/components/linkify/cta"
-import { FAQ } from "@/components/linkify/faq"
-import { Features } from "@/components/linkify/features"
-import { Footer } from "@/components/linkify/footer"
-import { Hero } from "@/components/linkify/hero"
-import { Navbar } from "@/components/linkify/navbar"
-import { Pricing } from "@/components/linkify/pricing"
-import { Process } from "@/components/linkify/process"
-import { Reviews } from "@/components/linkify/reviews"
+import { MaxWidthWrapper } from "@/components/global/max-width-wrapper";
+import { CTA } from "@/components/linkify/cta";
+import { FAQ } from "@/components/linkify/faq";
+import { Features } from "@/components/linkify/features";
+import { Footer } from "@/components/linkify/footer";
+import { Hero } from "@/components/linkify/hero";
+import { Navbar } from "@/components/linkify/navbar";
+import { Pricing } from "@/components/linkify/pricing";
+import { Process } from "@/components/linkify/process";
+import { Reviews } from "@/components/linkify/reviews";
 
 export const metadata: Metadata = {
   title: "DSPilot - Pilotez la performance de vos livreurs Amazon",
   description:
     "Dashboard temps réel, coaching intelligent, analyse des erreurs. La plateforme de gestion des performances pour les stations Amazon DSP.",
-  keywords: [
-    "Amazon DSP",
-    "livraison",
-    "performance",
-    "DWC",
-    "IADC",
-    "coaching",
-    "gestion",
-    "livreurs",
-  ],
+  keywords: ["Amazon DSP", "livraison", "performance", "DWC", "IADC", "coaching", "gestion", "livreurs"],
   openGraph: {
     title: "DSPilot - Pilotez la performance de vos livreurs Amazon",
     description:
@@ -32,7 +23,7 @@ export const metadata: Metadata = {
     type: "website",
     locale: "fr_FR",
   },
-}
+};
 
 export default function LandingPage() {
   return (
@@ -53,5 +44,5 @@ export default function LandingPage() {
       </main>
       <Footer />
     </div>
-  )
+  );
 }

@@ -1,57 +1,52 @@
-"use client"
+"use client";
 
-import * as React from "react"
+import * as React from "react";
+
 import {
   type ColumnDef,
-  type SortingState,
   flexRender,
   getCoreRowModel,
   getFilteredRowModel,
   getPaginationRowModel,
   getSortedRowModel,
+  type SortingState,
   useReactTable,
-} from "@tanstack/react-table"
+} from "@tanstack/react-table";
+import { Download, Search } from "lucide-react";
 
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Download, Search } from "lucide-react"
-import type { DriversListDriver } from "./columns"
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-type StatusFilter = "all" | "active" | "inactive"
+import type { DriversListDriver } from "./columns";
+
+type StatusFilter = "all" | "active" | "inactive";
 
 interface TierStat {
-  count: number
-  percentage: string
-  trend: number
+  count: number;
+  percentage: string;
+  trend: number;
 }
 
 interface TierStats {
-  fantastic: TierStat
-  great: TierStat
-  fair: TierStat
-  poor: TierStat
-  total: number
-  active: number
+  fantastic: TierStat;
+  great: TierStat;
+  fair: TierStat;
+  poor: TierStat;
+  total: number;
+  active: number;
 }
 
 interface DataTableProps {
-  columns: ColumnDef<DriversListDriver>[]
-  data: DriversListDriver[]
-  stats: TierStats
-  selectedTier: string
-  onTierChange: (tier: string) => void
-  periodMode: "week" | "day"
-  onRowClick: (driverId: string) => void
+  columns: ColumnDef<DriversListDriver>[];
+  data: DriversListDriver[];
+  stats: TierStats;
+  selectedTier: string;
+  onTierChange: (tier: string) => void;
+  periodMode: "week" | "day";
+  onRowClick: (driverId: string) => void;
 }
 
 export function DataTable({
@@ -63,42 +58,38 @@ export function DataTable({
   periodMode,
   onRowClick,
 }: DataTableProps) {
-  const [sorting, setSorting] = React.useState<SortingState>([
-    { id: "dwcPercent", desc: true }
-  ])
-  const [globalFilter, setGlobalFilter] = React.useState("")
-  const [statusFilter, setStatusFilter] = React.useState<StatusFilter>("all")
+  const [sorting, setSorting] = React.useState<SortingState>([{ id: "dwcPercent", desc: true }]);
+  const [globalFilter, setGlobalFilter] = React.useState("");
+  const [statusFilter, setStatusFilter] = React.useState<StatusFilter>("all");
 
   // Apply filters
   const filteredData = React.useMemo(() => {
-    let result = [...data]
+    let result = [...data];
 
     // Tier filter
     if (selectedTier !== "all") {
-      result = result.filter((d) => d.tier === selectedTier)
+      result = result.filter((d) => d.tier === selectedTier);
     }
 
     // Status filter (only for week mode)
     if (periodMode === "week") {
       if (statusFilter === "active") {
-        result = result.filter((d) => d.daysActive >= 5)
+        result = result.filter((d) => d.daysActive >= 5);
       } else if (statusFilter === "inactive") {
-        result = result.filter((d) => d.daysActive < 5)
+        result = result.filter((d) => d.daysActive < 5);
       }
     }
 
     // Global search filter
     if (globalFilter) {
-      const searchLower = globalFilter.toLowerCase()
+      const searchLower = globalFilter.toLowerCase();
       result = result.filter(
-        (d) =>
-          d.name.toLowerCase().includes(searchLower) ||
-          d.amazonId.toLowerCase().includes(searchLower)
-      )
+        (d) => d.name.toLowerCase().includes(searchLower) || d.amazonId.toLowerCase().includes(searchLower),
+      );
     }
 
-    return result
-  }, [data, selectedTier, statusFilter, globalFilter, periodMode])
+    return result;
+  }, [data, selectedTier, statusFilter, globalFilter, periodMode]);
 
   const table = useReactTable({
     data: filteredData,
@@ -116,18 +107,18 @@ export function DataTable({
         pageSize: 20,
       },
     },
-  })
+  });
 
   const handleExport = () => {
-    alert(`Export CSV des ${filteredData.length} drivers`)
-  }
+    alert(`Export CSV des ${filteredData.length} drivers`);
+  };
 
   return (
     <div className="space-y-4">
       {/* Toolbar */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <div className="relative max-w-md flex-1">
+          <Search className="-translate-y-1/2 absolute top-1/2 left-3 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Rechercher driver..."
             value={globalFilter}
@@ -138,10 +129,7 @@ export function DataTable({
 
         <div className="flex flex-wrap items-center gap-3">
           {periodMode === "week" && (
-            <Select
-              value={statusFilter}
-              onValueChange={(value: StatusFilter) => setStatusFilter(value)}
-            >
+            <Select value={statusFilter} onValueChange={(value: StatusFilter) => setStatusFilter(value)}>
               <SelectTrigger className="w-[120px]">
                 <SelectValue placeholder="Statut" />
               </SelectTrigger>
@@ -162,34 +150,34 @@ export function DataTable({
 
       {/* Tier Tabs */}
       <Tabs value={selectedTier} onValueChange={onTierChange}>
-        <TabsList className="h-auto flex-wrap bg-transparent p-0 gap-2">
+        <TabsList className="h-auto flex-wrap gap-2 bg-transparent p-0">
           <TabsTrigger
             value="all"
-            className="rounded-full border border-border bg-transparent px-4 py-1.5 data-[state=active]:bg-muted data-[state=active]:border-foreground/20"
+            className="rounded-full border border-border bg-transparent px-4 py-1.5 data-[state=active]:border-foreground/20 data-[state=active]:bg-muted"
           >
             Tous ({stats.total})
           </TabsTrigger>
           <TabsTrigger
             value="fantastic"
-            className="rounded-full border border-border bg-transparent px-4 py-1.5 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400 data-[state=active]:border-emerald-500/50"
+            className="rounded-full border border-border bg-transparent px-4 py-1.5 data-[state=active]:border-emerald-500/50 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400"
           >
             Fantastic ({stats.fantastic.count})
           </TabsTrigger>
           <TabsTrigger
             value="great"
-            className="rounded-full border border-border bg-transparent px-4 py-1.5 data-[state=active]:bg-blue-500/20 data-[state=active]:text-blue-400 data-[state=active]:border-blue-500/50"
+            className="rounded-full border border-border bg-transparent px-4 py-1.5 data-[state=active]:border-blue-500/50 data-[state=active]:bg-blue-500/20 data-[state=active]:text-blue-400"
           >
             Great ({stats.great.count})
           </TabsTrigger>
           <TabsTrigger
             value="fair"
-            className="rounded-full border border-border bg-transparent px-4 py-1.5 data-[state=active]:bg-amber-500/20 data-[state=active]:text-amber-400 data-[state=active]:border-amber-500/50"
+            className="rounded-full border border-border bg-transparent px-4 py-1.5 data-[state=active]:border-amber-500/50 data-[state=active]:bg-amber-500/20 data-[state=active]:text-amber-400"
           >
             Fair ({stats.fair.count})
           </TabsTrigger>
           <TabsTrigger
             value="poor"
-            className="rounded-full border border-border bg-transparent px-4 py-1.5 data-[state=active]:bg-red-500/20 data-[state=active]:text-red-400 data-[state=active]:border-red-500/50"
+            className="rounded-full border border-border bg-transparent px-4 py-1.5 data-[state=active]:border-red-500/50 data-[state=active]:bg-red-500/20 data-[state=active]:text-red-400"
           >
             Poor ({stats.poor.count})
           </TabsTrigger>
@@ -197,7 +185,7 @@ export function DataTable({
       </Tabs>
 
       {/* Table */}
-      <div className="rounded-md border overflow-x-auto">
+      <div className="overflow-x-auto rounded-md border">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
@@ -205,9 +193,7 @@ export function DataTable({
                 <TableHead className="w-12 text-muted-foreground">#</TableHead>
                 {headerGroup.headers.map((header) => (
                   <TableHead key={header.id} className="text-muted-foreground">
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(header.column.columnDef.header, header.getContext())}
+                    {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
                   </TableHead>
                 ))}
               </TableRow>
@@ -225,9 +211,7 @@ export function DataTable({
                     {table.getState().pagination.pageIndex * table.getState().pagination.pageSize + index + 1}
                   </TableCell>
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </TableCell>
+                    <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
                   ))}
                 </TableRow>
               ))
@@ -244,12 +228,11 @@ export function DataTable({
 
       {/* Pagination */}
       <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">
-          Affichage{" "}
-          {table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1}-
+        <p className="text-muted-foreground text-sm">
+          Affichage {table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1}-
           {Math.min(
             (table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize,
-            table.getRowModel().rows.length > 0 ? filteredData.length : 0
+            table.getRowModel().rows.length > 0 ? filteredData.length : 0,
           )}{" "}
           sur {filteredData.length} drivers
         </p>
@@ -264,18 +247,18 @@ export function DataTable({
           </Button>
           <div className="flex items-center gap-1">
             {Array.from({ length: Math.min(5, table.getPageCount()) }, (_, i) => {
-              const pageIndex = table.getState().pagination.pageIndex
-              const pageCount = table.getPageCount()
-              let pageNum: number
+              const pageIndex = table.getState().pagination.pageIndex;
+              const pageCount = table.getPageCount();
+              let pageNum: number;
 
               if (pageCount <= 5) {
-                pageNum = i
+                pageNum = i;
               } else if (pageIndex <= 2) {
-                pageNum = i
+                pageNum = i;
               } else if (pageIndex >= pageCount - 3) {
-                pageNum = pageCount - 5 + i
+                pageNum = pageCount - 5 + i;
               } else {
-                pageNum = pageIndex - 2 + i
+                pageNum = pageIndex - 2 + i;
               }
 
               return (
@@ -288,19 +271,14 @@ export function DataTable({
                 >
                   {pageNum + 1}
                 </Button>
-              )
+              );
             })}
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
-          >
+          <Button variant="outline" size="sm" onClick={() => table.nextPage()} disabled={!table.getCanNextPage()}>
             Suivant
           </Button>
         </div>
       </div>
     </div>
-  )
+  );
 }

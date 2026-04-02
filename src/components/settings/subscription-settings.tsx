@@ -1,10 +1,11 @@
-"use client"
+"use client";
 
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Badge } from "@/components/ui/badge"
-import { Rocket, Calendar, FileText, Download, Mail, Phone, CheckCircle } from "lucide-react"
+import { Calendar, CheckCircle, Download, FileText, Mail, Phone, Rocket } from "lucide-react";
+
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 const invoices = [
   {
@@ -31,7 +32,7 @@ const invoices = [
     amount: "2 490,00€",
     status: "paid",
   },
-]
+];
 
 export function SubscriptionSettings() {
   return (
@@ -48,14 +49,14 @@ export function SubscriptionSettings() {
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/20">
                 <Rocket className="h-5 w-5 text-primary" />
               </div>
-              <span className="text-xl font-bold">PERFORMANCE</span>
+              <span className="font-bold text-xl">PERFORMANCE</span>
             </div>
             <Badge variant="default" className="bg-tier-fantastic text-white">
               Actif
             </Badge>
           </div>
 
-          <div className="border-t border-border" />
+          <div className="border-border border-t" />
 
           {/* Monthly breakdown */}
           <div className="space-y-3">
@@ -69,7 +70,7 @@ export function SubscriptionSettings() {
                 <span className="text-muted-foreground">52 drivers actifs × 25€</span>
                 <span>1 300,00€</span>
               </div>
-              <div className="border-t border-border my-2" />
+              <div className="my-2 border-border border-t" />
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Total HT</span>
                 <span>1 899,00€</span>
@@ -78,7 +79,7 @@ export function SubscriptionSettings() {
                 <span className="text-muted-foreground">TVA (20%)</span>
                 <span>379,80€</span>
               </div>
-              <div className="border-t border-border my-2" />
+              <div className="my-2 border-border border-t" />
               <div className="flex justify-between font-semibold text-base">
                 <span>Total TTC</span>
                 <span>2 278,80€/mois</span>
@@ -86,7 +87,7 @@ export function SubscriptionSettings() {
             </div>
           </div>
 
-          <div className="border-t border-border" />
+          <div className="border-border border-t" />
 
           {/* Dates */}
           <div className="space-y-2 text-sm">
@@ -102,7 +103,7 @@ export function SubscriptionSettings() {
             </div>
           </div>
 
-          <div className="border-t border-border" />
+          <div className="border-border border-t" />
 
           {/* Features */}
           <div className="space-y-2">
@@ -193,5 +194,5 @@ export function SubscriptionSettings() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

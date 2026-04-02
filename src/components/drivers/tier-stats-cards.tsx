@@ -1,42 +1,43 @@
-"use client"
+"use client";
 
-import { Card, CardContent } from "@/components/ui/card"
-import { TrendingUp, TrendingDown, Minus } from "lucide-react"
-import { cn } from "@/lib/utils"
+import { Minus, TrendingDown, TrendingUp } from "lucide-react";
+
+import { Card, CardContent } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 interface DwcRangeStat {
-  count: number
-  percentage: string
-  trend: number
+  count: number;
+  percentage: string;
+  trend: number;
 }
 
 interface DwcRangeStats {
-  above95: DwcRangeStat
-  pct90to95: DwcRangeStat
-  pct85to90: DwcRangeStat
-  pct80to85: DwcRangeStat
-  below80: DwcRangeStat
-  total: number
-  active: number
+  above95: DwcRangeStat;
+  pct90to95: DwcRangeStat;
+  pct85to90: DwcRangeStat;
+  pct80to85: DwcRangeStat;
+  below80: DwcRangeStat;
+  total: number;
+  active: number;
 }
 
 // Backward compatibility: convert tier stats to DWC range stats
 interface LegacyTierStats {
-  fantastic: DwcRangeStat
-  great: DwcRangeStat
-  fair: DwcRangeStat
-  poor: DwcRangeStat
-  total: number
-  active: number
+  fantastic: DwcRangeStat;
+  great: DwcRangeStat;
+  fair: DwcRangeStat;
+  poor: DwcRangeStat;
+  total: number;
+  active: number;
 }
 
-type StatsInput = DwcRangeStats | LegacyTierStats
+type StatsInput = DwcRangeStats | LegacyTierStats;
 
 interface DwcRangeStatsCardsProps {
-  stats: StatsInput
-  selectedTier: string
-  onTierSelect: (tier: string) => void
-  comparisonLabel?: string
+  stats: StatsInput;
+  selectedTier: string;
+  onTierSelect: (tier: string) => void;
+  comparisonLabel?: string;
 }
 
 const dwcRangeConfig = {
@@ -75,17 +76,17 @@ const dwcRangeConfig = {
     bgHover: "hover:bg-red-500/10",
     bgSelected: "bg-red-500/10",
   },
-}
+};
 
 // Helper to check if stats are legacy tier stats
 function isLegacyTierStats(stats: StatsInput): stats is LegacyTierStats {
-  return "fantastic" in stats
+  return "fantastic" in stats;
 }
 
 // Convert legacy tier stats to DWC range stats
 function convertToRangeStats(stats: StatsInput): DwcRangeStats {
   if (!isLegacyTierStats(stats)) {
-    return stats
+    return stats;
   }
 
   // Map tier stats to range stats (best approximation)
@@ -97,11 +98,16 @@ function convertToRangeStats(stats: StatsInput): DwcRangeStats {
     below80: stats.poor,
     total: stats.total,
     active: stats.active,
-  }
+  };
 }
 
-export function TierStatsCards({ stats, selectedTier, onTierSelect, comparisonLabel = "vs S49" }: DwcRangeStatsCardsProps) {
-  const rangeStats = convertToRangeStats(stats)
+export function TierStatsCards({
+  stats,
+  selectedTier,
+  onTierSelect,
+  comparisonLabel = "vs S49",
+}: DwcRangeStatsCardsProps) {
+  const rangeStats = convertToRangeStats(stats);
 
   const ranges = [
     { key: "above95", ...dwcRangeConfig.above95, ...rangeStats.above95 },
@@ -109,30 +115,35 @@ export function TierStatsCards({ stats, selectedTier, onTierSelect, comparisonLa
     { key: "pct85to90", ...dwcRangeConfig.pct85to90, ...rangeStats.pct85to90 },
     { key: "pct80to85", ...dwcRangeConfig.pct80to85, ...rangeStats.pct80to85 },
     { key: "below80", ...dwcRangeConfig.below80, ...rangeStats.below80 },
-  ]
+  ];
 
   // Map legacy tier filter keys to new range keys for backward compatibility
   const normalizeFilterKey = (key: string) => {
     switch (key) {
-      case "fantastic": return "above95"
-      case "great": return "pct90to95"
-      case "fair": return "pct85to90"
-      case "poor": return "below80"
-      default: return key
+      case "fantastic":
+        return "above95";
+      case "great":
+        return "pct90to95";
+      case "fair":
+        return "pct85to90";
+      case "poor":
+        return "below80";
+      default:
+        return key;
     }
-  }
+  };
 
-  const normalizedSelectedTier = normalizeFilterKey(selectedTier)
+  const normalizedSelectedTier = normalizeFilterKey(selectedTier);
 
   return (
     <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
       {ranges.map((range) => {
-        const isSelected = normalizedSelectedTier === range.key
+        const isSelected = normalizedSelectedTier === range.key;
         return (
           <Card
             key={range.key}
             className={cn(
-              "cursor-pointer border-l-4 border-border bg-card transition-all",
+              "cursor-pointer border-border border-l-4 bg-card transition-all",
               range.borderColor,
               range.bgHover,
               isSelected && range.bgSelected,
@@ -141,7 +152,7 @@ export function TierStatsCards({ stats, selectedTier, onTierSelect, comparisonLa
           >
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
-                <span className={cn("text-sm font-medium", range.color)}>{range.label}</span>
+                <span className={cn("font-medium text-sm", range.color)}>{range.label}</span>
                 {range.trend !== 0 && (
                   <span
                     className={cn("flex items-center text-xs", range.trend > 0 ? "text-emerald-400" : "text-red-400")}
@@ -156,21 +167,21 @@ export function TierStatsCards({ stats, selectedTier, onTierSelect, comparisonLa
                   </span>
                 )}
                 {range.trend === 0 && (
-                  <span className="flex items-center text-xs text-muted-foreground">
+                  <span className="flex items-center text-muted-foreground text-xs">
                     <Minus className="mr-0.5 h-3 w-3" />
                     {comparisonLabel}
                   </span>
                 )}
               </div>
               <div className="mt-2">
-                <span className="text-3xl font-bold text-card-foreground">{range.count}</span>
-                <span className="ml-2 text-sm text-muted-foreground">drivers</span>
+                <span className="font-bold text-3xl text-card-foreground">{range.count}</span>
+                <span className="ml-2 text-muted-foreground text-sm">drivers</span>
               </div>
-              <div className="mt-1 text-sm text-muted-foreground">{range.percentage}%</div>
+              <div className="mt-1 text-muted-foreground text-sm">{range.percentage}%</div>
             </CardContent>
           </Card>
-        )
+        );
       })}
     </div>
-  )
+  );
 }

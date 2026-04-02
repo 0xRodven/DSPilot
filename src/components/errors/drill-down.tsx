@@ -1,25 +1,26 @@
-"use client"
+"use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { cn } from "@/lib/utils"
-import { formatNumber } from "@/lib/calculations"
-import { TrendingUp, TrendingDown, Minus } from "lucide-react"
-import type { ErrorSubcategory } from "@/lib/types"
+import { Minus, TrendingDown, TrendingUp } from "lucide-react";
+
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { formatNumber } from "@/lib/calculations";
+import type { ErrorSubcategory } from "@/lib/types";
+import { cn } from "@/lib/utils";
 
 interface DrillDownProps {
-  subcategories: ErrorSubcategory[]
-  selectedSubcategory: string
-  onSubcategoryChange: (name: string) => void
+  subcategories: ErrorSubcategory[];
+  selectedSubcategory: string;
+  onSubcategoryChange: (name: string) => void;
 }
 
 export function DrillDown({ subcategories, selectedSubcategory, onSubcategoryChange }: DrillDownProps) {
-  const selected = subcategories.find((s) => s.name === selectedSubcategory) || subcategories[0]
+  const selected = subcategories.find((s) => s.name === selectedSubcategory) || subcategories[0];
 
   return (
     <Card className="border-border bg-card">
       <CardHeader className="pb-3">
-        <CardTitle className="text-base font-medium">Drill-Down par sous-catégorie</CardTitle>
+        <CardTitle className="font-medium text-base">Drill-Down par sous-catégorie</CardTitle>
         <Select value={selectedSubcategory} onValueChange={onSubcategoryChange}>
           <SelectTrigger className="mt-2 w-full bg-background">
             <SelectValue />
@@ -33,8 +34,8 @@ export function DrillDown({ subcategories, selectedSubcategory, onSubcategoryCha
           </SelectContent>
         </Select>
         <div className="mt-3">
-          <p className="text-lg font-bold">{formatNumber(selected.count)} erreurs</p>
-          <p className="text-sm text-muted-foreground">{selected.percentage}% du total</p>
+          <p className="font-bold text-lg">{formatNumber(selected.count)} erreurs</p>
+          <p className="text-muted-foreground text-sm">{selected.percentage}% du total</p>
           <div className="mt-1 flex items-center gap-1">
             {selected.trend > 0 ? (
               <TrendingUp className="h-3 w-3 text-red-400" />
@@ -62,22 +63,22 @@ export function DrillDown({ subcategories, selectedSubcategory, onSubcategoryCha
       <CardContent>
         {selected.locations && selected.locations.length > 0 ? (
           <div className="space-y-4">
-            <p className="text-sm font-medium text-muted-foreground">Par localisation de livraison :</p>
+            <p className="font-medium text-muted-foreground text-sm">Par localisation de livraison :</p>
             {selected.locations.map((location) => {
-              const maxCount = Math.max(...selected.locations!.map((l) => l.count))
-              const widthPercent = (location.count / maxCount) * 100
+              const maxCount = Math.max(...selected.locations?.map((l) => l.count));
+              const widthPercent = (location.count / maxCount) * 100;
 
               return (
                 <div key={location.name} className="space-y-1">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">{location.name}</span>
-                    <span className="text-sm text-muted-foreground">{formatNumber(location.count)}</span>
+                    <span className="font-medium text-sm">{location.name}</span>
+                    <span className="text-muted-foreground text-sm">{formatNumber(location.count)}</span>
                   </div>
                   <div className="h-2 w-full overflow-hidden rounded bg-muted">
                     <div className="h-full rounded bg-primary transition-all" style={{ width: `${widthPercent}%` }} />
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-muted-foreground">{location.percentage}%</span>
+                    <span className="text-muted-foreground text-xs">{location.percentage}%</span>
                     <span
                       className={cn(
                         "text-xs",
@@ -93,15 +94,15 @@ export function DrillDown({ subcategories, selectedSubcategory, onSubcategoryCha
                     </span>
                   </div>
                 </div>
-              )
+              );
             })}
           </div>
         ) : (
-          <p className="text-sm text-muted-foreground">
+          <p className="text-muted-foreground text-sm">
             Pas de données de localisation disponibles pour cette catégorie.
           </p>
         )}
       </CardContent>
     </Card>
-  )
+  );
 }

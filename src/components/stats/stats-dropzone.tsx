@@ -1,15 +1,17 @@
 "use client";
 
 import type React from "react";
-import { useState, useCallback } from "react";
-import { FileSpreadsheet, X, Check, BarChart3, AlertCircle, Upload, Loader2, Calendar } from "lucide-react";
+import { useCallback, useState } from "react";
+
+import { AlertCircle, BarChart3, Calendar, Check, FileSpreadsheet, Loader2, Upload, X } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 import {
-  parseDeliveryOverviewCsvFile,
   type DeliveryMetricData,
   type DetectedWeek,
+  parseDeliveryOverviewCsvFile,
 } from "@/lib/parser/delivery-overview-csv";
+import { cn } from "@/lib/utils";
 
 interface StatsDropzoneProps {
   onImport: (metrics: DeliveryMetricData[]) => Promise<void>;
@@ -47,9 +49,7 @@ export function StatsDropzone({ onImport, disabled }: StatsDropzoneProps) {
       setState("preview");
     } catch (error) {
       setState("error");
-      setErrorMessage(
-        error instanceof Error ? error.message : "Erreur de lecture du fichier"
-      );
+      setErrorMessage(error instanceof Error ? error.message : "Erreur de lecture du fichier");
     }
   };
 
@@ -59,9 +59,7 @@ export function StatsDropzone({ onImport, disabled }: StatsDropzoneProps) {
 
     if (!validExtensions.includes(extension)) {
       setState("error");
-      setErrorMessage(
-        `Format non supporté: ${file.name}. Seuls les fichiers .csv sont acceptés.`
-      );
+      setErrorMessage(`Format non supporté: ${file.name}. Seuls les fichiers .csv sont acceptés.`);
       return false;
     }
 
@@ -74,21 +72,27 @@ export function StatsDropzone({ onImport, disabled }: StatsDropzoneProps) {
     return true;
   };
 
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (state !== "importing") {
-      setState("drag-over");
-    }
-  }, [state]);
+  const handleDragOver = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (state !== "importing") {
+        setState("drag-over");
+      }
+    },
+    [state],
+  );
 
-  const handleDragLeave = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (state !== "importing") {
-      setState("idle");
-    }
-  }, [state]);
+  const handleDragLeave = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (state !== "importing") {
+        setState("idle");
+      }
+    },
+    [state],
+  );
 
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
@@ -102,7 +106,7 @@ export function StatsDropzone({ onImport, disabled }: StatsDropzoneProps) {
         processFile(file);
       }
     },
-    [state]
+    [state, processFile, validateFile],
   );
 
   const handleFileInput = useCallback(
@@ -116,7 +120,7 @@ export function StatsDropzone({ onImport, disabled }: StatsDropzoneProps) {
       // Reset input
       e.target.value = "";
     },
-    [state]
+    [state, processFile, validateFile],
   );
 
   const handleReset = () => {
@@ -135,9 +139,7 @@ export function StatsDropzone({ onImport, disabled }: StatsDropzoneProps) {
       setState("success");
     } catch (error) {
       setState("error");
-      setErrorMessage(
-        error instanceof Error ? error.message : "Erreur lors de l'import"
-      );
+      setErrorMessage(error instanceof Error ? error.message : "Erreur lors de l'import");
     }
   };
 
@@ -150,13 +152,13 @@ export function StatsDropzone({ onImport, disabled }: StatsDropzoneProps) {
       <div className="rounded-lg border border-emerald-500/50 bg-emerald-500/10 p-4">
         <div className="flex items-start justify-between">
           <div className="flex items-start gap-3">
-            <div className="p-2 rounded-lg bg-emerald-500/20">
+            <div className="rounded-lg bg-emerald-500/20 p-2">
               <Check className="h-4 w-4 text-emerald-400" />
             </div>
             <div>
               <p className="font-medium text-emerald-400">Import réussi !</p>
-              <p className="text-sm text-muted-foreground">{filename}</p>
-              <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
+              <p className="text-muted-foreground text-sm">{filename}</p>
+              <div className="mt-2 flex items-center gap-4 text-muted-foreground text-sm">
                 <span className="flex items-center gap-1">
                   <Calendar className="h-4 w-4" />
                   {detectedWeeks.length} semaine{detectedWeeks.length > 1 ? "s" : ""}
@@ -168,11 +170,7 @@ export function StatsDropzone({ onImport, disabled }: StatsDropzoneProps) {
               </div>
             </div>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleReset}
-          >
+          <Button variant="outline" size="sm" onClick={handleReset}>
             Nouveau fichier
           </Button>
         </div>
@@ -186,13 +184,13 @@ export function StatsDropzone({ onImport, disabled }: StatsDropzoneProps) {
       <div className="rounded-lg border border-blue-500/30 bg-blue-500/5 p-4">
         <div className="flex items-start justify-between">
           <div className="flex items-start gap-3">
-            <div className="p-2 rounded-lg bg-blue-500/20">
+            <div className="rounded-lg bg-blue-500/20 p-2">
               <FileSpreadsheet className="h-4 w-4 text-blue-400" />
             </div>
             <div>
               <p className="font-medium text-blue-400">Fichier prêt à importer</p>
-              <p className="text-sm text-muted-foreground">{filename}</p>
-              <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
+              <p className="text-muted-foreground text-sm">{filename}</p>
+              <div className="mt-2 flex items-center gap-4 text-muted-foreground text-sm">
                 <span className="flex items-center gap-1">
                   <Calendar className="h-4 w-4" />
                   {detectedWeeks.map((w) => w.label).join(", ")}
@@ -203,20 +201,16 @@ export function StatsDropzone({ onImport, disabled }: StatsDropzoneProps) {
                 </span>
               </div>
               {warnings.length > 0 && (
-                <div className="mt-2 text-xs text-amber-400">
-                  <AlertCircle className="h-3 w-3 inline mr-1" />
+                <div className="mt-2 text-amber-400 text-xs">
+                  <AlertCircle className="mr-1 inline h-3 w-3" />
                   {warnings.length} avertissement{warnings.length > 1 ? "s" : ""}
                 </div>
               )}
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Button
-              size="sm"
-              onClick={handleConfirmImport}
-              disabled={disabled}
-            >
-              <Upload className="h-4 w-4 mr-2" />
+            <Button size="sm" onClick={handleConfirmImport} disabled={disabled}>
+              <Upload className="mr-2 h-4 w-4" />
               Importer
             </Button>
             <Button
@@ -241,7 +235,7 @@ export function StatsDropzone({ onImport, disabled }: StatsDropzoneProps) {
           <Loader2 className="h-5 w-5 animate-spin text-blue-400" />
           <div>
             <p className="font-medium text-blue-400">Import en cours...</p>
-            <p className="text-sm text-muted-foreground">{filename}</p>
+            <p className="text-muted-foreground text-sm">{filename}</p>
           </div>
         </div>
       </div>
@@ -254,12 +248,12 @@ export function StatsDropzone({ onImport, disabled }: StatsDropzoneProps) {
       <div className="rounded-lg border border-red-500/30 bg-red-500/5 p-4">
         <div className="flex items-start justify-between">
           <div className="flex items-start gap-3">
-            <div className="p-2 rounded-lg bg-red-500/20">
+            <div className="rounded-lg bg-red-500/20 p-2">
               <X className="h-4 w-4 text-red-400" />
             </div>
             <div>
               <p className="font-medium text-red-400">Erreur</p>
-              <p className="text-sm text-muted-foreground">{errorMessage}</p>
+              <p className="text-muted-foreground text-sm">{errorMessage}</p>
             </div>
           </div>
           <Button
@@ -280,10 +274,10 @@ export function StatsDropzone({ onImport, disabled }: StatsDropzoneProps) {
     return (
       <div className="rounded-lg border border-blue-500/30 bg-blue-500/5 p-4">
         <div className="flex items-center gap-3">
-          <div className="animate-spin rounded-full h-5 w-5 border-2 border-blue-500 border-t-transparent" />
+          <div className="h-5 w-5 animate-spin rounded-full border-2 border-blue-500 border-t-transparent" />
           <div>
             <p className="font-medium text-blue-400">Analyse en cours...</p>
-            <p className="text-sm text-muted-foreground">{filename}</p>
+            <p className="text-muted-foreground text-sm">{filename}</p>
           </div>
         </div>
       </div>
@@ -295,42 +289,28 @@ export function StatsDropzone({ onImport, disabled }: StatsDropzoneProps) {
     <div
       className={cn(
         "relative rounded-lg border-2 border-dashed p-6 transition-all duration-200",
-        state === "idle" &&
-          "border-muted-foreground/25 hover:border-muted-foreground/50 bg-muted/5",
+        state === "idle" && "border-muted-foreground/25 bg-muted/5 hover:border-muted-foreground/50",
         state === "drag-over" && "border-blue-500 bg-blue-500/5",
-        disabled && "opacity-50 pointer-events-none"
+        disabled && "pointer-events-none opacity-50",
       )}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
       <div className="flex flex-col items-center gap-3 text-center">
-        <div className="p-3 rounded-lg bg-muted">
+        <div className="rounded-lg bg-muted p-3">
           <FileSpreadsheet
-            className={cn(
-              "h-8 w-8",
-              state === "drag-over" ? "text-blue-400" : "text-muted-foreground"
-            )}
+            className={cn("h-8 w-8", state === "drag-over" ? "text-blue-400" : "text-muted-foreground")}
           />
         </div>
         <div>
-          <p className="font-medium">
-            {state === "drag-over"
-              ? "Déposez le fichier"
-              : "Importer les statistiques"}
-          </p>
-          <p className="text-sm text-muted-foreground mt-1">
+          <p className="font-medium">{state === "drag-over" ? "Déposez le fichier" : "Importer les statistiques"}</p>
+          <p className="mt-1 text-muted-foreground text-sm">
             Glissez-déposez votre fichier CSV "Delivery Overview" ou cliquez pour parcourir
           </p>
         </div>
         <label>
-          <input
-            type="file"
-            accept=".csv"
-            className="hidden"
-            onChange={handleFileInput}
-            disabled={disabled}
-          />
+          <input type="file" accept=".csv" className="hidden" onChange={handleFileInput} disabled={disabled} />
           <Button variant="outline" size="sm" asChild disabled={disabled}>
             <span className="cursor-pointer">Parcourir</span>
           </Button>

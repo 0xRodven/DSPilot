@@ -1,6 +1,7 @@
 import { v } from "convex/values";
+
+import type { Id } from "./_generated/dataModel";
 import { mutation, query } from "./_generated/server";
-import { Id } from "./_generated/dataModel";
 import { getTier } from "./lib/tier";
 
 /**
@@ -16,9 +17,7 @@ export const getOrCreateDriver = mutation({
     // Chercher le driver existant
     const existing = await ctx.db
       .query("drivers")
-      .withIndex("by_station_amazon", (q) =>
-        q.eq("stationId", args.stationId).eq("amazonId", args.amazonId)
-      )
+      .withIndex("by_station_amazon", (q) => q.eq("stationId", args.stationId).eq("amazonId", args.amazonId))
       .first();
 
     if (existing) {
@@ -55,9 +54,7 @@ export const bulkUpsertDrivers = mutation({
       // Chercher le driver existant
       const existing = await ctx.db
         .query("drivers")
-        .withIndex("by_station_amazon", (q) =>
-          q.eq("stationId", args.stationId).eq("amazonId", amazonId)
-        )
+        .withIndex("by_station_amazon", (q) => q.eq("stationId", args.stationId).eq("amazonId", amazonId))
         .first();
 
       if (existing) {
@@ -100,9 +97,7 @@ export const listDrivers = query({
     if (args.activeOnly) {
       return await ctx.db
         .query("drivers")
-        .withIndex("by_station_active", (q) =>
-          q.eq("stationId", args.stationId).eq("isActive", true)
-        )
+        .withIndex("by_station_active", (q) => q.eq("stationId", args.stationId).eq("isActive", true))
         .collect();
     }
 
@@ -140,7 +135,7 @@ export const bulkUpdateDriverNames = mutation({
       v.object({
         amazonId: v.string(),
         name: v.string(),
-      })
+      }),
     ),
   },
   handler: async (ctx, args) => {
@@ -152,9 +147,7 @@ export const bulkUpdateDriverNames = mutation({
       // Chercher le driver par stationId + amazonId (utilise l'index existant)
       const driver = await ctx.db
         .query("drivers")
-        .withIndex("by_station_amazon", (q) =>
-          q.eq("stationId", args.stationId).eq("amazonId", amazonId)
-        )
+        .withIndex("by_station_amazon", (q) => q.eq("stationId", args.stationId).eq("amazonId", amazonId))
         .first();
 
       if (driver) {
@@ -242,9 +235,7 @@ export const getDriverDetail = query({
     // 2. Get current week stats
     const currentWeekStats = await ctx.db
       .query("driverWeeklyStats")
-      .withIndex("by_driver_week", (q) =>
-        q.eq("driverId", args.driverId).eq("year", args.year).eq("week", args.week)
-      )
+      .withIndex("by_driver_week", (q) => q.eq("driverId", args.driverId).eq("year", args.year).eq("week", args.week))
       .first();
 
     // 3. Get previous week stats for trend
@@ -252,9 +243,7 @@ export const getDriverDetail = query({
     const prevYear = args.week === 1 ? args.year - 1 : args.year;
     const prevWeekStats = await ctx.db
       .query("driverWeeklyStats")
-      .withIndex("by_driver_week", (q) =>
-        q.eq("driverId", args.driverId).eq("year", prevYear).eq("week", prevWeek)
-      )
+      .withIndex("by_driver_week", (q) => q.eq("driverId", args.driverId).eq("year", prevYear).eq("week", prevWeek))
       .first();
 
     // 4. Get weekly history (last 12 weeks)
@@ -267,16 +256,14 @@ export const getDriverDetail = query({
     // 5. Get daily stats for current week
     const dailyStats = await ctx.db
       .query("driverDailyStats")
-      .withIndex("by_driver_week", (q) =>
-        q.eq("driverId", args.driverId).eq("year", args.year).eq("week", args.week)
-      )
+      .withIndex("by_driver_week", (q) => q.eq("driverId", args.driverId).eq("year", args.year).eq("week", args.week))
       .collect();
 
     // 6. Get all drivers in station for ranking
     const allStationDriverStats = await ctx.db
       .query("driverWeeklyStats")
       .withIndex("by_station_week", (q) =>
-        q.eq("stationId", driver.stationId).eq("year", args.year).eq("week", args.week)
+        q.eq("stationId", driver.stationId).eq("year", args.year).eq("week", args.week),
       )
       .collect();
 
@@ -368,7 +355,12 @@ export const getDriverDetail = query({
 
     const errorBreakdown = {
       dwcMisses: {
-        total: dwcBreakdown.contactMiss + dwcBreakdown.photoDefect + dwcBreakdown.noPhoto + dwcBreakdown.otpMiss + dwcBreakdown.other,
+        total:
+          dwcBreakdown.contactMiss +
+          dwcBreakdown.photoDefect +
+          dwcBreakdown.noPhoto +
+          dwcBreakdown.otpMiss +
+          dwcBreakdown.other,
         categories: [
           { name: "Contact Miss", count: dwcBreakdown.contactMiss, subcategories: [] },
           { name: "Photo Defect", count: dwcBreakdown.photoDefect, subcategories: [] },
@@ -389,19 +381,21 @@ export const getDriverDetail = query({
     };
 
     // Format weekly history
-    const formattedWeeklyHistory = weeklyHistory.map((stat) => {
-      const dwcTotal = stat.dwcCompliant + stat.dwcMisses + stat.failedAttempts;
-      const dwc = dwcTotal > 0 ? Math.round((stat.dwcCompliant / dwcTotal) * 1000) / 10 : 0;
-      const iadcTotal = stat.iadcCompliant + stat.iadcNonCompliant;
-      const iadc = iadcTotal > 0 ? Math.round((stat.iadcCompliant / iadcTotal) * 1000) / 10 : 0;
+    const formattedWeeklyHistory = weeklyHistory
+      .map((stat) => {
+        const dwcTotal = stat.dwcCompliant + stat.dwcMisses + stat.failedAttempts;
+        const dwc = dwcTotal > 0 ? Math.round((stat.dwcCompliant / dwcTotal) * 1000) / 10 : 0;
+        const iadcTotal = stat.iadcCompliant + stat.iadcNonCompliant;
+        const iadc = iadcTotal > 0 ? Math.round((stat.iadcCompliant / iadcTotal) * 1000) / 10 : 0;
 
-      return {
-        week: `S${stat.week}`,
-        weekNumber: stat.week,
-        dwc,
-        iadc,
-      };
-    }).reverse(); // Chronological order
+        return {
+          week: `S${stat.week}`,
+          weekNumber: stat.week,
+          dwc,
+          iadc,
+        };
+      })
+      .reverse(); // Chronological order
 
     // Calculate streak (consecutive weeks >= 95%)
     let streak = 0;
@@ -452,8 +446,8 @@ export const getDriverWithFullHistory = query({
   args: {
     driverId: v.id("drivers"),
     weeksLimit: v.optional(v.number()), // undefined = 12, 0 = all
-    year: v.optional(v.number()),       // Semaine spécifique à afficher
-    week: v.optional(v.number()),       // Semaine spécifique à afficher
+    year: v.optional(v.number()), // Semaine spécifique à afficher
+    week: v.optional(v.number()), // Semaine spécifique à afficher
   },
   handler: async (ctx, args) => {
     // 1. Get driver info
@@ -519,9 +513,7 @@ export const getDriverWithFullHistory = query({
 
     if (args.year !== undefined && args.week !== undefined) {
       // Look for exact week match
-      const foundStats = weeklyHistory.find(
-        (s) => s.year === args.year && s.week === args.week
-      );
+      const foundStats = weeklyHistory.find((s) => s.year === args.year && s.week === args.week);
       if (foundStats) {
         targetStats = foundStats;
       } else {
@@ -529,7 +521,7 @@ export const getDriverWithFullHistory = query({
         const directQuery = await ctx.db
           .query("driverWeeklyStats")
           .withIndex("by_driver_week", (q) =>
-            q.eq("driverId", args.driverId).eq("year", targetYear).eq("week", targetWeek)
+            q.eq("driverId", args.driverId).eq("year", targetYear).eq("week", targetWeek),
           )
           .first();
         if (directQuery) {
@@ -545,26 +537,21 @@ export const getDriverWithFullHistory = query({
     }
 
     // 4. Get previous week for trend (relative to target week)
-    const targetWeekIndex = weeklyHistory.findIndex(
-      (s) => s.year === targetYear && s.week === targetWeek
-    );
-    const prevStats = targetWeekIndex >= 0 && targetWeekIndex < weeklyHistory.length - 1
-      ? weeklyHistory[targetWeekIndex + 1]
-      : null;
+    const targetWeekIndex = weeklyHistory.findIndex((s) => s.year === targetYear && s.week === targetWeek);
+    const prevStats =
+      targetWeekIndex >= 0 && targetWeekIndex < weeklyHistory.length - 1 ? weeklyHistory[targetWeekIndex + 1] : null;
 
     // 5. Get daily stats for TARGET week (not necessarily latest)
     const dailyStats = await ctx.db
       .query("driverDailyStats")
-      .withIndex("by_driver_week", (q) =>
-        q.eq("driverId", args.driverId).eq("year", targetYear).eq("week", targetWeek)
-      )
+      .withIndex("by_driver_week", (q) => q.eq("driverId", args.driverId).eq("year", targetYear).eq("week", targetWeek))
       .collect();
 
     // 6. Get station stats for ranking (for target week)
     const allStationDriverStats = await ctx.db
       .query("driverWeeklyStats")
       .withIndex("by_station_week", (q) =>
-        q.eq("stationId", driver.stationId).eq("year", targetYear).eq("week", targetWeek)
+        q.eq("stationId", driver.stationId).eq("year", targetYear).eq("week", targetWeek),
       )
       .collect();
 
@@ -631,32 +618,34 @@ export const getDriverWithFullHistory = query({
 
     // Format daily performance
     const dayNames = ["Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"];
-    const dailyPerformance = dailyStats.map((stat) => {
-      const date = new Date(stat.date);
-      const dayIndex = date.getDay();
-      const dTotal = stat.dwcCompliant + stat.dwcMisses + stat.failedAttempts;
-      const dailyDwcPercent = dTotal > 0 ? Math.round((stat.dwcCompliant / dTotal) * 1000) / 10 : null;
-      const iTotal = stat.iadcCompliant + stat.iadcNonCompliant;
-      const dailyIadcPercent = iTotal > 0 ? Math.round((stat.iadcCompliant / iTotal) * 1000) / 10 : null;
+    const dailyPerformance = dailyStats
+      .map((stat) => {
+        const date = new Date(stat.date);
+        const dayIndex = date.getDay();
+        const dTotal = stat.dwcCompliant + stat.dwcMisses + stat.failedAttempts;
+        const dailyDwcPercent = dTotal > 0 ? Math.round((stat.dwcCompliant / dTotal) * 1000) / 10 : null;
+        const iTotal = stat.iadcCompliant + stat.iadcNonCompliant;
+        const dailyIadcPercent = iTotal > 0 ? Math.round((stat.iadcCompliant / iTotal) * 1000) / 10 : null;
 
-      let status: "excellent" | "tres-bon" | "bon" | "moyen" | "non-travaille" = "non-travaille";
-      if (dailyDwcPercent !== null) {
-        if (dailyDwcPercent >= 95) status = "excellent";
-        else if (dailyDwcPercent >= 90) status = "tres-bon";
-        else if (dailyDwcPercent >= 88) status = "bon";
-        else status = "moyen";
-      }
+        let status: "excellent" | "tres-bon" | "bon" | "moyen" | "non-travaille" = "non-travaille";
+        if (dailyDwcPercent !== null) {
+          if (dailyDwcPercent >= 95) status = "excellent";
+          else if (dailyDwcPercent >= 90) status = "tres-bon";
+          else if (dailyDwcPercent >= 88) status = "bon";
+          else status = "moyen";
+        }
 
-      return {
-        day: dayNames[dayIndex],
-        date: stat.date,
-        dwcPercent: dailyDwcPercent,
-        iadcPercent: dailyIadcPercent,
-        deliveries: dTotal > 0 ? dTotal : null,
-        errors: dTotal > 0 ? stat.dwcMisses + stat.failedAttempts : null,
-        status,
-      };
-    }).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+        return {
+          day: dayNames[dayIndex],
+          date: stat.date,
+          dwcPercent: dailyDwcPercent,
+          iadcPercent: dailyIadcPercent,
+          deliveries: dTotal > 0 ? dTotal : null,
+          errors: dTotal > 0 ? stat.dwcMisses + stat.failedAttempts : null,
+          status,
+        };
+      })
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
     // Error breakdown for TARGET week (handle null targetStats)
     const emptyDwcBreakdown = {
@@ -677,7 +666,12 @@ export const getDriverWithFullHistory = query({
 
     const errorBreakdown = {
       dwcMisses: {
-        total: dwcBreakdown.contactMiss + dwcBreakdown.photoDefect + dwcBreakdown.noPhoto + dwcBreakdown.otpMiss + dwcBreakdown.other,
+        total:
+          dwcBreakdown.contactMiss +
+          dwcBreakdown.photoDefect +
+          dwcBreakdown.noPhoto +
+          dwcBreakdown.otpMiss +
+          dwcBreakdown.other,
         categories: [
           { name: "Contact Miss", count: dwcBreakdown.contactMiss, subcategories: [] },
           { name: "Photo Defect", count: dwcBreakdown.photoDefect, subcategories: [] },
@@ -698,20 +692,22 @@ export const getDriverWithFullHistory = query({
     };
 
     // Format weekly history for chart
-    const formattedWeeklyHistory = weeklyHistory.map((stat) => {
-      const t = stat.dwcCompliant + stat.dwcMisses + stat.failedAttempts;
-      const dwc = t > 0 ? Math.round((stat.dwcCompliant / t) * 1000) / 10 : 0;
-      const iT = stat.iadcCompliant + stat.iadcNonCompliant;
-      const iadc = iT > 0 ? Math.round((stat.iadcCompliant / iT) * 1000) / 10 : 0;
+    const formattedWeeklyHistory = weeklyHistory
+      .map((stat) => {
+        const t = stat.dwcCompliant + stat.dwcMisses + stat.failedAttempts;
+        const dwc = t > 0 ? Math.round((stat.dwcCompliant / t) * 1000) / 10 : 0;
+        const iT = stat.iadcCompliant + stat.iadcNonCompliant;
+        const iadc = iT > 0 ? Math.round((stat.iadcCompliant / iT) * 1000) / 10 : 0;
 
-      return {
-        week: `S${stat.week}`,
-        weekNumber: stat.week,
-        year: stat.year,
-        dwc,
-        iadc,
-      };
-    }).reverse();
+        return {
+          week: `S${stat.week}`,
+          weekNumber: stat.week,
+          year: stat.year,
+          dwc,
+          iadc,
+        };
+      })
+      .reverse();
 
     // Calculate streak
     let streak = 0;
@@ -769,7 +765,7 @@ export const getDriverDailyPerformanceWithCoaching = query({
   args: {
     driverId: v.id("drivers"),
     startDate: v.string(), // ISO date "2025-12-01"
-    endDate: v.string(),   // ISO date "2025-12-31"
+    endDate: v.string(), // ISO date "2025-12-31"
   },
   handler: async (ctx, args) => {
     // 1. Get driver info
@@ -801,7 +797,7 @@ export const getDriverDailyPerformanceWithCoaching = query({
     });
 
     // 5. Build a map of date -> coaching action
-    const actionsByDate = new Map<string, typeof coachingActions[0]>();
+    const actionsByDate = new Map<string, (typeof coachingActions)[0]>();
     for (const action of actionsInRange) {
       const actionDate = new Date(action.createdAt).toISOString().split("T")[0];
       // If multiple actions on same day, keep the latest one
@@ -884,15 +880,11 @@ export const searchDriversByName = query({
     // Get all active drivers for station
     const allDrivers = await ctx.db
       .query("drivers")
-      .withIndex("by_station_active", (q) =>
-        q.eq("stationId", args.stationId).eq("isActive", true)
-      )
+      .withIndex("by_station_active", (q) => q.eq("stationId", args.stationId).eq("isActive", true))
       .collect();
 
     // Filter by name (case-insensitive partial match)
-    const matches = allDrivers
-      .filter((d) => d.name.toLowerCase().includes(searchTerm))
-      .slice(0, limit);
+    const matches = allDrivers.filter((d) => d.name.toLowerCase().includes(searchTerm)).slice(0, limit);
 
     return matches.map((d) => ({
       _id: d._id,

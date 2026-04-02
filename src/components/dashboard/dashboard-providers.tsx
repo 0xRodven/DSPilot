@@ -1,13 +1,14 @@
-"use client"
+"use client";
 
 // Client-side providers et initializers pour le dashboard
 
-import { FilterInitializer } from "./filter-initializer"
-import { OrgStationSync } from "./org-station-sync"
-import { ChatWidget } from "@/components/chat/chat-widget"
+import { ChatWidget } from "@/components/chat/chat-widget";
+
+import { FilterInitializer } from "./filter-initializer";
+import { OrgStationSync } from "./org-station-sync";
 
 interface DashboardProvidersProps {
-  children: React.ReactNode
+  children: React.ReactNode;
 }
 
 export function DashboardProviders({ children }: DashboardProvidersProps) {
@@ -18,5 +19,5 @@ export function DashboardProviders({ children }: DashboardProvidersProps) {
       {children}
       <ChatWidget />
     </>
-  )
+  );
 }

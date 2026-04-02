@@ -1,56 +1,58 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { useQuery } from "convex/react"
-import { api } from "@convex/_generated/api"
-import { useDashboardStore } from "@/lib/store"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Skeleton } from "@/components/ui/skeleton"
-import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
+import { useState } from "react";
+
+import { api } from "@convex/_generated/api";
+import { useQuery } from "convex/react";
 import {
-  ComposedChart,
-  Line,
   Bar,
+  CartesianGrid,
+  ComposedChart,
+  Legend,
+  Line,
+  ReferenceLine,
+  ResponsiveContainer,
+  Tooltip,
   XAxis,
   YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  ReferenceLine,
-  Legend,
-} from "recharts"
+} from "recharts";
+
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useDashboardStore } from "@/lib/store";
 
 const referenceLines = [
   { value: 95, label: "95% Fantastic", color: "#34d399" },
   { value: 90, label: "90% Great", color: "#60a5fa" },
   { value: 88, label: "88% Fair", color: "#fbbf24" },
-]
+];
 
 export function PerformanceChart() {
-  const { selectedStation } = useDashboardStore()
-  const [showDwc, setShowDwc] = useState(true)
-  const [showIadc, setShowIadc] = useState(true)
-  const [showColis, setShowColis] = useState(false)
-  const [showDnr, setShowDnr] = useState(false)
-  const [showRefLines, setShowRefLines] = useState({ 95: true, 90: true, 88: true })
-  const [period, setPeriod] = useState<"4W" | "8W" | "12W">("8W")
+  const { selectedStation } = useDashboardStore();
+  const [showDwc, setShowDwc] = useState(true);
+  const [showIadc, setShowIadc] = useState(true);
+  const [showColis, setShowColis] = useState(false);
+  const [showDnr, setShowDnr] = useState(false);
+  const [showRefLines, setShowRefLines] = useState({ 95: true, 90: true, 88: true });
+  const [period, setPeriod] = useState<"4W" | "8W" | "12W">("8W");
 
-  const weeksCount = period === "4W" ? 4 : period === "8W" ? 8 : 12
+  const weeksCount = period === "4W" ? 4 : period === "8W" ? 8 : 12;
 
   // Get station from Convex - skip if no code yet (prevents race condition on navigation)
   const station = useQuery(
     api.stations.getStationByCode,
-    selectedStation.code ? { code: selectedStation.code } : "skip"
-  )
+    selectedStation.code ? { code: selectedStation.code } : "skip",
+  );
 
   const performanceData = useQuery(
     api.stats.getPerformanceEvolution,
-    station ? { stationId: station._id, weeksCount } : "skip"
-  )
+    station ? { stationId: station._id, weeksCount } : "skip",
+  );
 
-  const isLoading = !station || performanceData === undefined
-  const data = performanceData || []
+  const isLoading = !station || performanceData === undefined;
+  const data = performanceData || [];
 
   // Loading state
   if (isLoading) {
@@ -60,7 +62,7 @@ export function PerformanceChart() {
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <Skeleton className="h-5 w-40" />
-              <Skeleton className="h-3 w-48 mt-1" />
+              <Skeleton className="mt-1 h-3 w-48" />
             </div>
             <Skeleton className="h-9 w-32" />
           </div>
@@ -69,7 +71,7 @@ export function PerformanceChart() {
               <Skeleton className="h-5 w-16" />
               <Skeleton className="h-5 w-16" />
             </div>
-            <div className="flex items-center gap-3 border-l border-border pl-4">
+            <div className="flex items-center gap-3 border-border border-l pl-4">
               <Skeleton className="h-4 w-20" />
               <Skeleton className="h-4 w-12" />
               <Skeleton className="h-4 w-12" />
@@ -78,20 +80,17 @@ export function PerformanceChart() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="h-[350px] flex items-end gap-3 pt-8">
+          <div className="flex h-[350px] items-end gap-3 pt-8">
             {[...Array(8)].map((_, i) => (
-              <div key={i} className="flex-1 flex flex-col items-center gap-2">
-                <Skeleton
-                  className="w-full rounded-t"
-                  style={{ height: `${40 + (i % 3) * 20}%` }}
-                />
+              <div key={i} className="flex flex-1 flex-col items-center gap-2">
+                <Skeleton className="w-full rounded-t" style={{ height: `${40 + (i % 3) * 20}%` }} />
                 <Skeleton className="h-3 w-8" />
               </div>
             ))}
           </div>
         </CardContent>
       </Card>
-    )
+    );
   }
 
   return (
@@ -99,8 +98,8 @@ export function PerformanceChart() {
       <CardHeader className="pb-4">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <CardTitle className="text-lg font-semibold text-card-foreground">Évolution Performance</CardTitle>
-            <p className="text-sm text-muted-foreground">
+            <CardTitle className="font-semibold text-card-foreground text-lg">Évolution Performance</CardTitle>
+            <p className="text-muted-foreground text-sm">
               {data.length > 0
                 ? `S${data[0]?.weekNumber} → S${data[data.length - 1]?.weekNumber} • ${data.length} semaines`
                 : "Aucune donnée disponible"}
@@ -128,14 +127,14 @@ export function PerformanceChart() {
         {/* Controls row */}
         <div className="mt-4 flex flex-wrap items-center gap-6">
           {/* Metric toggles */}
-          <div className="flex items-center gap-4 flex-wrap">
+          <div className="flex flex-wrap items-center gap-4">
             <label className="flex cursor-pointer items-center gap-2">
               <Checkbox
                 checked={showDwc}
                 onCheckedChange={(checked) => setShowDwc(checked === true)}
                 className="border-blue-400 data-[state=checked]:bg-blue-500"
               />
-              <span className="text-sm font-medium text-blue-400">DWC</span>
+              <span className="font-medium text-blue-400 text-sm">DWC</span>
             </label>
             <label className="flex cursor-pointer items-center gap-2">
               <Checkbox
@@ -143,7 +142,7 @@ export function PerformanceChart() {
                 onCheckedChange={(checked) => setShowIadc(checked === true)}
                 className="border-amber-400 data-[state=checked]:bg-amber-500"
               />
-              <span className="text-sm font-medium text-amber-400">IADC</span>
+              <span className="font-medium text-amber-400 text-sm">IADC</span>
             </label>
             <span className="text-muted-foreground">|</span>
             <label className="flex cursor-pointer items-center gap-2">
@@ -152,7 +151,7 @@ export function PerformanceChart() {
                 onCheckedChange={(checked) => setShowColis(checked === true)}
                 className="border-emerald-400 data-[state=checked]:bg-emerald-500"
               />
-              <span className="text-sm font-medium text-emerald-400">Colis</span>
+              <span className="font-medium text-emerald-400 text-sm">Colis</span>
             </label>
             <label className="flex cursor-pointer items-center gap-2">
               <Checkbox
@@ -160,13 +159,13 @@ export function PerformanceChart() {
                 onCheckedChange={(checked) => setShowDnr(checked === true)}
                 className="border-red-400 data-[state=checked]:bg-red-500"
               />
-              <span className="text-sm font-medium text-red-400">Risque DNR</span>
+              <span className="font-medium text-red-400 text-sm">Risque DNR</span>
             </label>
           </div>
 
           {/* Reference line toggles */}
-          <div className="flex items-center gap-3 border-l border-border pl-4">
-            <span className="text-xs text-muted-foreground">Lignes réf:</span>
+          <div className="flex items-center gap-3 border-border border-l pl-4">
+            <span className="text-muted-foreground text-xs">Lignes réf:</span>
             {referenceLines.map((line) => (
               <label key={line.value} className="flex cursor-pointer items-center gap-1.5">
                 <Checkbox
@@ -223,9 +222,9 @@ export function PerformanceChart() {
                 }}
                 formatter={(value: number, name: string) => {
                   if (name === "Colis" || name === "Risque DNR") {
-                    return [value.toLocaleString("fr-FR"), name]
+                    return [value.toLocaleString("fr-FR"), name];
                   }
-                  return [`${value}%`, name]
+                  return [`${value}%`, name];
                 }}
               />
 
@@ -246,22 +245,10 @@ export function PerformanceChart() {
 
               {/* Volume bars */}
               {showColis && (
-                <Bar
-                  yAxisId="right"
-                  dataKey="totalDeliveries"
-                  fill="#34d399"
-                  fillOpacity={0.3}
-                  name="Colis"
-                />
+                <Bar yAxisId="right" dataKey="totalDeliveries" fill="#34d399" fillOpacity={0.3} name="Colis" />
               )}
               {showDnr && (
-                <Bar
-                  yAxisId="right"
-                  dataKey="deliveryMissesRisk"
-                  fill="#f87171"
-                  fillOpacity={0.3}
-                  name="Risque DNR"
-                />
+                <Bar yAxisId="right" dataKey="deliveryMissesRisk" fill="#f87171" fillOpacity={0.3} name="Risque DNR" />
               )}
 
               {/* Data lines */}
@@ -292,12 +279,12 @@ export function PerformanceChart() {
 
               <Legend
                 wrapperStyle={{ paddingTop: "20px" }}
-                formatter={(value) => <span className="text-sm text-foreground">{value}</span>}
+                formatter={(value) => <span className="text-foreground text-sm">{value}</span>}
               />
             </ComposedChart>
           </ResponsiveContainer>
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }

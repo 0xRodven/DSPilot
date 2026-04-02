@@ -1,26 +1,26 @@
-"use client"
+"use client";
 
-import { Card, CardContent } from "@/components/ui/card"
-import { Clock, TrendingUp, MinusCircle, AlertTriangle } from "lucide-react"
-import { cn } from "@/lib/utils"
+import { AlertTriangle, Clock, MinusCircle, TrendingUp } from "lucide-react";
+
+import { Card, CardContent } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 interface CoachingStats {
-  pending: { count: number; overdueCount: number }
-  improved: { count: number; avgImprovement: number }
-  noEffect: { count: number }
-  escalated: { count: number }
-  total: number
-  thisMonth: number
+  pending: { count: number; overdueCount: number };
+  improved: { count: number; avgImprovement: number };
+  noEffect: { count: number };
+  escalated: { count: number };
+  total: number;
+  thisMonth: number;
 }
 
 interface CoachingKPIsProps {
-  stats: CoachingStats
-  onFilterChange: (status: string | null) => void
-  activeFilter: string | null
+  stats: CoachingStats;
+  onFilterChange: (status: string | null) => void;
+  activeFilter: string | null;
 }
 
 export function CoachingKPIs({ stats, onFilterChange, activeFilter }: CoachingKPIsProps) {
-
   const kpis = [
     {
       id: "pending",
@@ -70,13 +70,13 @@ export function CoachingKPIs({ stats, onFilterChange, activeFilter }: CoachingKP
       borderColor: "border-red-500/30",
       alertColor: "text-red-400",
     },
-  ]
+  ];
 
   return (
     <div className="grid grid-cols-4 gap-4">
       {kpis.map((kpi) => {
-        const Icon = kpi.icon
-        const isActive = activeFilter === kpi.id
+        const Icon = kpi.icon;
+        const isActive = activeFilter === kpi.id;
 
         return (
           <Card
@@ -95,14 +95,14 @@ export function CoachingKPIs({ stats, onFilterChange, activeFilter }: CoachingKP
                 <span className={cn("text-xs", kpi.alertColor)}>{kpi.detail}</span>
               </div>
               <div className="mt-3">
-                <p className="text-3xl font-bold text-foreground">{kpi.value}</p>
-                <p className={cn("text-sm font-medium", kpi.color)}>{kpi.label}</p>
-                <p className="mt-1 text-xs text-muted-foreground">{kpi.subLabel}</p>
+                <p className="font-bold text-3xl text-foreground">{kpi.value}</p>
+                <p className={cn("font-medium text-sm", kpi.color)}>{kpi.label}</p>
+                <p className="mt-1 text-muted-foreground text-xs">{kpi.subLabel}</p>
               </div>
             </CardContent>
           </Card>
-        )
+        );
       })}
     </div>
-  )
+  );
 }

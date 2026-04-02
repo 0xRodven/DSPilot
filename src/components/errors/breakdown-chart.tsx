@@ -1,64 +1,61 @@
-"use client"
+"use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { formatNumber } from "@/lib/calculations"
-import { getErrorDescription, hasErrorDescription } from "@/lib/utils/error-descriptions"
-import { HelpCircle } from "lucide-react"
-import type { ErrorCategoryData } from "@/lib/types"
+import { HelpCircle } from "lucide-react";
+
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { formatNumber } from "@/lib/calculations";
+import type { ErrorCategoryData } from "@/lib/types";
+import { getErrorDescription, hasErrorDescription } from "@/lib/utils/error-descriptions";
 
 interface BreakdownChartProps {
-  category: ErrorCategoryData
+  category: ErrorCategoryData;
 }
 
 const COLORS = {
   dwc: ["#ef4444", "#f87171", "#fca5a5", "#fecaca", "#fee2e2"],
   iadc: ["#3b82f6", "#60a5fa", "#93c5fd", "#bfdbfe", "#dbeafe"],
   "false-scans": ["#f59e0b", "#fbbf24", "#fcd34d"],
-}
+};
 
 export function BreakdownChart({ category }: BreakdownChartProps) {
   const data = category.subcategories.map((sub) => ({
     name: sub.name,
     value: sub.count,
     percentage: sub.percentage,
-  }))
+  }));
 
-  const colors = COLORS[category.id]
-  const categoryLabel = category.id === "dwc" ? "DWC" : category.id === "iadc" ? "IADC" : "False Scans"
+  const colors = COLORS[category.id];
+  const categoryLabel = category.id === "dwc" ? "DWC" : category.id === "iadc" ? "IADC" : "False Scans";
 
   return (
     <TooltipProvider delayDuration={300}>
       <Card className="border-border bg-card">
         <CardHeader className="pb-2">
           <div className="flex items-center gap-2">
-            <CardTitle className="text-base font-medium">
-              Répartition {categoryLabel}
-            </CardTitle>
+            <CardTitle className="font-medium text-base">Répartition {categoryLabel}</CardTitle>
             <Tooltip>
               <TooltipTrigger asChild>
-                <HelpCircle className="h-4 w-4 text-muted-foreground/60 cursor-help" />
+                <HelpCircle className="h-4 w-4 cursor-help text-muted-foreground/60" />
               </TooltipTrigger>
               <TooltipContent side="top" className="max-w-xs">
-                <p className="text-xs">
-                  {getErrorDescription(categoryLabel)}
-                </p>
+                <p className="text-xs">{getErrorDescription(categoryLabel)}</p>
               </TooltipContent>
             </Tooltip>
           </div>
-          <p className="text-sm text-muted-foreground">{formatNumber(category.total)} erreurs</p>
+          <p className="text-muted-foreground text-sm">{formatNumber(category.total)} erreurs</p>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
             {data.map((item, index) => (
               <div key={item.name}>
                 <div className="mb-1 flex items-center justify-between">
-                  <span className="text-sm font-medium flex items-center gap-1.5">
+                  <span className="flex items-center gap-1.5 font-medium text-sm">
                     {item.name}
                     {hasErrorDescription(item.name) && (
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <HelpCircle className="h-3.5 w-3.5 text-muted-foreground/60 cursor-help" />
+                          <HelpCircle className="h-3.5 w-3.5 cursor-help text-muted-foreground/60" />
                         </TooltipTrigger>
                         <TooltipContent side="top" className="max-w-xs">
                           <p className="text-xs">{getErrorDescription(item.name)}</p>
@@ -66,7 +63,7 @@ export function BreakdownChart({ category }: BreakdownChartProps) {
                       </Tooltip>
                     )}
                   </span>
-                  <span className="text-sm text-muted-foreground">
+                  <span className="text-muted-foreground text-sm">
                     {formatNumber(item.value)} ({item.percentage}%)
                   </span>
                 </div>
@@ -85,5 +82,5 @@ export function BreakdownChart({ category }: BreakdownChartProps) {
         </CardContent>
       </Card>
     </TooltipProvider>
-  )
+  );
 }

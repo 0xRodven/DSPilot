@@ -1,44 +1,47 @@
-"use client"
+"use client";
 
-import { useMemo } from "react"
-import { useRouter } from "next/navigation"
-import { useBuildFilteredHref } from "@/lib/filters"
-import { Card, CardContent } from "@/components/ui/card"
-import { DataTable } from "./data-table"
-import { createColumns, type DriversListDriver } from "./columns"
+import { useMemo } from "react";
+
+import { useRouter } from "next/navigation";
+
+import { Card, CardContent } from "@/components/ui/card";
+import { useBuildFilteredHref } from "@/lib/filters";
+
+import { createColumns, type DriversListDriver } from "./columns";
+import { DataTable } from "./data-table";
 
 interface TierStat {
-  count: number
-  percentage: string
-  trend: number
+  count: number;
+  percentage: string;
+  trend: number;
 }
 
 interface TierStats {
-  fantastic: TierStat
-  great: TierStat
-  fair: TierStat
-  poor: TierStat
-  total: number
-  active: number
+  fantastic: TierStat;
+  great: TierStat;
+  fair: TierStat;
+  poor: TierStat;
+  total: number;
+  active: number;
 }
 
 interface Driver {
-  id: string
-  name: string
-  amazonId: string
-  dwcPercent: number
-  iadcPercent: number
-  daysActive: number
-  tier: "fantastic" | "great" | "fair" | "poor"
-  trend: number | null
+  id: string;
+  name: string;
+  amazonId: string;
+  dwcPercent: number;
+  iadcPercent: number;
+  daysActive: number;
+  tier: "fantastic" | "great" | "fair" | "poor";
+  trend: number | null;
 }
 
 interface DriversListTableProps {
-  drivers: Driver[]
-  stats: TierStats
-  selectedTier: string
-  onTierChange: (tier: string) => void
-  periodMode?: "week" | "day"
+  drivers: Driver[];
+  stats: TierStats;
+  selectedTier: string;
+  onTierChange: (tier: string) => void;
+  periodMode?: "week" | "day";
 }
 
 export function DriversListTable({
@@ -48,8 +51,8 @@ export function DriversListTable({
   onTierChange,
   periodMode = "week",
 }: DriversListTableProps) {
-  const router = useRouter()
-  const buildHref = useBuildFilteredHref()
+  const router = useRouter();
+  const buildHref = useBuildFilteredHref();
 
   // Transform data for the table
   const tableData: DriversListDriver[] = useMemo(() => {
@@ -62,8 +65,8 @@ export function DriversListTable({
       daysActive: d.daysActive,
       tier: d.tier,
       trend: d.trend,
-    }))
-  }, [drivers])
+    }));
+  }, [drivers]);
 
   // Create columns with callbacks
   const columns = useMemo(
@@ -73,8 +76,8 @@ export function DriversListTable({
         onPlanCoaching: (driverId) => router.push(buildHref(`/dashboard/coaching?driverId=${driverId}`)),
         periodMode,
       }),
-    [router, buildHref, periodMode]
-  )
+    [router, buildHref, periodMode],
+  );
 
   return (
     <Card className="border-border bg-card">
@@ -90,5 +93,5 @@ export function DriversListTable({
         />
       </CardContent>
     </Card>
-  )
+  );
 }

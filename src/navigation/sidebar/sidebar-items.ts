@@ -4,7 +4,6 @@ import {
   Calendar,
   ClipboardList,
   FileText,
-  GraduationCap,
   LayoutDashboard,
   type LucideIcon,
   MessageSquare,

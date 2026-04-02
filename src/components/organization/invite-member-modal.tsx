@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { useOrganization, useAuth } from "@clerk/nextjs";
-import { toast } from "sonner";
+
+import { useAuth, useOrganization } from "@clerk/nextjs";
 import { UserPlus } from "lucide-react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -17,13 +18,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 // Clerk Free Plan: uniquement les rôles built-in org:admin et org:member
 type InviteRole = "org:admin" | "org:member";
@@ -33,10 +28,7 @@ interface InviteMemberModalProps {
   allowedRoles?: InviteRole[];
 }
 
-export function InviteMemberModal({
-  trigger,
-  allowedRoles = ["org:admin", "org:member"],
-}: InviteMemberModalProps) {
+export function InviteMemberModal({ trigger, allowedRoles = ["org:admin", "org:member"] }: InviteMemberModalProps) {
   const { organization, isLoaded } = useOrganization();
   const { orgRole } = useAuth();
   const [open, setOpen] = useState(false);
@@ -97,7 +89,7 @@ export function InviteMemberModal({
       <DialogTrigger asChild>
         {trigger || (
           <Button variant="outline" size="sm">
-            <UserPlus className="h-4 w-4 mr-2" />
+            <UserPlus className="mr-2 h-4 w-4" />
             Inviter
           </Button>
         )}
@@ -106,8 +98,7 @@ export function InviteMemberModal({
         <DialogHeader>
           <DialogTitle>Inviter un membre</DialogTitle>
           <DialogDescription>
-            Invitez un nouveau membre dans votre organisation. Un email
-            d&apos;invitation lui sera envoyé.
+            Invitez un nouveau membre dans votre organisation. Un email d&apos;invitation lui sera envoyé.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
@@ -132,9 +123,7 @@ export function InviteMemberModal({
                   <SelectItem key={r} value={r}>
                     <div className="flex flex-col">
                       <span className="font-medium">{roleLabels[r].label}</span>
-                      <span className="text-xs text-muted-foreground">
-                        {roleLabels[r].description}
-                      </span>
+                      <span className="text-muted-foreground text-xs">{roleLabels[r].description}</span>
                     </div>
                   </SelectItem>
                 ))}

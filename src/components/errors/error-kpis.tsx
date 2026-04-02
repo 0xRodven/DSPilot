@@ -1,15 +1,16 @@
-"use client"
+"use client";
 
-import { Card, CardContent } from "@/components/ui/card"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { cn } from "@/lib/utils"
-import { formatNumber } from "@/lib/calculations"
-import { getErrorDescription, hasErrorDescription } from "@/lib/utils/error-descriptions"
-import { TrendingUp, TrendingDown, HelpCircle } from "lucide-react"
-import type { ErrorCategoryData } from "@/lib/types"
+import { HelpCircle, TrendingDown, TrendingUp } from "lucide-react";
+
+import { Card, CardContent } from "@/components/ui/card";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { formatNumber } from "@/lib/calculations";
+import type { ErrorCategoryData } from "@/lib/types";
+import { cn } from "@/lib/utils";
+import { getErrorDescription, hasErrorDescription } from "@/lib/utils/error-descriptions";
 
 interface ErrorKPIsProps {
-  category: ErrorCategoryData
+  category: ErrorCategoryData;
 }
 
 export function ErrorKPIs({ category }: ErrorKPIsProps) {
@@ -18,7 +19,7 @@ export function ErrorKPIs({ category }: ErrorKPIsProps) {
     value: category.total,
     trend: category.trend,
     trendPercent: category.trendPercent,
-  }
+  };
 
   // Toujours prendre 3 sous-catégories pour avoir 4 cartes au total
   const subcategoryCards = category.subcategories.slice(0, 3).map((sub) => ({
@@ -26,17 +27,18 @@ export function ErrorKPIs({ category }: ErrorKPIsProps) {
     value: sub.count,
     percentage: sub.percentage,
     trend: sub.trend,
-  }))
+  }));
 
-  const cards = [totalCard, ...subcategoryCards]
+  const cards = [totalCard, ...subcategoryCards];
 
   return (
     <TooltipProvider delayDuration={300}>
-      <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         {cards.map((card, index) => {
-          const isNegativeTrend = card.trend > 0
-          const isImprovement = category.id === "dwc" || category.id === "false-scans" ? card.trend < 0 : card.trend < 0
-          const hasTooltip = hasErrorDescription(card.label)
+          const isNegativeTrend = card.trend > 0;
+          const isImprovement =
+            category.id === "dwc" || category.id === "false-scans" ? card.trend < 0 : card.trend < 0;
+          const hasTooltip = hasErrorDescription(card.label);
 
           return (
             <Card
@@ -48,11 +50,11 @@ export function ErrorKPIs({ category }: ErrorKPIsProps) {
             >
               <CardContent className="p-4">
                 <div className="flex items-center gap-1.5">
-                  <p className="text-sm text-muted-foreground">{card.label}</p>
+                  <p className="text-muted-foreground text-sm">{card.label}</p>
                   {hasTooltip && (
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <HelpCircle className="h-3.5 w-3.5 text-muted-foreground/60 cursor-help" />
+                        <HelpCircle className="h-3.5 w-3.5 cursor-help text-muted-foreground/60" />
                       </TooltipTrigger>
                       <TooltipContent side="top" className="max-w-xs">
                         <p className="text-xs">{getErrorDescription(card.label)}</p>
@@ -61,8 +63,8 @@ export function ErrorKPIs({ category }: ErrorKPIsProps) {
                   )}
                 </div>
                 <div className="mt-1 flex items-baseline gap-2">
-                  <span className="text-2xl font-bold">{formatNumber(card.value)}</span>
-                  {"percentage" in card && <span className="text-sm text-muted-foreground">{card.percentage}%</span>}
+                  <span className="font-bold text-2xl">{formatNumber(card.value)}</span>
+                  {"percentage" in card && <span className="text-muted-foreground text-sm">{card.percentage}%</span>}
                 </div>
                 <div className="mt-2 flex items-center gap-1">
                   {isNegativeTrend ? (
@@ -83,9 +85,9 @@ export function ErrorKPIs({ category }: ErrorKPIsProps) {
                 </div>
               </CardContent>
             </Card>
-          )
+          );
         })}
       </div>
     </TooltipProvider>
-  )
+  );
 }

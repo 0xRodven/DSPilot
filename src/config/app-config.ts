@@ -8,7 +8,6 @@ export const APP_CONFIG = {
   copyright: `© ${currentYear}, DSPilot.`,
   meta: {
     title: "DSPilot - Gestion des Performances Livreurs",
-    description:
-      "DSPilot est une plateforme SaaS de gestion des performances livreurs Amazon (DWC/IADC).",
+    description: "DSPilot est une plateforme SaaS de gestion des performances livreurs Amazon (DWC/IADC).",
   },
 };

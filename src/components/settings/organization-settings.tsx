@@ -1,33 +1,34 @@
-"use client"
+"use client";
 
-import { OrganizationProfile, useOrganization } from "@clerk/nextjs"
-import { useQuery } from "convex/react"
-import { api } from "@convex/_generated/api"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Skeleton } from "@/components/ui/skeleton"
-import { format } from "date-fns"
-import { fr } from "date-fns/locale"
-import { Building2, Calendar } from "lucide-react"
+import { OrganizationProfile, useOrganization } from "@clerk/nextjs";
+import { api } from "@convex/_generated/api";
+import { useQuery } from "convex/react";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
+import { Building2, Calendar } from "lucide-react";
+
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export function OrganizationSettings() {
-  const { organization, isLoaded } = useOrganization()
-  const station = useQuery(api.stations.getStationForCurrentOrg)
+  const { organization, isLoaded } = useOrganization();
+  const station = useQuery(api.stations.getStationForCurrentOrg);
 
   if (!isLoaded) {
-    return <Skeleton className="h-96 w-full" />
+    return <Skeleton className="h-96 w-full" />;
   }
 
   if (!organization) {
     return (
       <Card>
         <CardContent className="py-8 text-center text-muted-foreground">
-          <Building2 className="mx-auto h-12 w-12 mb-4 opacity-50" />
+          <Building2 className="mx-auto mb-4 h-12 w-12 opacity-50" />
           <p>Aucune organisation sélectionnée.</p>
-          <p className="text-sm mt-2">Créez ou rejoignez une organisation pour commencer.</p>
+          <p className="mt-2 text-sm">Créez ou rejoignez une organisation pour commencer.</p>
         </CardContent>
       </Card>
-    )
+    );
   }
 
   return (
@@ -45,7 +46,7 @@ export function OrganizationSettings() {
             </Badge>
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-2 text-sm text-muted-foreground">
+        <CardContent className="space-y-2 text-muted-foreground text-sm">
           {station?.createdAt && (
             <div className="flex items-center gap-2">
               <Calendar className="h-4 w-4" />
@@ -82,5 +83,5 @@ export function OrganizationSettings() {
         routing="hash"
       />
     </div>
-  )
+  );
 }

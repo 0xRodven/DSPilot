@@ -1,10 +1,12 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
 import { useCallback } from "react";
 
+import Link from "next/link";
+import { usePathname, useSearchParams } from "next/navigation";
+
 import { ChevronRight } from "lucide-react";
+
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   DropdownMenu,
@@ -215,11 +217,19 @@ export function NavMain({ items }: NavMainProps) {
                     );
                   }
                   // Otherwise, render the dropdown as before
-                  return <NavItemCollapsed key={item.title} item={item} isActive={isItemActive} buildHref={buildHref} />;
+                  return (
+                    <NavItemCollapsed key={item.title} item={item} isActive={isItemActive} buildHref={buildHref} />
+                  );
                 }
                 // Expanded view
                 return (
-                  <NavItemExpanded key={item.title} item={item} isActive={isItemActive} isSubmenuOpen={isSubmenuOpen} buildHref={buildHref} />
+                  <NavItemExpanded
+                    key={item.title}
+                    item={item}
+                    isActive={isItemActive}
+                    isSubmenuOpen={isSubmenuOpen}
+                    buildHref={buildHref}
+                  />
                 );
               })}
             </SidebarMenu>
