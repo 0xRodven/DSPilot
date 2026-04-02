@@ -237,6 +237,13 @@ type AutomationImportResult = {
     fair: number;
     poor: number;
   };
+  dwcDistribution: {
+    above95: number;
+    pct90to95: number;
+    pct85to90: number;
+    pct80to85: number;
+    below80: number;
+  };
   warnings: string[];
   automation?: {
     status: "success" | "partial" | "failed";
@@ -553,6 +560,7 @@ export const applyAutomationParsedReport = internalMutation({
       totalDrivers: args.weeklyStats.length,
       activeDrivers: args.weeklyStats.length,
       tierDistribution: stationAggregation.tierDistribution,
+      dwcDistribution: stationAggregation.dwcDistribution,
       dwcBreakdown: stationAggregation.dwcBreakdown,
       iadcBreakdown: stationAggregation.iadcBreakdown,
       createdAt: now,
@@ -611,6 +619,7 @@ export const applyAutomationParsedReport = internalMutation({
       dwcScore: fleetScores.dwcScore,
       iadcScore: fleetScores.iadcScore,
       tierDistribution: stationAggregation.tierDistribution,
+      dwcDistribution: stationAggregation.dwcDistribution,
       warnings: warnings.length > 0 ? warnings : undefined,
       completedAt: now,
     });
@@ -634,6 +643,7 @@ export const applyAutomationParsedReport = internalMutation({
       dwcScore: fleetScores.dwcScore,
       iadcScore: fleetScores.iadcScore,
       tierDistribution: stationAggregation.tierDistribution,
+      dwcDistribution: stationAggregation.dwcDistribution,
       warnings,
     };
   },
@@ -1072,6 +1082,14 @@ function aggregateStationWeek(weeklyStats: IngestParsedAmazonReportArgs["weeklyS
     poor: 0,
   };
 
+  const dwcDistribution = {
+    above95: 0,
+    pct90to95: 0,
+    pct85to90: 0,
+    pct80to85: 0,
+    below80: 0,
+  };
+
   let dwcCompliant = 0;
   let dwcMisses = 0;
   let failedAttempts = 0;
@@ -1107,6 +1125,12 @@ function aggregateStationWeek(weeklyStats: IngestParsedAmazonReportArgs["weeklyS
 
     const dwcPercent = (stat.dwcCompliant / totalDwc) * 100;
     tierDistribution[getTier(dwcPercent)]++;
+
+    if (dwcPercent >= 95) dwcDistribution.above95++;
+    else if (dwcPercent >= 90) dwcDistribution.pct90to95++;
+    else if (dwcPercent >= 85) dwcDistribution.pct85to90++;
+    else if (dwcPercent >= 80) dwcDistribution.pct80to85++;
+    else dwcDistribution.below80++;
   }
 
   return {
@@ -1118,6 +1142,7 @@ function aggregateStationWeek(weeklyStats: IngestParsedAmazonReportArgs["weeklyS
     dwcBreakdown,
     iadcBreakdown,
     tierDistribution,
+    dwcDistribution,
   };
 }
 
@@ -1149,5 +1174,3 @@ function getDriverId(driverMap: Map<string, Id<"drivers">>, transporterId: strin
 
   return driverId;
 }
-
-

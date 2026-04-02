@@ -1,19 +1,24 @@
 import { v } from "convex/values";
-import { mutation, query, internalMutation } from "./_generated/server";
+
 import { internal } from "./_generated/api";
-import {
-  requireWriteAccess,
-  canAccessStation,
-  checkStationAccess,
-} from "./lib/permissions";
-import { getTier } from "./lib/tier";
 import type { Id } from "./_generated/dataModel";
+import { internalMutation, mutation, query } from "./_generated/server";
+import { canAccessStation, checkStationAccess, requireWriteAccess } from "./lib/permissions";
+import { getTier } from "./lib/tier";
 
 const tierDistributionValidator = v.object({
   fantastic: v.number(),
   great: v.number(),
   fair: v.number(),
   poor: v.number(),
+});
+
+const dwcDistributionValidator = v.object({
+  above95: v.number(),
+  pct90to95: v.number(),
+  pct85to90: v.number(),
+  pct80to85: v.number(),
+  below80: v.number(),
 });
 
 /**
@@ -36,7 +41,7 @@ export const createImport = mutation({
     const existing = await ctx.db
       .query("imports")
       .withIndex("by_station_week", (q) =>
-        q.eq("stationId", args.stationId).eq("year", args.year).eq("week", args.week)
+        q.eq("stationId", args.stationId).eq("year", args.year).eq("week", args.week),
       )
       .first();
 
@@ -89,6 +94,7 @@ export const completeImport = mutation({
     dwcScore: v.number(),
     iadcScore: v.number(),
     tierDistribution: tierDistributionValidator,
+    dwcDistribution: v.optional(dwcDistributionValidator),
     warnings: v.optional(v.array(v.string())),
   },
   handler: async (ctx, args) => {
@@ -109,6 +115,7 @@ export const completeImport = mutation({
       dwcScore: args.dwcScore,
       iadcScore: args.iadcScore,
       tierDistribution: args.tierDistribution,
+      dwcDistribution: args.dwcDistribution,
       warnings: args.warnings,
       completedAt: Date.now(),
     });
@@ -199,7 +206,7 @@ export const checkExistingImport = query({
     return await ctx.db
       .query("imports")
       .withIndex("by_station_week", (q) =>
-        q.eq("stationId", args.stationId).eq("year", args.year).eq("week", args.week)
+        q.eq("stationId", args.stationId).eq("year", args.year).eq("week", args.week),
       )
       .filter((q) => q.neq(q.field("status"), "failed"))
       .first();
@@ -309,9 +316,7 @@ export const deleteImport = mutation({
     // 2. Supprimer tous les driverDailyStats de cette semaine/station
     const dailyStats = await ctx.db
       .query("driverDailyStats")
-      .withIndex("by_station_week", (q) =>
-        q.eq("stationId", stationId).eq("year", year).eq("week", week)
-      )
+      .withIndex("by_station_week", (q) => q.eq("stationId", stationId).eq("year", year).eq("week", week))
       .collect();
 
     for (const stat of dailyStats) {
@@ -321,9 +326,7 @@ export const deleteImport = mutation({
     // 3. Supprimer tous les driverWeeklyStats de cette semaine/station
     const weeklyStats = await ctx.db
       .query("driverWeeklyStats")
-      .withIndex("by_station_week", (q) =>
-        q.eq("stationId", stationId).eq("year", year).eq("week", week)
-      )
+      .withIndex("by_station_week", (q) => q.eq("stationId", stationId).eq("year", year).eq("week", week))
       .collect();
 
     for (const stat of weeklyStats) {
@@ -333,9 +336,7 @@ export const deleteImport = mutation({
     // 4. Supprimer le stationWeeklyStats de cette semaine/station
     const stationStats = await ctx.db
       .query("stationWeeklyStats")
-      .withIndex("by_station_week", (q) =>
-        q.eq("stationId", stationId).eq("year", year).eq("week", week)
-      )
+      .withIndex("by_station_week", (q) => q.eq("stationId", stationId).eq("year", year).eq("week", week))
       .first();
 
     if (stationStats) {
@@ -375,9 +376,7 @@ export const getImportData = query({
     // 2. Récupérer les driverWeeklyStats de cette semaine/station
     const weeklyStats = await ctx.db
       .query("driverWeeklyStats")
-      .withIndex("by_station_week", (q) =>
-        q.eq("stationId", imp.stationId).eq("year", imp.year).eq("week", imp.week)
-      )
+      .withIndex("by_station_week", (q) => q.eq("stationId", imp.stationId).eq("year", imp.year).eq("week", imp.week))
       .collect();
 
     // 3. Récupérer les drivers associés
@@ -388,14 +387,10 @@ export const getImportData = query({
 
         // Calculate DWC and IADC percentages
         const dwcTotal = stat.dwcCompliant + stat.dwcMisses + stat.failedAttempts;
-        const dwcPercent = dwcTotal > 0
-          ? Math.round((stat.dwcCompliant / dwcTotal) * 1000) / 10
-          : 0;
+        const dwcPercent = dwcTotal > 0 ? Math.round((stat.dwcCompliant / dwcTotal) * 1000) / 10 : 0;
 
         const iadcTotal = stat.iadcCompliant + stat.iadcNonCompliant;
-        const iadcPercent = iadcTotal > 0
-          ? Math.round((stat.iadcCompliant / iadcTotal) * 1000) / 10
-          : 0;
+        const iadcPercent = iadcTotal > 0 ? Math.round((stat.iadcCompliant / iadcTotal) * 1000) / 10 : 0;
 
         // Determine tier from the canonical policy
         const tierKey = getTier(dwcPercent);
@@ -414,7 +409,7 @@ export const getImportData = query({
           iadcCompliant: stat.iadcCompliant,
           iadcNonCompliant: stat.iadcNonCompliant,
         };
-      })
+      }),
     );
 
     return {
