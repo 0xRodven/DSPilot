@@ -477,6 +477,17 @@ export default defineSchema({
     updatedAt: v.number(),
   }).index("by_station", ["stationId"]),
 
+  stationObjectives: defineTable({
+    stationId: v.id("stations"),
+    dwcTarget: v.number(), // ex: 92 — objectif DWC% station
+    iadcTarget: v.number(), // ex: 65 — objectif IADC% station
+    dwcAlertDrop: v.number(), // ex: 5 — seuil alerte chute DWC (en points)
+    dnrDpmoMax: v.number(), // ex: 1500 — seuil alerte DNR DPMO
+    coachingMaxDays: v.number(), // ex: 14 — jours avant alerte coaching
+    updatedBy: v.string(),
+    updatedAt: v.number(),
+  }).index("by_station", ["stationId"]),
+
   // WhatsApp settings per station
   whatsappSettings: defineTable({
     stationId: v.id("stations"),
