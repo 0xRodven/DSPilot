@@ -17,6 +17,66 @@ allowed-tools: Read, Write, Edit
 - `/convex/whatsapp.ts` - Message generation
 - `/src/lib/coaching/recap-generator.ts` - Recap data structure
 - `/src/app/(main)/dashboard/weekly-recap/` - PDF export UI
+- `/src/lib/pdf/weekly-recap-document.tsx` - WeeklyRecapDocument (React PDF component)
+
+## PDF Document Component
+
+The PDF is rendered using `@react-pdf/renderer` via the `WeeklyRecapDocument` component:
+
+```tsx
+import { WeeklyRecapDocument } from "@/lib/pdf/weekly-recap-document"
+
+// Props
+interface WeeklyRecapDocumentProps {
+  data: WeeklyRecapData
+  blurDriverNames?: boolean  // Privacy mode: blurs driver names in output
+}
+```
+
+### Data Types for PDF
+
+```typescript
+interface WeeklyRecapData {
+  station: { code: string; name: string }
+  period: { year: number; week: number; startDate: string; endDate: string }
+  summary: {
+    totalDrivers: number
+    fleetDwc: number
+    fleetIadc: number
+    tierDistribution: PDFTierDistribution
+  }
+  drivers: PDFDriver[]
+}
+
+interface PDFDriver {
+  name: string
+  amazonId: string
+  kpis: PDFKPIs
+  tier: string
+  rank: number
+  trend?: { direction: "up" | "down" | "stable"; change: number }
+}
+
+interface PDFKPIs {
+  dwcPercent: number
+  iadcPercent: number
+  deliveryAttempts: number
+  dwcCompliant: number
+  dwcMisses: number
+  failedAttempts: number
+  iadcCompliant: number
+  iadcNonCompliant: number
+}
+
+interface PDFTierDistribution {
+  fantastic: number
+  great: number
+  fair: number
+  poor: number
+}
+```
+
+The `blurDriverNames` prop enables privacy mode, useful for demo or presentation contexts where driver identities should be hidden.
 
 ## Recap Data Structure
 

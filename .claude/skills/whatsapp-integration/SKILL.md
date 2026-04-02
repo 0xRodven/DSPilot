@@ -18,6 +18,8 @@ Location: `/convex/whatsapp.ts`, `/convex/whatsappCron.ts`
 
 ## Twilio Configuration
 
+Note: This integration uses raw `fetch()` to call the Twilio REST API directly. It does NOT use the Twilio SDK.
+
 ```typescript
 // Environment variables required
 // TWILIO_ACCOUNT_SID
@@ -46,9 +48,9 @@ function formatForWhatsApp(phone: string): string {
 ## Message Status Flow
 
 ```
-created → pending → sent → delivered
-                 ↘ failed
-                 ↘ undelivered
+created -> pending -> sent -> delivered
+                  \-> failed
+                  \-> undelivered
 ```
 
 ```typescript
@@ -68,10 +70,9 @@ whatsappMessages: defineTable({
   stationId: v.id("stations"),
   driverId: v.id("drivers"),
   phoneNumber: v.string(),
-  message: v.string(),
-  messageType: v.string(),  // "recap" | "alert" | "custom"
+  messageContent: v.string(),
   status: v.string(),
-  twilioSid: v.optional(v.string()),
+  messageSid: v.optional(v.string()),
   errorMessage: v.optional(v.string()),
   year: v.number(),
   week: v.number(),
@@ -86,22 +87,18 @@ whatsappMessages: defineTable({
 
 ## WhatsApp Settings Schema
 
-```typescript
-// Per-station settings
-interface WhatsAppSettings {
-  enabled: boolean
-  sendDay: number      // 0-6 (Sunday-Saturday), default: 1 (Monday)
-  sendHour: number     // 0-23, default: 9
-  timezone: string     // e.g., "Europe/Paris"
-}
+WhatsApp settings are stored in a separate `whatsappSettings` table (not embedded in the stations table):
 
-// In stations table
-whatsappSettings: v.optional(v.object({
+```typescript
+// Separate whatsappSettings table
+whatsappSettings: defineTable({
+  stationId: v.id("stations"),
   enabled: v.boolean(),
-  sendDay: v.number(),
-  sendHour: v.number(),
-  timezone: v.string(),
-}))
+  sendDay: v.number(),      // 0-6 (Sunday-Saturday), default: 1 (Monday)
+  sendHour: v.number(),     // 0-23, default: 9
+  timezone: v.string(),     // e.g., "Europe/Paris"
+})
+  .index("by_station", ["stationId"])
 ```
 
 ## Opt-in Management
@@ -124,7 +121,7 @@ function canSendWhatsApp(driver: Driver): boolean {
 ## Sending Messages
 
 ```typescript
-// Internal action for sending
+// Internal action for sending via raw fetch (no Twilio SDK)
 export const sendWhatsAppMessage = internalAction({
   args: {
     messageId: v.id("whatsappMessages"),
@@ -133,22 +130,37 @@ export const sendWhatsAppMessage = internalAction({
     const message = await ctx.runQuery(internal.whatsapp.getMessage, { messageId })
     if (!message) throw new Error("Message not found")
 
-    const client = twilio(
-      process.env.TWILIO_ACCOUNT_SID,
-      process.env.TWILIO_AUTH_TOKEN
-    )
+    const accountSid = process.env.TWILIO_ACCOUNT_SID!
+    const authToken = process.env.TWILIO_AUTH_TOKEN!
+    const from = process.env.TWILIO_WHATSAPP_FROM!
 
     try {
-      const result = await client.messages.create({
-        body: message.message,
-        from: process.env.TWILIO_WHATSAPP_FROM,
-        to: formatForWhatsApp(message.phoneNumber),
-      })
+      const response = await fetch(
+        `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+            Authorization: `Basic ${btoa(`${accountSid}:${authToken}`)}`,
+          },
+          body: new URLSearchParams({
+            Body: message.messageContent,
+            From: from,
+            To: formatForWhatsApp(message.phoneNumber),
+          }),
+        }
+      )
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.message || "Twilio API error")
+      }
 
       await ctx.runMutation(internal.whatsapp.updateMessageStatus, {
         messageId,
         status: "sent",
-        twilioSid: result.sid,
+        messageSid: result.sid,
       })
     } catch (error) {
       await ctx.runMutation(internal.whatsapp.updateMessageStatus, {
@@ -163,41 +175,41 @@ export const sendWhatsAppMessage = internalAction({
 
 ## Scheduled Sends (Cron)
 
+The cron runs **hourly** to check whether any station is due for sends:
+
 ```typescript
 // In convex/crons.ts
-crons.weekly(
-  "send-weekly-recaps",
-  { dayOfWeek: "monday", hourUTC: 8 },
-  internal.whatsappCron.sendWeeklyRecaps
+crons.hourly(
+  "check-whatsapp-sends",
+  internal.whatsappCron.checkAndSendRecaps
 )
 
 // Handler
-export const sendWeeklyRecaps = internalAction({
+export const checkAndSendRecaps = internalAction({
   handler: async (ctx) => {
     // Get all stations with WhatsApp enabled
-    const stations = await ctx.runQuery(internal.whatsapp.getEnabledStations)
+    const settings = await ctx.runQuery(internal.whatsapp.getEnabledSettings)
 
-    for (const station of stations) {
-      // Check if it's the right time for this station's timezone
-      if (!isCorrectSendTime(station.whatsappSettings)) continue
+    for (const setting of settings) {
+      // Check if it's the right day/hour for this station's timezone
+      if (!isCorrectSendTime(setting)) continue
 
       // Get drivers with opt-in
       const drivers = await ctx.runQuery(
         internal.whatsapp.getOptedInDrivers,
-        { stationId: station._id }
+        { stationId: setting.stationId }
       )
 
       for (const driver of drivers) {
         // Generate and queue message
         const recap = await generateDriverRecap(driver)
-        const message = generateRecapMessage(recap)
+        const messageContent = generateRecapMessage(recap)
 
         await ctx.runMutation(internal.whatsapp.createMessage, {
-          stationId: station._id,
+          stationId: setting.stationId,
           driverId: driver._id,
           phoneNumber: driver.phoneNumber,
-          message,
-          messageType: "recap",
+          messageContent,
         })
       }
     }
@@ -293,7 +305,7 @@ N'hesite pas a en parler si tu as besoin d'aide !
     { header: "Driver", accessor: "driverName" },
     { header: "Status", accessor: "status", cell: StatusBadge },
     { header: "Sent", accessor: "sentAt", cell: DateCell },
-    { header: "Message", accessor: "message", truncate: 50 },
+    { header: "Message", accessor: "messageContent", truncate: 50 },
   ]}
   data={messages}
 />

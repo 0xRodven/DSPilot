@@ -322,10 +322,10 @@ const textColor = getTierColor(tier); // "text-emerald-400"
 const bgColor = getTierBgColor(tier); // "bg-emerald-500/20 text-emerald-400"
 
 // Thresholds:
-// fantastic: >= 98.5%
-// great: >= 96%
-// fair: >= 90%
-// poor: < 90%
+// fantastic: >= 95%
+// great: >= 90%
+// fair: >= 88%
+// poor: < 88%
 ```
 
 ### 8. Page Layout Pattern

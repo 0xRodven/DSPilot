@@ -46,13 +46,13 @@ type ActionStatus = "pending" | "improved" | "no_effect" | "escalated"
 
 ```
 Stage 1: Discussion
-    ↓ no improvement
+    | no improvement
 Stage 2: Warning #1
-    ↓ no improvement
+    | no improvement
 Stage 3: Warning #2
-    ↓ no improvement
+    | no improvement
 Stage 4: Warning #3
-    ↓ no improvement
+    | no improvement
 Stage 5: Suspension
 ```
 
@@ -89,15 +89,24 @@ coachingActions: defineTable({
   notes: v.optional(v.string()),
   evaluationNotes: v.optional(v.string()),
   followUpDate: v.optional(v.string()),
-  escalationDate: v.optional(v.number()),
+  escalationDate: v.optional(v.string()),
   escalationNote: v.optional(v.string()),
+  createdBy: v.string(),
   createdAt: v.number(),
   evaluatedAt: v.optional(v.number()),
 })
   .index("by_driver", ["driverId"])
   .index("by_station", ["stationId"])
   .index("by_driver_status", ["driverId", "status"])
+  .index("by_station_status", ["stationId", "status"])
 ```
+
+## Enrichment on List
+
+The `listCoachingActions` query enriches each action with additional driver data:
+- **dwc**: The driver's current DWC percentage
+- **tier**: The driver's current tier (fantastic/great/fair/poor)
+- **waitingDays**: Number of days the action has been in `pending` status
 
 ## Kanban Board Structure
 

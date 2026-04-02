@@ -9,64 +9,69 @@ allowed-tools: Read, Write, Edit
 ## When to Use
 - Implementing tier classification logic
 - Applying tier colors to UI components
-- Building driver rankings
-- Creating performance badges
+- Building driver rankings or performance badges
 - Calculating trends and changes
+- Working with IADC tier classification
 
-## Reference Implementation
-Location: `/src/lib/utils/tier.ts`
+## Reference Implementations
+- Frontend: `src/lib/utils/tier.ts` (DWC + IADC + colors)
+- Backend: `convex/lib/tier.ts` (DWC only, used in Convex functions)
 
-## Tier Thresholds
+## DWC Tier Thresholds
 
 | Tier | DWC % | Description |
 |------|-------|-------------|
-| Fantastic | >= 98.5% | Performance excellente |
-| Great | >= 96% | Tres bonne performance |
-| Fair | >= 90% | Performance acceptable |
-| Poor | < 90% | Performance a ameliorer |
+| Fantastic | >= 95% | Performance excellente |
+| Great | >= 90% | Très bonne performance |
+| Fair | >= 88% | Performance acceptable |
+| Poor | < 88% | Performance à améliorer |
 
-## TypeScript Types
+## IADC Tier Thresholds
+
+| Tier | IADC % | Description |
+|------|--------|-------------|
+| Fantastic | >= 70% | Performance excellente |
+| Great | >= 60% | Très bonne performance |
+| Fair | >= 50% | Performance acceptable |
+| Poor | < 50% | Performance à améliorer |
+
+## TypeScript Types & Constants
 
 ```typescript
 export type Tier = "fantastic" | "great" | "fair" | "poor"
 
-export const tierThresholds = {
-  fantastic: 98.5,
-  great: 96,
-  fair: 90,
-  poor: 0,
-} as const
-
-export const tierLabels: Record<Tier, string> = {
-  fantastic: "Fantastic",
-  great: "Great",
-  fair: "Fair",
-  poor: "Poor",
-}
-
-export const tierDescriptions: Record<Tier, string> = {
-  fantastic: "DWC >= 98.5% - Performance excellente",
-  great: "DWC >= 96% - Tres bonne performance",
-  fair: "DWC >= 90% - Performance acceptable",
-  poor: "DWC < 90% - Performance a ameliorer",
-}
-```
-
-## Classification Function
-
-```typescript
+// DWC
+export const tierThresholds = { fantastic: 95, great: 90, fair: 88, poor: 0 } as const
 export const getTier = (dwcPercent: number): Tier => {
-  if (dwcPercent >= 98.5) return "fantastic"
-  if (dwcPercent >= 96) return "great"
-  if (dwcPercent >= 90) return "fair"
+  if (dwcPercent >= 95) return "fantastic"
+  if (dwcPercent >= 90) return "great"
+  if (dwcPercent >= 88) return "fair"
   return "poor"
+}
+
+// IADC
+export const iadcThresholds = { fantastic: 70, great: 60, fair: 50, poor: 0 } as const
+export const getIadcTier = (iadcPercent: number): Tier => {
+  if (iadcPercent >= 70) return "fantastic"
+  if (iadcPercent >= 60) return "great"
+  if (iadcPercent >= 50) return "fair"
+  return "poor"
+}
+
+// Labels
+export const tierLabels: Record<Tier, string> = { fantastic: "Fantastic", great: "Great", fair: "Fair", poor: "Poor" }
+export const tierDescriptions: Record<Tier, string> = {
+  fantastic: "DWC ≥ 95% — Performance excellente",
+  great: "DWC ≥ 90% — Très bonne performance",
+  fair: "DWC ≥ 88% — Performance acceptable",
+  poor: "DWC < 88% — Performance à améliorer",
 }
 ```
 
 ## Color Functions
 
-### Text Colors
 ```typescript
+// Text colors
 export const getTierColor = (tier: Tier) => {
   switch (tier) {
     case "fantastic": return "text-emerald-400"
@@ -75,10 +80,8 @@ export const getTierColor = (tier: Tier) => {
     case "poor": return "text-red-400"
   }
 }
-```
 
-### Background Colors (with transparency)
-```typescript
+// Badge backgrounds (with transparency)
 export const getTierBgColor = (tier: Tier) => {
   switch (tier) {
     case "fantastic": return "bg-emerald-500/20 text-emerald-400"
@@ -87,10 +90,8 @@ export const getTierBgColor = (tier: Tier) => {
     case "poor": return "bg-red-500/20 text-red-400"
   }
 }
-```
 
-### Border Colors
-```typescript
+// Border colors (left border accent)
 export const getTierBorderColor = (tier: Tier) => {
   switch (tier) {
     case "fantastic": return "border-l-emerald-500"
@@ -101,38 +102,9 @@ export const getTierBorderColor = (tier: Tier) => {
 }
 ```
 
-## Usage Patterns
-
-### In Components
-```tsx
-import { getTier, getTierColor, getTierBgColor } from "@/lib/utils/tier"
-
-function DriverCard({ dwcPercent }: { dwcPercent: number }) {
-  const tier = getTier(dwcPercent)
-
-  return (
-    <Card className={cn("border-l-4", getTierBorderColor(tier))}>
-      <Badge className={getTierBgColor(tier)}>
-        {tierLabels[tier]}
-      </Badge>
-      <span className={getTierColor(tier)}>
-        {dwcPercent.toFixed(1)}%
-      </span>
-    </Card>
-  )
-}
-```
-
-### In Tables
-```tsx
-<TableCell className={getTierColor(getTier(driver.dwcPercent))}>
-  {driver.dwcPercent.toFixed(1)}%
-</TableCell>
-```
-
-### In Charts
+## Hex Colors (for charts, PDF)
 ```typescript
-const tierColors = {
+const tierHexColors = {
   fantastic: "#34d399", // emerald-400
   great: "#60a5fa",     // blue-400
   fair: "#fbbf24",      // amber-400
@@ -140,63 +112,48 @@ const tierColors = {
 }
 ```
 
-## Trend Calculation
+## Backend (Convex) — `convex/lib/tier.ts`
 
 ```typescript
-export function calculateTrend(
-  current: number,
-  previous: number
-): { direction: "up" | "down" | "stable"; change: number } {
-  const change = current - previous
-  const direction =
-    change > 0.5 ? "up" :
-    change < -0.5 ? "down" :
-    "stable"
+import { getTier } from "./tier"
 
-  return { direction, change: Math.abs(change) }
+export const DWC_TIER_THRESHOLDS = { fantastic: 95, great: 90, fair: 88, poor: 0 } as const
+export function getTier(dwcPercent: number): Tier {
+  if (dwcPercent >= DWC_TIER_THRESHOLDS.fantastic) return "fantastic"
+  if (dwcPercent >= DWC_TIER_THRESHOLDS.great) return "great"
+  if (dwcPercent >= DWC_TIER_THRESHOLDS.fair) return "fair"
+  return "poor"
 }
 ```
 
-## Tier Distribution
+## DWC/IADC Calculation Formulas
 
 ```typescript
-interface TierDistribution {
-  fantastic: number
-  great: number
-  fair: number
-  poor: number
-}
+// DWC% = compliant / (compliant + misses + failedAttempts) * 100
+const dwcPercent = (dwcCompliant / (dwcCompliant + dwcMisses + failedAttempts)) * 100
 
-export function calculateTierDistribution(
-  stats: { dwcPercent: number }[]
-): TierDistribution {
-  return stats.reduce(
-    (acc, stat) => {
-      const tier = getTier(stat.dwcPercent)
-      acc[tier]++
-      return acc
-    },
-    { fantastic: 0, great: 0, fair: 0, poor: 0 }
-  )
-}
+// IADC% = compliant / (compliant + nonCompliant) * 100
+const iadcPercent = (iadcCompliant / (iadcCompliant + iadcNonCompliant)) * 100
+
+// Fleet average: sum volumes, NOT average of percentages
+const fleetDwc = totalCompliant / (totalCompliant + totalMisses + totalFailed) * 100
 ```
 
-## Ranking Logic
+## Usage Patterns
 
-```typescript
-// Sort drivers by DWC descending
-const ranked = drivers
-  .map((d, index) => ({
-    ...d,
-    rank: index + 1,
-    tier: getTier(d.dwcPercent),
-  }))
-  .sort((a, b) => b.dwcPercent - a.dwcPercent)
+```tsx
+import { getTier, getTierColor, getTierBgColor, getTierBorderColor } from "@/lib/utils/tier"
+
+// Card with tier border accent
+<Card className={cn("border-l-4", getTierBorderColor(getTier(dwcPercent)))}>
+  <Badge className={getTierBgColor(getTier(dwcPercent))}>{tierLabels[tier]}</Badge>
+  <span className={getTierColor(getTier(dwcPercent))}>{dwcPercent.toFixed(1)}%</span>
+</Card>
 ```
 
 ## DO NOT
-- Use different thresholds than defined above
-- Create new tier levels
+- Use thresholds other than 95/90/88 for DWC
+- Use thresholds other than 70/60/50 for IADC
 - Change color mappings without approval
-- Use hardcoded colors instead of functions
-- Calculate tier from IADC (only DWC)
+- Use hardcoded hex colors instead of Tailwind functions in UI
+- Average percentages instead of volume-weighted calculation

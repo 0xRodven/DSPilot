@@ -12,6 +12,7 @@ allowed-tools: Read, Write, Edit
 - Managing import lifecycle
 - Handling re-imports (replace existing)
 - Building import history UI
+- Batch importing via useBatchImport hook
 
 ## Reference Implementation
 Location: `/convex/imports.ts`
@@ -19,9 +20,9 @@ Location: `/convex/imports.ts`
 ## Import Lifecycle
 
 ```
-upload → pending → processing → success
-                            ↘ partial (with warnings)
-                            ↘ failed (with errors)
+upload -> pending -> processing -> success
+                            \-> partial (with warnings)
+                            \-> failed (with errors)
 ```
 
 ```typescript
@@ -43,6 +44,12 @@ imports: defineTable({
   driverCount: v.number(),
   dailyStatsCount: v.number(),
   weeklyStatsCount: v.number(),
+  dailyRecordsCount: v.optional(v.number()),
+  newDriversCount: v.optional(v.number()),
+
+  // Scores
+  dwcScore: v.optional(v.number()),
+  iadcScore: v.optional(v.number()),
 
   // Tier distribution at import time
   tierDistribution: v.object({
@@ -115,13 +122,17 @@ try {
     driverCount: parsedReport.transporterIds.length,
     dailyStatsCount: parsedReport.dailyStats.length,
     weeklyStatsCount: parsedReport.weeklyStats.length,
+    dailyRecordsCount: parsedReport.dailyStats.length,
+    newDriversCount: parsedReport.newDrivers?.length ?? 0,
+    dwcScore: parsedReport.fleetDwc,
+    iadcScore: parsedReport.fleetIadc,
     tierDistribution: calculateTierDistribution(parsedReport.weeklyStats),
     errors: parsedReport.errors,
     warnings: parsedReport.warnings,
     completedAt: Date.now(),
   })
 
-  // Generate alerts
+  // Post-import automation: schedule alert generation
   await ctx.scheduler.runAfter(0, internal.alerts.generateAlertsForImport, {
     stationId,
     year,
@@ -137,6 +148,21 @@ try {
   throw error
 }
 ```
+
+## Batch Import via useBatchImport Hook
+
+For importing multiple files at once, use the `useBatchImport` hook:
+
+```typescript
+import { useBatchImport } from "@/hooks/useBatchImport"
+
+const { importFiles, progress, isImporting } = useBatchImport()
+
+// Import multiple files sequentially
+await importFiles(files, stationId)
+```
+
+The hook handles progress tracking, error aggregation, and sequential processing of multiple HTML report files.
 
 ## Cascade Delete Logic
 

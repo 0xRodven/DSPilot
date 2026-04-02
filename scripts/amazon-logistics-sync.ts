@@ -543,7 +543,7 @@ async function discoverSupplementaryPaths(options: CliOptions, year: number, wee
     ...files.filter((filePath) => {
       const filename = path.basename(filePath).toLowerCase();
       return (
-        filename.endsWith(".html") && (filename.includes(associateWeekTag) || filename.includes(`associate-overview`))
+        filename.endsWith(".html") && (filename.includes(associateWeekTag) || filename.includes("associate-overview") || filename.includes("associate_overview"))
       );
     }),
   ]);
@@ -717,7 +717,7 @@ async function buildArtifactMetadata(
           filePath,
           mimeType: "text/html",
         });
-      } else if (filename.includes("associate_w")) {
+      } else if (filename.includes("associate_w") || filename.includes("associate_overview")) {
         discoveredArtifacts.push({
           artifactType: "associate_weekly_html",
           logicalSource: "amazon_associate_overview",

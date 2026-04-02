@@ -12,9 +12,11 @@ allowed-tools: Read, Write, Edit
 - Creating alert badges/counters
 - Managing alert lifecycle (read/dismiss)
 - Post-import alert processing
+- Working with the confidence scoring system
 
 ## Reference Implementation
-Location: `/convex/alerts.ts`
+- `/convex/alerts.ts` - Alert mutations and queries
+- `/convex/lib/automationPolicy.ts` - Confidence scoring and qualify functions
 
 ## Alert Types
 
@@ -55,6 +57,85 @@ const alertSeverity: Record<AlertType, AlertSeverity> = {
 }
 ```
 
+## Confidence Scoring System (automationPolicy.ts)
+
+All alerts are scored for confidence before creation. The system uses `QualifiedAlertCandidate` objects enriched with evidence and recommended actions.
+
+### Types
+
+```typescript
+type AutomationSeverity = "info" | "warning" | "critical"
+type AutomationConfidenceLevel = "low" | "medium" | "high"
+type AutomationDecisionType = "alert" | "digest" | "report_daily" | "report_weekly"
+type LogicalChannel = "ops" | "alerts" | "reports_daily" | "reports_weekly"
+
+type AlertEvidence = {
+  label: string
+  value: string
+}
+
+type QualifiedAlertCandidate = {
+  type: "dwc_drop" | "dwc_critical" | "coaching_pending" | "new_driver" | "tier_downgrade"
+  severity: Exclude<AutomationSeverity, "info">
+  title: string
+  message: string
+  summary: string
+  confidenceScore: number
+  confidenceLevel: AutomationConfidenceLevel
+  logicalChannel: LogicalChannel
+  evidence: AlertEvidence[]
+  recommendedAction: string
+  targetPath?: string
+  currentValue?: number
+  previousValue?: number
+  threshold?: number
+}
+```
+
+### toConfidenceLevel()
+
+```typescript
+function toConfidenceLevel(score: number): AutomationConfidenceLevel {
+  if (score >= 0.85) return "high"
+  if (score >= 0.65) return "medium"
+  return "low"
+}
+```
+
+### shouldAutoSend()
+
+```typescript
+function shouldAutoSend(confidenceScore: number, minConfidence: number): boolean {
+  return confidenceScore >= minConfidence
+}
+```
+
+### Qualify Functions and Confidence Scores
+
+#### 1. qualifyDwcCriticalAlert
+- DWC < 88%: severity `"critical"`, confidence `0.96`
+- DWC < 90% but >= 88%: severity `"warning"`, confidence `0.90`
+- logicalChannel: `"alerts"`
+
+#### 2. qualifyDwcDropAlert
+- Drop >= 10 points: severity `"critical"`, confidence `0.92`
+- Drop >= 5 but < 10: severity `"warning"`, confidence `0.82`
+- logicalChannel: `"alerts"`
+
+#### 3. qualifyTierDowngradeAlert
+- Current tier is `"poor"`: severity `"critical"`, confidence `0.90`
+- Otherwise: severity `"warning"`, confidence `0.78`
+- logicalChannel: `"alerts"`
+
+#### 4. qualifyNewDriverAlert
+- Always severity `"warning"`, confidence `0.72`
+- logicalChannel: `"alerts"`
+
+#### 5. qualifyCoachingPendingAlert
+- Days pending > 21: severity `"critical"`, confidence `0.88`
+- Days pending <= 21: severity `"warning"`, confidence `0.76`
+- logicalChannel: `"ops"`
+
 ## Data Schema
 
 ```typescript
@@ -73,6 +154,17 @@ alerts: defineTable({
   dismissedBy: v.optional(v.string()),
   dismissedAt: v.optional(v.number()),
   createdAt: v.number(),
+  confidenceScore: v.optional(v.number()),
+  confidenceLevel: v.optional(v.string()),
+  logicalChannel: v.optional(v.string()),
+  targetPath: v.optional(v.string()),
+  evidence: v.optional(v.array(v.object({
+    label: v.string(),
+    value: v.string(),
+  }))),
+  recommendedAction: v.optional(v.string()),
+  sourceRunId: v.optional(v.string()),
+  decisionScoreId: v.optional(v.id("decisionScores")),
   metadata: v.optional(v.object({
     previousDwc: v.optional(v.number()),
     currentDwc: v.optional(v.number()),
@@ -84,6 +176,24 @@ alerts: defineTable({
   .index("by_station", ["stationId"])
   .index("by_station_unread", ["stationId", "isRead"])
   .index("by_station_week", ["stationId", "year", "week"])
+```
+
+## decisionScores Table Integration
+
+Alerts can reference an entry in the `decisionScores` table via the `decisionScoreId` field. This table logs every automation decision for audit and traceability.
+
+```typescript
+decisionScores: defineTable({
+  stationId: v.id("stations"),
+  decisionType: v.string(),         // "alert" | "digest" | "report_daily" | "report_weekly"
+  alertType: v.optional(v.string()),
+  confidenceScore: v.number(),
+  confidenceLevel: v.string(),
+  logicalChannel: v.string(),
+  autoSent: v.boolean(),
+  createdAt: v.number(),
+})
+  .index("by_station", ["stationId"])
 ```
 
 ## Alert Generation Logic

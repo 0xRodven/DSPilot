@@ -138,7 +138,13 @@
       "Bash(chmod:*)",
       "Bash(npx biome:*)",
       "WebFetch(domain:alexop.dev)",
-      "Bash(git check-ignore:*)"
+      "Bash(git check-ignore:*)",
+      "Bash(cp:*)",
+      "Bash(claude plugins:*)",
+      "Bash(claude plugin:*)",
+      "Bash(bash)",
+      "Bash(rm -rf ~/.claude/skills/gstack)",
+      "Bash(git clone:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

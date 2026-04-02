@@ -29,6 +29,7 @@ import type * as rag from "../rag.js";
 import type * as seed from "../seed.js";
 import type * as seed_seedCoaching from "../seed/seedCoaching.js";
 import type * as stationDeliveryStats from "../stationDeliveryStats.js";
+import type * as stationObjectives from "../stationObjectives.js";
 import type * as stations from "../stations.js";
 import type * as stats from "../stats.js";
 import type * as whatsapp from "../whatsapp.js";
@@ -62,6 +63,7 @@ declare const fullApi: ApiFromModules<{
   seed: typeof seed;
   "seed/seedCoaching": typeof seed_seedCoaching;
   stationDeliveryStats: typeof stationDeliveryStats;
+  stationObjectives: typeof stationObjectives;
   stations: typeof stations;
   stats: typeof stats;
   whatsapp: typeof whatsapp;

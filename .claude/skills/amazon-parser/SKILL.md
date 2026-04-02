@@ -19,10 +19,17 @@ Location: `/src/lib/parser/`
 | File | Purpose |
 |------|---------|
 | `index.ts` | Main orchestrator - `parseHtmlFile()` |
+| `types.ts` | TypeScript type definitions |
 | `html-extractor.ts` | Extract base64 CSVs from HTML |
 | `csv-parser.ts` | Parse CSV rows |
-| `aggregator.ts` | Aggregate daily → weekly stats |
-| `types.ts` | TypeScript type definitions |
+| `aggregator.ts` | Aggregate daily -> weekly stats |
+| `constants.ts` | Shared constants and mappings |
+| `html-table.ts` | Generic HTML table extraction utilities |
+| `associate-overview-html.ts` | Parse associate overview HTML tables |
+| `daily-report-html.ts` | Parse daily report HTML tables |
+| `delivery-overview-csv.ts` | Parse delivery overview CSV data |
+| `driver-names-csv.ts` | Extract driver names from CSV |
+| `driver-roster-html.ts` | Parse driver roster HTML tables |
 
 ## Key Types
 
@@ -90,24 +97,24 @@ interface ParsedReport {
 
 ```
 1. HTML File Upload
-   ↓
+   |
 2. extractCsvsFromHtml()
    - Find <script> tags with base64 CSV data
    - Decode base64 to CSV text
    - Extract station code from filename/headers
    - Detect period type (daily vs weekly)
-   ↓
+   |
 3. parseCsvRows()
    - Parse CSV headers
    - Map columns to RawCsvRow fields
    - Handle numeric conversions
    - Collect errors/warnings
-   ↓
+   |
 4. aggregateStats()
    - Group by transporter
    - Calculate breakdowns
    - Sum metrics
-   ↓
+   |
 5. Return ParsedReport
 ```
 
