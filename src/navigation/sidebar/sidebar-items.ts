@@ -6,7 +6,6 @@ import {
   FileText,
   LayoutDashboard,
   type LucideIcon,
-  MessageSquare,
   Settings,
   Upload,
   Users,
@@ -90,9 +89,9 @@ export function getSidebarItems(orgName?: string): NavGroup[] {
           icon: Calendar,
         },
         {
-          title: "Recapitulatifs",
-          url: "/dashboard/coaching/recaps",
-          icon: MessageSquare,
+          title: "Rapports",
+          url: "/dashboard/reports",
+          icon: FileText,
         },
       ],
     },
@@ -100,11 +99,6 @@ export function getSidebarItems(orgName?: string): NavGroup[] {
       id: 3,
       label: "Configuration",
       items: [
-        {
-          title: "Rapports",
-          url: "/dashboard/reports",
-          icon: FileText,
-        },
         {
           title: "Parametres",
           url: "/dashboard/settings",
