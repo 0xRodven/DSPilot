@@ -199,6 +199,8 @@ export const updateStationWeeklyStats = mutation({
       poor: 0,
     };
 
+    const dwcDist = { above95: 0, pct90to95: 0, pct85to90: 0, pct80to85: 0, below80: 0 };
+
     for (const stat of driverStats) {
       dwcCompliant += stat.dwcCompliant;
       dwcMisses += stat.dwcMisses;
@@ -227,6 +229,11 @@ export const updateStationWeeklyStats = mutation({
       if (total > 0) {
         const dwcPercent = (stat.dwcCompliant / total) * 100;
         tiers[getTier(dwcPercent)]++;
+        if (dwcPercent >= 95) dwcDist.above95++;
+        else if (dwcPercent >= 90) dwcDist.pct90to95++;
+        else if (dwcPercent >= 85) dwcDist.pct85to90++;
+        else if (dwcPercent >= 80) dwcDist.pct80to85++;
+        else dwcDist.below80++;
       }
     }
 
@@ -252,6 +259,7 @@ export const updateStationWeeklyStats = mutation({
       totalDrivers: driverStats.length,
       activeDrivers: driverStats.length,
       tierDistribution: tiers,
+      dwcDistribution: dwcDist,
       dwcBreakdown,
       iadcBreakdown,
       updatedAt: now,
@@ -1060,6 +1068,7 @@ export const getDashboardKPIsDaily = query({
     let iadcCompliant = 0;
     let iadcNonCompliant = 0;
     const tiers = { fantastic: 0, great: 0, fair: 0, poor: 0 };
+    const dwcDist = { above95: 0, pct90to95: 0, pct85to90: 0, pct80to85: 0, below80: 0 };
 
     for (const stat of dailyStats) {
       dwcCompliant += stat.dwcCompliant;
@@ -1073,6 +1082,11 @@ export const getDashboardKPIsDaily = query({
       if (total > 0) {
         const dwcPercent = (stat.dwcCompliant / total) * 100;
         tiers[getTier(dwcPercent)]++;
+        if (dwcPercent >= 95) dwcDist.above95++;
+        else if (dwcPercent >= 90) dwcDist.pct90to95++;
+        else if (dwcPercent >= 85) dwcDist.pct85to90++;
+        else if (dwcPercent >= 80) dwcDist.pct80to85++;
+        else dwcDist.below80++;
       }
     }
 
@@ -1130,6 +1144,7 @@ export const getDashboardKPIsDaily = query({
       totalDrivers: dailyStats.length,
       alerts,
       tierDistribution: tiers,
+      dwcDistribution: dwcDist,
       prevDate,
       // New fields for KPI cards
       totalDeliveries: dwcTotal,
@@ -1446,6 +1461,7 @@ export const getDashboardKPIsRange = query({
 
     // 7. Calculer tierDistribution depuis les drivers uniques
     const tierDistribution = { fantastic: 0, great: 0, fair: 0, poor: 0 };
+    const dwcDistribution = { above95: 0, pct90to95: 0, pct85to90: 0, pct80to85: 0, below80: 0 };
 
     for (const stats of byDriver.values()) {
       const driverTotals = stats.reduce(
@@ -1462,6 +1478,11 @@ export const getDashboardKPIsRange = query({
 
         // Calculer le tier du driver unique depuis la politique canonique
         tierDistribution[getTier(driverDwc)]++;
+        if (driverDwc >= 95) dwcDistribution.above95++;
+        else if (driverDwc >= 90) dwcDistribution.pct90to95++;
+        else if (driverDwc >= 85) dwcDistribution.pct85to90++;
+        else if (driverDwc >= 80) dwcDistribution.pct80to85++;
+        else dwcDistribution.below80++;
       }
     }
 
@@ -1474,6 +1495,7 @@ export const getDashboardKPIsRange = query({
       totalDrivers,
       alerts,
       tierDistribution,
+      dwcDistribution,
       periodWeeks: weeklyStats.length,
       // New fields for KPI cards
       totalDeliveries: dwcTotal,
