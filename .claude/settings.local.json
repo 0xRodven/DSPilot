@@ -144,7 +144,9 @@
       "Bash(claude plugin:*)",
       "Bash(bash)",
       "Bash(rm -rf ~/.claude/skills/gstack)",
-      "Bash(git clone:*)"
+      "Bash(git clone:*)",
+      "Bash(ssh openclaw:*)",
+      "Skill(schedule)"
     ]
   },
   "enableAllProjectMcpServers": true,

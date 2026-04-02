@@ -20,7 +20,7 @@
 import { ConvexHttpClient } from "convex/browser";
 
 import { api } from "../convex/_generated/api";
-import type { DriverRecommendation, ReportData } from "../src/lib/pdf/report-template";
+import type { DriverRecommendation, ReportData, WeeklyHistoryEntry } from "../src/lib/pdf/report-template";
 import { generateReportHtml } from "../src/lib/pdf/report-template";
 import * as fs from "node:fs";
 
@@ -164,6 +164,16 @@ async function main() {
   const top5 = reportData.drivers.slice(0, 5) as AnyDriver[];
   const bottom5 = (reportData.drivers as AnyDriver[]).filter((d: AnyDriver) => d.dwcPercent < 90).slice(-5);
 
+  // Map weeklyHistory from Convex format
+  const weeklyHistory: WeeklyHistoryEntry[] | undefined = reportData.weeklyHistory
+    ? (reportData.weeklyHistory as { week: number; year: number; avgDwc: number; avgIadc: number }[]).map((h) => ({
+        week: h.week,
+        year: h.year,
+        avgDwc: h.avgDwc,
+        avgIadc: h.avgIadc,
+      }))
+    : undefined;
+
   const templateData: ReportData = {
     stationName: reportData.stationName,
     stationCode: reportData.stationCode,
@@ -178,6 +188,7 @@ async function main() {
       dwcPercent: d.dwcPercent,
       iadcPercent: d.iadcPercent,
       daysWorked: d.daysWorked,
+      trend: d.dwcTrend ?? undefined,
     })),
     bottomDrivers: bottom5.map((d: AnyDriver) => ({
       rank: d.rank,
@@ -185,6 +196,7 @@ async function main() {
       dwcPercent: d.dwcPercent,
       iadcPercent: d.iadcPercent,
       daysWorked: d.daysWorked,
+      trend: d.dwcTrend ?? undefined,
     })),
     allDrivers: (reportData.drivers as AnyDriver[]).map((d: AnyDriver) => ({
       rank: d.rank,
@@ -192,10 +204,12 @@ async function main() {
       dwcPercent: d.dwcPercent,
       iadcPercent: d.iadcPercent,
       daysWorked: d.daysWorked,
+      trend: d.dwcTrend ?? undefined,
     })),
     aiSummary: aiContent.aiSummary || undefined,
     aiRecommendations: aiContent.aiRecommendations || undefined,
     driverRecommendations: aiContent.driverRecommendations.length > 0 ? aiContent.driverRecommendations : undefined,
+    weeklyHistory,
   };
 
   // Generate both versions

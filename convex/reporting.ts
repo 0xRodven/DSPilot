@@ -129,6 +129,31 @@ export const getReportData = query({
       below80: sorted.filter((d) => d.dwcPercent < 80).length,
     };
 
+    // Weekly history (last 8 weeks)
+    const allStationStats = await ctx.db
+      .query("stationWeeklyStats")
+      .withIndex("by_station_week", (q) => q.eq("stationId", station._id))
+      .collect();
+
+    // Sort by year/week descending, take last 8 before or including current week
+    const sortedStats = allStationStats
+      .filter((s) => s.year < args.year || (s.year === args.year && s.week <= args.week))
+      .sort((a, b) => {
+        if (a.year !== b.year) return b.year - a.year;
+        return b.week - a.week;
+      })
+      .slice(0, 8);
+
+    const weeklyHistory = sortedStats
+      .map((s) => {
+        const total = s.dwcCompliant + s.dwcMisses + s.failedAttempts;
+        const avgDwc = total > 0 ? Math.round((s.dwcCompliant / total) * 1000) / 10 : 0;
+        const iadcT = s.iadcCompliant + s.iadcNonCompliant;
+        const avgIadc = iadcT > 0 ? Math.round((s.iadcCompliant / iadcT) * 1000) / 10 : 0;
+        return { week: s.week, year: s.year, avgDwc, avgIadc };
+      })
+      .reverse(); // ascending order (oldest first for chart)
+
     return {
       stationId: station._id,
       stationName: station.name,
@@ -147,6 +172,7 @@ export const getReportData = query({
       dwcDistribution,
       drivers: sorted.map((d, i) => ({ ...d, rank: i + 1 })),
       prevWeek,
+      weeklyHistory,
     };
   },
 });

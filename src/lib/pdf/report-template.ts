@@ -20,6 +20,15 @@ export interface ReportDriver {
   dwcPercent: number;
   iadcPercent: number;
   daysWorked: number;
+  /** Trend vs previous week in pp (e.g. +2.3 or -1.5). Optional. */
+  trend?: number;
+}
+
+export interface WeeklyHistoryEntry {
+  week: number;
+  year: number;
+  avgDwc: number;
+  avgIadc: number;
 }
 
 export interface ReportData {
@@ -56,6 +65,8 @@ export interface ReportData {
   aiRecommendations?: string;
   /** Per-driver recommendations with "why" explanations */
   driverRecommendations?: DriverRecommendation[];
+  /** DWC history for the last 8 weeks (for trend chart). Optional. */
+  weeklyHistory?: WeeklyHistoryEntry[];
 }
 
 export interface DriverRecommendation {
@@ -163,11 +174,18 @@ body {
 .kpi-delta { font-size: 10px; font-weight: 450; margin-top: 3px; }
 .up { color: #059669; } .down { color: #dc2626; } .muted { color: #a1a1a6; }
 
-/* AI Box */
-.ai-box { background: #f0f4ff; border-left: 3px solid #2563eb; padding: 16px 20px; margin-bottom: 24px; }
-.ai-label { font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: #2563eb; margin-bottom: 6px; }
-.ai-text { font-size: 11px; line-height: 1.7; color: #1e3a5f; }
+/* AI Box — Synthesis (larger, more prominent) */
+.ai-box { background: #f0f4ff; border-left: 3px solid #2563eb; padding: 20px 24px; margin-bottom: 24px; }
+.ai-label { font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: #2563eb; margin-bottom: 8px; }
+.ai-text { font-size: 12px; line-height: 1.8; color: #1e3a5f; }
 .ai-text strong { font-weight: 600; }
+
+/* Weekly history chart (8-week DWC trend) */
+.history-chart { display: flex; align-items: flex-end; justify-content: space-between; height: 100px; gap: 8px; margin-top: 12px; }
+.history-bar-wrapper { display: flex; flex-direction: column; align-items: center; flex: 1; }
+.history-bar-value { font-size: 9px; font-weight: 600; color: #1d1d1f; margin-bottom: 4px; }
+.history-bar { width: 100%; min-height: 4px; border-radius: 2px 2px 0 0; }
+.history-bar-week { font-size: 8px; color: #6e6e73; margin-top: 4px; font-weight: 500; }
 
 /* Section */
 .section { margin-bottom: 24px; }
@@ -184,7 +202,7 @@ body {
 
 /* Table */
 table { width: 100%; border-collapse: collapse; font-size: 11px; table-layout: fixed; }
-col.c-rank { width: 32px; } col.c-name { width: auto; } col.c-num { width: 64px; } col.c-days { width: 48px; }
+col.c-rank { width: 32px; } col.c-name { width: auto; } col.c-num { width: 56px; } col.c-days { width: 42px; } col.c-trend { width: 52px; }
 thead th { font-weight: 500; font-size: 9px; text-transform: uppercase; letter-spacing: 0.05em; color: #6e6e73; padding: 6px 8px; border-bottom: 1.5px solid #1d1d1f; text-align: left; }
 thead th.r { text-align: right; }
 tbody td { padding: 7px 8px; border-bottom: 1px solid #e8e8ed; vertical-align: middle; }
@@ -221,19 +239,34 @@ td.r { text-align: right; font-variant-numeric: tabular-nums; font-weight: 500; 
 // Template helpers
 // ---------------------------------------------------------------------------
 
-function renderDriverRow(d: ReportDriver): string {
+function formatTrend(trend?: number): string {
+  if (trend === undefined || trend === null) return '<span style="color:#a1a1a6;">—</span>';
+  const isStable = Math.abs(trend) < 0.5;
+  if (isStable) return '<span style="color:#a1a1a6;">→ 0pp</span>';
+  const isUp = trend >= 0.5;
+  const arrow = isUp ? "↑" : "↓";
+  const color = isUp ? "#059669" : "#dc2626";
+  const sign = trend > 0 ? "+" : "";
+  return `<span style="color:${color};">${arrow} ${sign}${trend.toFixed(1)}pp</span>`;
+}
+
+function renderDriverRow(d: ReportDriver, includeTrend = true): string {
+  const trendCell = includeTrend ? `<td class="r">${formatTrend(d.trend)}</td>` : "";
   return `<tr>
     <td class="rank">${String(d.rank).padStart(2, "0")}</td>
     <td class="name">${escapeHtml(d.name)}</td>
     <td class="r" style="color:${getDwcColor(d.dwcPercent)}">${formatPercent(d.dwcPercent)}</td>
+    ${trendCell}
     <td class="r">${formatPercent(d.iadcPercent)}</td>
     <td class="r">${d.daysWorked}</td>
   </tr>`;
 }
 
-function renderTableHead(): string {
-  return `<colgroup><col class="c-rank"><col class="c-name"><col class="c-num"><col class="c-num"><col class="c-days"></colgroup>
-  <thead><tr><th>#</th><th>Livreur</th><th class="r">DWC</th><th class="r">IADC</th><th class="r">Jours</th></tr></thead>`;
+function renderTableHead(includeTrend = true): string {
+  const trendCol = includeTrend ? '<col class="c-trend">' : "";
+  const trendTh = includeTrend ? '<th class="r">Trend</th>' : "";
+  return `<colgroup><col class="c-rank"><col class="c-name"><col class="c-num">${trendCol}<col class="c-num"><col class="c-days"></colgroup>
+  <thead><tr><th>#</th><th>Livreur</th><th class="r">DWC</th>${trendTh}<th class="r">IADC</th><th class="r">Jours</th></tr></thead>`;
 }
 
 function renderFooter(page: number, totalPages: number, generatedAt: string): string {
@@ -249,6 +282,50 @@ function renderPageHead(): string {
   return `<div class="page-head">
     <div class="page-head-brand"><img src="${LOGO_BASE64}" alt="">DSPilot</div>
     <div class="page-head-meta">Rapport de Performance Hebdomadaire</div>
+  </div>`;
+}
+
+function renderWeeklyHistoryChart(history: WeeklyHistoryEntry[]): string {
+  if (!history || history.length === 0) return "";
+
+  // Sort by year/week ascending
+  const sorted = [...history].sort((a, b) => {
+    if (a.year !== b.year) return a.year - b.year;
+    return a.week - b.week;
+  });
+
+  // Take last 8 weeks max
+  const last8 = sorted.slice(-8);
+  if (last8.length === 0) return "";
+
+  // Find min/max for scaling (leave some headroom)
+  const values = last8.map((h) => h.avgDwc);
+  const minVal = Math.min(...values);
+  const maxVal = Math.max(...values);
+  const range = Math.max(maxVal - minVal, 2); // at least 2pp range
+  const chartMin = Math.max(minVal - 1, 70); // don't go below 70%
+  const chartMax = Math.min(maxVal + 1, 100); // don't go above 100%
+  const chartRange = chartMax - chartMin;
+
+  const bars = last8
+    .map((h) => {
+      const heightPct = chartRange > 0 ? ((h.avgDwc - chartMin) / chartRange) * 100 : 50;
+      const height = Math.max(heightPct, 5); // minimum 5% height for visibility
+      const color = getDwcColor(h.avgDwc);
+      return `<div class="history-bar-wrapper">
+      <div class="history-bar-value">${h.avgDwc.toFixed(1)}%</div>
+      <div class="history-bar" style="height:${height}%;background:${color};"></div>
+      <div class="history-bar-week">S${h.week}</div>
+    </div>`;
+    })
+    .join("");
+
+  return `<div class="section">
+    <div class="section-head">
+      <div class="section-eyebrow">Exhibit 1</div>
+      <div class="section-title">Évolution DWC — ${last8.length} dernières semaines</div>
+    </div>
+    <div class="history-chart">${bars}</div>
   </div>`;
 }
 
@@ -393,9 +470,11 @@ export function generateReportHtml(data: ReportData, options: ReportOptions = {}
 
       ${data.aiSummary ? `<div class="ai-box"><div class="ai-label">✦ Synthèse de la semaine</div><div class="ai-text">${data.aiSummary}</div></div>` : ""}
 
+      ${data.weeklyHistory && data.weeklyHistory.length > 1 ? renderWeeklyHistoryChart(data.weeklyHistory) : ""}
+
       <div class="section">
         <div class="section-head">
-          <div class="section-eyebrow">Exhibit 1</div>
+          <div class="section-eyebrow">Exhibit ${data.weeklyHistory && data.weeklyHistory.length > 1 ? "2" : "1"}</div>
           <div class="section-title">Distribution DWC% — ${dist.above95 + dist.pct90to95} livreurs à 90% ou plus</div>
         </div>
         <div class="dist-wrapper">
@@ -405,13 +484,13 @@ export function generateReportHtml(data: ReportData, options: ReportOptions = {}
       </div>
 
       <div class="section">
-        <div class="section-head"><div class="section-eyebrow">Exhibit 2</div><div class="section-title">Top ${topDrivers.length} performers</div></div>
-        <table>${renderTableHead()}<tbody>${topDrivers.map(renderDriverRow).join("")}</tbody></table>
+        <div class="section-head"><div class="section-eyebrow">Exhibit ${data.weeklyHistory && data.weeklyHistory.length > 1 ? "3" : "2"}</div><div class="section-title">Top ${topDrivers.length} performers</div></div>
+        <table>${renderTableHead(true)}<tbody>${topDrivers.map((d) => renderDriverRow(d, true)).join("")}</tbody></table>
       </div>
 
       <div class="section">
-        <div class="section-head"><div class="section-eyebrow">Exhibit 3</div><div class="section-title">Livreurs à coacher</div></div>
-        <table>${renderTableHead()}<tbody>${bottomDrivers.map(renderDriverRow).join("")}</tbody></table>
+        <div class="section-head"><div class="section-eyebrow">Exhibit ${data.weeklyHistory && data.weeklyHistory.length > 1 ? "4" : "3"}</div><div class="section-title">Livreurs à coacher</div></div>
+        <table>${renderTableHead(true)}<tbody>${bottomDrivers.map((d) => renderDriverRow(d, true)).join("")}</tbody></table>
       </div>
 
       ${data.aiRecommendations ? `<div class="ai-box"><div class="ai-label">✦ Recommandations</div><div class="ai-text">${data.aiRecommendations}</div></div>` : ""}
@@ -436,7 +515,7 @@ export function generateReportHtml(data: ReportData, options: ReportOptions = {}
               <div class="section-eyebrow">Annexe ${p + 1}</div>
               <div class="section-title">Tableau complet des livreurs${pages > 1 ? ` (${p * driversPerPage + 1}–${Math.min((p + 1) * driversPerPage, allDrivers.length)} sur ${allDrivers.length})` : ""}</div>
             </div>
-            <table>${renderTableHead()}<tbody>${pageDrivers.map(renderDriverRow).join("")}</tbody></table>
+            <table>${renderTableHead(true)}<tbody>${pageDrivers.map((d) => renderDriverRow(d, true)).join("")}</tbody></table>
           </div>
         </div>
         ${renderFooter(pageNum, totalPages, data.generatedAt)}
