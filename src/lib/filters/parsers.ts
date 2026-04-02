@@ -11,7 +11,11 @@ import { getISOWeek, getISOWeekYear } from "date-fns"
 export type WeekValue = { year: number; week: number }
 export type RangeValue = { start: Date; end: Date }
 export type PeriodMode = "day" | "week" | "range"
+// Legacy tier filter type - kept for backward compatibility
 export type TierFilter = "all" | "fantastic" | "great" | "fair" | "poor"
+
+// New DWC% range filter type
+export type DwcRangeFilter = "all" | "above95" | "pct90to95" | "pct85to90" | "pct80to85" | "below80"
 
 // ============================================================================
 // HELPER FUNCTIONS

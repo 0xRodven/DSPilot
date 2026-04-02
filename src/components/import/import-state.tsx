@@ -26,7 +26,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { cn } from "@/lib/utils"
 import type { ParsedImportData } from "@/lib/types"
-import { getTierBgColor } from "@/lib/utils/tier"
+import { getDwcBadgeClass } from "@/lib/utils/performance-color"
 
 export type ImportStep = "uploading" | "parsing" | "preview" | "success" | "error"
 
@@ -227,17 +227,17 @@ export function ImportState({
               </div>
             </div>
             <div className="flex items-center justify-between pt-2 border-t border-border/50">
-              <span className="text-sm">Distribution:</span>
-              <div className="flex items-center gap-2 text-sm">
-                <span className="text-emerald-400">{parsedData.tierDistribution.fantastic}</span>
-                <span className="text-blue-400">{parsedData.tierDistribution.great}</span>
-                <span className="text-amber-400">{parsedData.tierDistribution.fair}</span>
-                <span className="text-red-400">{parsedData.tierDistribution.poor}</span>
+              <span className="text-sm">Distribution DWC%:</span>
+              <div className="flex items-center gap-2 text-sm tabular-nums">
+                <span className="text-emerald-500" title=">=95%">{parsedData.tierDistribution.fantastic}</span>
+                <span className="text-blue-500" title="90-95%">{parsedData.tierDistribution.great}</span>
+                <span className="text-amber-500" title="85-90%">{parsedData.tierDistribution.fair}</span>
+                <span className="text-red-500" title="<85%">{parsedData.tierDistribution.poor}</span>
               </div>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-sm">High Performers:</span>
-              <span className="font-medium">
+              <span className="text-sm">&gt;=90% DWC:</span>
+              <span className="font-medium tabular-nums">
                 {(
                   ((parsedData.tierDistribution.fantastic + parsedData.tierDistribution.great) /
                     parsedData.driversCount) *
@@ -305,14 +305,8 @@ export function ImportState({
                         <TableCell className="text-sm text-right">{driver.dwcPercent.toFixed(1)}%</TableCell>
                         <TableCell className="text-sm text-right">{driver.iadcPercent.toFixed(1)}%</TableCell>
                         <TableCell className="text-center">
-                          <Badge className={cn("text-xs capitalize", getTierBgColor(driver.tier))}>
-                            {driver.tier === "fantastic"
-                              ? "Fant"
-                              : driver.tier === "great"
-                                ? "Great"
-                                : driver.tier === "fair"
-                                  ? "Fair"
-                                  : "Poor"}
+                          <Badge className={cn("text-xs tabular-nums", getDwcBadgeClass(driver.dwcPercent))}>
+                            {driver.dwcPercent.toFixed(1)}%
                           </Badge>
                         </TableCell>
                       </TableRow>

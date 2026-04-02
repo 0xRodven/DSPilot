@@ -4,7 +4,7 @@ import type { ColumnDef } from "@tanstack/react-table"
 import { Button } from "@/components/ui/button"
 import { ArrowUpDown, MoreHorizontal, User, Eye, GraduationCap, History, FileDown, TrendingUp, TrendingDown, Minus } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { getTierColor, getTierBgColor, tierLabels, tierDescriptions } from "@/lib/utils/tier"
+import { getDwcTextClass, getDwcBadgeClass } from "@/lib/utils/performance-color"
 import { cn } from "@/lib/utils"
 
 export interface DriversListDriver {
@@ -69,9 +69,9 @@ export const createColumns = ({
         </div>
       ),
       cell: ({ row }) => {
-        const tier = row.original.tier
+        const dwcPercent = row.original.dwcPercent
         return (
-          <div className={cn("text-right font-semibold tabular-nums", getTierColor(tier))}>
+          <div className={cn("text-right font-semibold tabular-nums", getDwcTextClass(dwcPercent))}>
             {row.getValue("dwcPercent")}%
           </div>
         )
@@ -166,29 +166,44 @@ export const createColumns = ({
     })
   }
 
-  // Add tier and actions columns
+  // Add DWC badge and actions columns
   columns.push(
     {
-      accessorKey: "tier",
-      header: "Tier",
+      accessorKey: "dwcPercent",
+      id: "dwcBadge",
+      header: "DWC",
       cell: ({ row }) => {
-        const tier = row.getValue("tier") as DriversListDriver["tier"]
+        const dwcPercent = row.original.dwcPercent
         return (
           <div className="text-center">
             <span
-              title={tierDescriptions[tier]}
               className={cn(
-                "inline-flex cursor-help items-center justify-center rounded-full px-2.5 py-0.5 text-xs font-medium",
-                getTierBgColor(tier)
+                "inline-flex items-center justify-center rounded-full px-2.5 py-0.5 text-xs font-medium tabular-nums",
+                getDwcBadgeClass(dwcPercent)
               )}
             >
-              {tierLabels[tier]}
+              {dwcPercent.toFixed(1)}%
             </span>
           </div>
         )
       },
-      filterFn: (row, id, value) => {
-        return value === "all" || row.getValue(id) === value
+      filterFn: (row, _id, value) => {
+        if (value === "all") return true
+        const dwc = row.original.dwcPercent
+        // Filter by DWC% ranges
+        switch (value) {
+          case "above95": return dwc >= 95
+          case "pct90to95": return dwc >= 90 && dwc < 95
+          case "pct85to90": return dwc >= 85 && dwc < 90
+          case "pct80to85": return dwc >= 80 && dwc < 85
+          case "below80": return dwc < 80
+          // Legacy tier filters for backward compat
+          case "fantastic": return dwc >= 95
+          case "great": return dwc >= 90 && dwc < 95
+          case "fair": return dwc >= 88 && dwc < 90
+          case "poor": return dwc < 88
+          default: return true
+        }
       },
     },
     {

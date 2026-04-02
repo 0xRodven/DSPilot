@@ -14,7 +14,7 @@ import { Calendar } from "@/components/ui/calendar"
 import { Search, MessageSquare, AlertTriangle, BookOpen, Ban, Lightbulb, CalendarIcon, Check, Copy } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { CoachingSuggestion } from "@/lib/types"
-import { getTierBgColor } from "@/lib/utils/tier"
+import { getDwcBadgeClass } from "@/lib/utils/performance-color"
 import type { CoachingActionType } from "@/lib/utils/status"
 import { withToast } from "@/lib/utils/mutation"
 import { generateCoachingMessage, type ActionType } from "@/lib/coaching/coaching-message-generator"
@@ -226,7 +226,7 @@ export function NewActionModal({ open, onOpenChange, prefillSuggestion, stationI
               <div className="rounded-lg border border-blue-500/30 bg-blue-500/10 p-4">
                 <div className="flex items-center gap-2 text-white">
                   <span className="font-medium">{selectedDriverInfo?.name}</span>
-                  <Badge className={cn("text-xs", getTierBgColor(selectedDriverInfo?.tier as "fantastic" | "great" | "fair" | "poor"))}>
+                  <Badge className={cn("text-xs tabular-nums", getDwcBadgeClass(selectedDriverInfo?.dwcPercent ?? 0))}>
                     {selectedDriverInfo?.dwcPercent}% DWC
                   </Badge>
                 </div>
@@ -319,8 +319,8 @@ export function NewActionModal({ open, onOpenChange, prefillSuggestion, stationI
                     >
                       <div className="flex items-center gap-2">
                         <span className="text-white">{driver.name}</span>
-                        <Badge className={cn("text-xs", getTierBgColor(driver.tier))}>
-                          {driver.tier.charAt(0).toUpperCase() + driver.tier.slice(1)} ({driver.dwcPercent}%)
+                        <Badge className={cn("text-xs tabular-nums", getDwcBadgeClass(driver.dwcPercent))}>
+                          {driver.dwcPercent}% DWC
                         </Badge>
                       </div>
                     </button>
@@ -346,7 +346,7 @@ export function NewActionModal({ open, onOpenChange, prefillSuggestion, stationI
                     }}
                   >
                     <span className="text-white">{driver.name}</span>
-                    <Badge className={cn("text-xs", getTierBgColor(driver.tier))}>{driver.dwcPercent}% DWC</Badge>
+                    <Badge className={cn("text-xs tabular-nums", getDwcBadgeClass(driver.dwcPercent))}>{driver.dwcPercent}% DWC</Badge>
                   </button>
                 ))}
               </div>
@@ -358,7 +358,7 @@ export function NewActionModal({ open, onOpenChange, prefillSuggestion, stationI
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <span className="text-white">{selectedDriverInfo.name}</span>
-                    <Badge className={cn("text-xs", getTierBgColor(selectedDriverInfo.tier as "fantastic" | "great" | "fair" | "poor"))}>
+                    <Badge className={cn("text-xs tabular-nums", getDwcBadgeClass(selectedDriverInfo.dwcPercent))}>
                       {selectedDriverInfo.dwcPercent}% DWC
                     </Badge>
                   </div>

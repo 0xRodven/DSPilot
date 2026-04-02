@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { AlertTriangle, TrendingDown, RotateCcw, UserMinus, Plus, ChevronRight, Target } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { CoachingSuggestion } from "@/lib/types"
-import { getTierBgColor } from "@/lib/utils/tier"
+import { getDwcBadgeClass } from "@/lib/utils/performance-color"
 
 interface CoachingSuggestionsProps {
   suggestions: CoachingSuggestion[]
@@ -60,9 +60,8 @@ function SuggestionCard({
       <div className="flex items-start justify-between">
         <div>
           <p className="font-medium text-white">{suggestion.driverName}</p>
-          <Badge className={cn("mt-1 text-xs", getTierBgColor(suggestion.driverTier))}>
-            {suggestion.driverTier.charAt(0).toUpperCase() + suggestion.driverTier.slice(1)} ({suggestion.driverDwc}%
-            DWC)
+          <Badge className={cn("mt-1 text-xs tabular-nums", getDwcBadgeClass(suggestion.driverDwc))}>
+            {suggestion.driverDwc}% DWC
           </Badge>
         </div>
         <Icon className={cn("h-4 w-4", config.color)} />

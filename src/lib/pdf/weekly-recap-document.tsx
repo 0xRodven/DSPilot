@@ -204,34 +204,22 @@ export interface WeeklyRecapData {
   bottomDrivers: PDFDriver[]
 }
 
-function getTierStyle(tier: string) {
-  switch (tier) {
-    case "fantastic":
-      return styles.tierFantastic
-    case "great":
-      return styles.tierGreat
-    case "fair":
-      return styles.tierFair
-    case "poor":
-      return styles.tierPoor
-    default:
-      return styles.tierFair
-  }
+/**
+ * Get DWC% based style for PDF badges
+ * Uses fixed thresholds instead of tier names for gradient-based coloring
+ */
+function getDwcStyle(dwcPercent: number) {
+  if (dwcPercent >= 95) return styles.tierFantastic
+  if (dwcPercent >= 90) return styles.tierGreat
+  if (dwcPercent >= 85) return styles.tierFair
+  return styles.tierPoor
 }
 
-function getTierLabel(tier: string) {
-  switch (tier) {
-    case "fantastic":
-      return "Fantastic"
-    case "great":
-      return "Great"
-    case "fair":
-      return "Fair"
-    case "poor":
-      return "Poor"
-    default:
-      return tier
-  }
+/**
+ * Format DWC% as badge label for PDF
+ */
+function getDwcLabel(dwcPercent: number) {
+  return `${dwcPercent.toFixed(1)}%`
 }
 
 function formatPercent(value: number) {
@@ -329,33 +317,33 @@ export function WeeklyRecapDocument({ data, blurDriverNames = false }: WeeklyRec
           </View>
         </View>
 
-        {/* Tier Distribution */}
+        {/* DWC% Distribution */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Distribution des Tiers</Text>
+          <Text style={styles.sectionTitle}>Distribution DWC%</Text>
           <View style={styles.distributionRow}>
             <View style={styles.distributionItem}>
               <Text style={[styles.distributionCount, { color: "#10b981" }]}>
                 {processedData.tierDistribution.fantastic}
               </Text>
-              <Text style={styles.distributionLabel}>Fantastic (≥95%)</Text>
+              <Text style={styles.distributionLabel}>&gt;=95%</Text>
             </View>
             <View style={styles.distributionItem}>
               <Text style={[styles.distributionCount, { color: "#3b82f6" }]}>
                 {processedData.tierDistribution.great}
               </Text>
-              <Text style={styles.distributionLabel}>Great (≥90%)</Text>
+              <Text style={styles.distributionLabel}>90-95%</Text>
             </View>
             <View style={styles.distributionItem}>
               <Text style={[styles.distributionCount, { color: "#f59e0b" }]}>
                 {processedData.tierDistribution.fair}
               </Text>
-              <Text style={styles.distributionLabel}>Fair (≥88%)</Text>
+              <Text style={styles.distributionLabel}>85-90%</Text>
             </View>
             <View style={styles.distributionItem}>
               <Text style={[styles.distributionCount, { color: "#ef4444" }]}>
                 {processedData.tierDistribution.poor}
               </Text>
-              <Text style={styles.distributionLabel}>Poor (&lt;88%)</Text>
+              <Text style={styles.distributionLabel}>&lt;85%</Text>
             </View>
           </View>
         </View>
@@ -370,7 +358,7 @@ export function WeeklyRecapDocument({ data, blurDriverNames = false }: WeeklyRec
               <Text style={[styles.tableHeaderCell, styles.col3]}>DWC %</Text>
               <Text style={[styles.tableHeaderCell, styles.col4]}>IADC %</Text>
               <Text style={[styles.tableHeaderCell, styles.col5]}>Jours</Text>
-              <Text style={[styles.tableHeaderCell, styles.col6]}>Tier</Text>
+              <Text style={[styles.tableHeaderCell, styles.col6]}>DWC</Text>
             </View>
             {processedData.topDrivers.map((driver, index) => (
               <View key={index} style={styles.tableRow}>
@@ -384,8 +372,8 @@ export function WeeklyRecapDocument({ data, blurDriverNames = false }: WeeklyRec
                 </Text>
                 <Text style={[styles.tableCell, styles.col5]}>{driver.daysWorked}</Text>
                 <View style={[styles.col6, { alignItems: "center" }]}>
-                  <Text style={[styles.tierBadge, getTierStyle(driver.tier)]}>
-                    {getTierLabel(driver.tier)}
+                  <Text style={[styles.tierBadge, getDwcStyle(driver.dwcPercent)]}>
+                    {getDwcLabel(driver.dwcPercent)}
                   </Text>
                 </View>
               </View>
@@ -404,7 +392,7 @@ export function WeeklyRecapDocument({ data, blurDriverNames = false }: WeeklyRec
                 <Text style={[styles.tableHeaderCell, styles.col3]}>DWC %</Text>
                 <Text style={[styles.tableHeaderCell, styles.col4]}>IADC %</Text>
                 <Text style={[styles.tableHeaderCell, styles.col5]}>Jours</Text>
-                <Text style={[styles.tableHeaderCell, styles.col6]}>Tier</Text>
+                <Text style={[styles.tableHeaderCell, styles.col6]}>DWC</Text>
               </View>
               {processedData.bottomDrivers.map((driver, index) => (
                 <View key={index} style={styles.tableRow}>
@@ -418,8 +406,8 @@ export function WeeklyRecapDocument({ data, blurDriverNames = false }: WeeklyRec
                   </Text>
                   <Text style={[styles.tableCell, styles.col5]}>{driver.daysWorked}</Text>
                   <View style={[styles.col6, { alignItems: "center" }]}>
-                    <Text style={[styles.tierBadge, getTierStyle(driver.tier)]}>
-                      {getTierLabel(driver.tier)}
+                    <Text style={[styles.tierBadge, getDwcStyle(driver.dwcPercent)]}>
+                      {getDwcLabel(driver.dwcPercent)}
                     </Text>
                   </View>
                 </View>

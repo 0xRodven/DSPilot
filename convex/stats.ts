@@ -464,6 +464,14 @@ export const getDashboardKPIs = query({
       totalDrivers: currentStats.totalDrivers,
       alerts,
       tierDistribution: currentStats.tierDistribution,
+      // DWC% distribution (5 ranges) - fallback to computed from tierDistribution if not present
+      dwcDistribution: currentStats.dwcDistribution ?? {
+        above95: currentStats.tierDistribution.fantastic,
+        pct90to95: currentStats.tierDistribution.great,
+        pct85to90: Math.floor(currentStats.tierDistribution.fair / 2),
+        pct80to85: Math.ceil(currentStats.tierDistribution.fair / 2) + Math.floor(currentStats.tierDistribution.poor / 2),
+        below80: Math.ceil(currentStats.tierDistribution.poor / 2),
+      },
       prevWeek,
       // New fields for KPI cards
       totalDeliveries: dwcTotal,

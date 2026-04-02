@@ -21,7 +21,7 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { CoachingActionFull } from "@/lib/types"
-import { getTierBgColor } from "@/lib/utils/tier"
+import { getDwcBadgeClass } from "@/lib/utils/performance-color"
 import {
   getCoachingStatusColor,
   getCoachingStatusLabel,
@@ -74,8 +74,8 @@ export function ActionCard({ action, onEvaluate }: ActionCardProps) {
                 </Badge>
               </div>
               <p className="text-sm text-zinc-500">{action.driverAmazonId}</p>
-              <Badge className={cn("mt-1 text-xs", getTierBgColor(action.driverTier))}>
-                {action.driverTier.charAt(0).toUpperCase() + action.driverTier.slice(1)} ({action.driverDwc}% DWC)
+              <Badge className={cn("mt-1 text-xs tabular-nums", getDwcBadgeClass(action.driverDwc))}>
+                {action.driverDwc}% DWC
               </Badge>
             </div>
           </div>

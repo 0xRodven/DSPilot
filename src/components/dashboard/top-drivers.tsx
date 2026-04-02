@@ -1,116 +1,117 @@
-"use client"
+"use client";
 
-import { useState, useMemo } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Skeleton } from "@/components/ui/skeleton"
-import { Button } from "@/components/ui/button"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { getTierColor } from "@/lib/utils/tier"
-import { TrendingUp, TrendingDown, Trophy, AlertTriangle, User } from "lucide-react"
-import { cn } from "@/lib/utils"
-import { useQuery } from "convex/react"
-import { api } from "@convex/_generated/api"
-import { useDashboardStore } from "@/lib/store"
-import { useFilters } from "@/lib/filters"
-import { useRouter } from "next/navigation"
+import { useMemo, useState } from "react";
 
-type MetricType = "dwc" | "iadc" | "volume" | "photoDefects"
-type ViewType = "top" | "bottom"
+import { useRouter } from "next/navigation";
+
+import { api } from "@convex/_generated/api";
+import { useQuery } from "convex/react";
+import { AlertTriangle, TrendingDown, TrendingUp, Trophy, User } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useFilters } from "@/lib/filters";
+import { useDashboardStore } from "@/lib/store";
+import { cn } from "@/lib/utils";
+import { getDwcTextClass } from "@/lib/utils/performance-color";
+
+type MetricType = "dwc" | "iadc" | "volume" | "photoDefects";
+type ViewType = "top" | "bottom";
 
 const metricLabels: Record<MetricType, string> = {
   dwc: "DWC %",
   iadc: "IADC %",
   volume: "Jours actifs",
   photoDefects: "Défauts photo",
-}
+};
 
 const getCardTitle = (metric: MetricType, view: ViewType) => {
   switch (metric) {
     case "dwc":
-      return view === "top" ? "Top 5 DWC" : "Bottom 5 DWC"
+      return view === "top" ? "Top 5 DWC" : "Bottom 5 DWC";
     case "iadc":
-      return view === "top" ? "Top 5 IADC" : "Bottom 5 IADC"
+      return view === "top" ? "Top 5 IADC" : "Bottom 5 IADC";
     case "volume":
-      return view === "top" ? "Drivers les plus actifs" : "Drivers les moins actifs"
+      return view === "top" ? "Drivers les plus actifs" : "Drivers les moins actifs";
     case "photoDefects":
-      return view === "top"
-        ? "Drivers avec le plus de défauts photo"
-        : "Drivers avec le moins de défauts photo"
+      return view === "top" ? "Drivers avec le plus de défauts photo" : "Drivers avec le moins de défauts photo";
   }
-}
+};
 
-const rankEmojis = ["🥇", "🥈", "🥉", "4.", "5."]
+const rankEmojis = ["🥇", "🥈", "🥉", "4.", "5."];
 
 export function TopDrivers() {
-  const router = useRouter()
-  const { selectedStation } = useDashboardStore()
-  const { period, year, weekNum, date, displayLabel, normalizedTime } = useFilters()
+  const router = useRouter();
+  const { selectedStation } = useDashboardStore();
+  const { period, year, weekNum, date, normalizedTime } = useFilters();
 
-  const [metric, setMetric] = useState<MetricType>("dwc")
-  const [view, setView] = useState<ViewType>("top")
+  const [metric, setMetric] = useState<MetricType>("dwc");
+  const [view, setView] = useState<ViewType>("top");
 
   // Get station from Convex - skip if no code yet (prevents race condition on navigation)
   const station = useQuery(
     api.stations.getStationByCode,
-    selectedStation.code ? { code: selectedStation.code } : "skip"
-  )
+    selectedStation.code ? { code: selectedStation.code } : "skip",
+  );
 
   // Get drivers from Convex - choose query based on mode
   const driversWeekly = useQuery(
     api.stats.getDashboardDrivers,
-    station && period === "week" ? { stationId: station._id, year, week: weekNum } : "skip"
-  )
+    station && period === "week" ? { stationId: station._id, year, week: weekNum } : "skip",
+  );
 
   const driversDaily = useQuery(
     api.stats.getDashboardDriversDaily,
-    station && period === "day" ? { stationId: station._id, date } : "skip"
-  )
+    station && period === "day" ? { stationId: station._id, date } : "skip",
+  );
 
   const driversRange = useQuery(
     api.stats.getDashboardDriversRange,
     station && period === "range"
       ? { stationId: station._id, startDate: normalizedTime.start, endDate: normalizedTime.end }
-      : "skip"
-  )
+      : "skip",
+  );
 
-  const drivers = period === "day" ? driversDaily : period === "range" ? driversRange : driversWeekly
+  const drivers = period === "day" ? driversDaily : period === "range" ? driversRange : driversWeekly;
 
   const sortedDrivers = useMemo(() => {
-    if (!drivers) return []
+    if (!drivers) return [];
 
     return [...drivers]
       .sort((a, b) => {
         const getValue = (driver: typeof a) => {
           switch (metric) {
             case "dwc":
-              return driver.dwcPercent
+              return driver.dwcPercent;
             case "iadc":
-              return driver.iadcPercent
+              return driver.iadcPercent;
             case "volume":
-              return driver.daysActive
+              return driver.daysActive;
             case "photoDefects":
-              return driver.photoDefects ?? 0
+              return driver.photoDefects ?? 0;
           }
-        }
+        };
         // For photoDefects, "top" means most errors (descending), "bottom" means least errors
         // Default "top" view for photoDefects shows drivers with most errors (need attention)
-        return view === "top" ? getValue(b) - getValue(a) : getValue(a) - getValue(b)
+        return view === "top" ? getValue(b) - getValue(a) : getValue(a) - getValue(b);
       })
-      .slice(0, 5)
-  }, [drivers, metric, view])
+      .slice(0, 5);
+  }, [drivers, metric, view]);
 
   const getDisplayValue = (driver: NonNullable<typeof drivers>[0]) => {
     switch (metric) {
       case "dwc":
-        return `${driver.dwcPercent}%`
+        return `${driver.dwcPercent}%`;
       case "iadc":
-        return `${driver.iadcPercent}%`
+        return `${driver.iadcPercent}%`;
       case "volume":
-        return `${driver.daysActive} jours`
+        return `${driver.daysActive} jours`;
       case "photoDefects":
-        return `${driver.photoDefects ?? 0}`
+        return `${driver.photoDefects ?? 0}`;
     }
-  }
+  };
 
   // Loading state
   if (!station || drivers === undefined) {
@@ -123,7 +124,7 @@ export function TopDrivers() {
             <Skeleton className="h-8 w-24" />
           </div>
         </CardHeader>
-        <CardContent className="pt-2 space-y-3">
+        <CardContent className="space-y-3 pt-2">
           {[...Array(5)].map((_, i) => (
             <div key={i} className="flex items-center gap-3 rounded-lg border border-border/50 px-3 py-2">
               <Skeleton className="h-6 w-6" />
@@ -136,7 +137,7 @@ export function TopDrivers() {
           ))}
         </CardContent>
       </Card>
-    )
+    );
   }
 
   // No data state
@@ -144,25 +145,21 @@ export function TopDrivers() {
     return (
       <Card className="border-border bg-card">
         <CardHeader className="pb-2">
-          <CardTitle className="text-base font-semibold text-card-foreground">
-            {getCardTitle(metric, view)}
-          </CardTitle>
+          <CardTitle className="font-semibold text-base text-card-foreground">{getCardTitle(metric, view)}</CardTitle>
         </CardHeader>
-        <CardContent className="pt-2 text-center py-8">
-          <User className="h-8 w-8 mx-auto mb-2 text-muted-foreground/50" />
+        <CardContent className="py-8 pt-2 text-center">
+          <User className="mx-auto mb-2 h-8 w-8 text-muted-foreground/50" />
           <p className="text-muted-foreground text-sm">Aucun driver</p>
         </CardContent>
       </Card>
-    )
+    );
   }
 
   return (
     <Card className="border-border bg-card">
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-base font-semibold text-card-foreground">
-            {getCardTitle(metric, view)}
-          </CardTitle>
+          <CardTitle className="font-semibold text-base text-card-foreground">{getCardTitle(metric, view)}</CardTitle>
         </div>
 
         <div className="mt-2 flex items-center gap-2">
@@ -207,14 +204,14 @@ export function TopDrivers() {
           {sortedDrivers.map((driver, index) => (
             <div
               key={driver.id}
-              className="flex items-center justify-between rounded-lg border border-border/50 bg-muted/30 px-3 py-2 transition-colors hover:bg-muted/50 cursor-pointer"
+              className="flex cursor-pointer items-center justify-between rounded-lg border border-border/50 bg-muted/30 px-3 py-2 transition-colors hover:bg-muted/50"
               onClick={() => router.push(`/dashboard/drivers/${driver.id}`)}
             >
               <div className="flex items-center gap-3">
                 <span className="w-6 text-center text-sm">{rankEmojis[index]}</span>
                 <div>
-                  <p className="text-sm font-medium text-card-foreground">{driver.name}</p>
-                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <p className="font-medium text-card-foreground text-sm">{driver.name}</p>
+                  <div className="flex items-center gap-1 text-muted-foreground text-xs">
                     {driver.trend === null ? (
                       <>
                         <span className="text-muted-foreground">—</span>
@@ -232,7 +229,11 @@ export function TopDrivers() {
                           {driver.trend}%
                         </span>
                         <span>
-                          {period === "day" ? "vs veille" : period === "range" ? "évol." : `vs S${weekNum > 1 ? weekNum - 1 : 52}`}
+                          {period === "day"
+                            ? "vs veille"
+                            : period === "range"
+                              ? "évol."
+                              : `vs S${weekNum > 1 ? weekNum - 1 : 52}`}
                         </span>
                       </>
                     )}
@@ -240,7 +241,7 @@ export function TopDrivers() {
                 </div>
               </div>
               <div className="text-right">
-                <span className={cn("text-sm font-semibold", getTierColor(driver.tier))}>
+                <span className={cn("font-semibold text-sm", getDwcTextClass(driver.dwcPercent))}>
                   {getDisplayValue(driver)}
                 </span>
               </div>
@@ -257,5 +258,5 @@ export function TopDrivers() {
         </Button>
       </CardContent>
     </Card>
-  )
+  );
 }

@@ -6,6 +6,9 @@ import { api } from "@convex/_generated/api";
 import { Id } from "@convex/_generated/dataModel";
 import { parseHtmlFile, calculateFleetAverages, type ParsedReport } from "@/lib/parser";
 import { getTier } from "@/lib/utils/tier";
+// NOTE: getTier is still used here because the backend tierDistribution still expects
+// the tier counts. We're migrating the DISPLAY from tier names to DWC% ranges, but
+// the underlying data model still has tier field for backward compatibility.
 
 export type ImportPhase =
   | "idle"

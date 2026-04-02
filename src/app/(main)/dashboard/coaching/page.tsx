@@ -19,6 +19,8 @@ import { useFilters } from "@/lib/filters";
 import { useDashboardStore } from "@/lib/store";
 import type { CoachingActionFull, CoachingSuggestion } from "@/lib/types";
 import { getTier } from "@/lib/utils/tier";
+// NOTE: getTier is still used here to compute tier field for CoachingSuggestion type
+// which the backend expects. Display uses DWC% gradient instead of tier names.
 
 export default function CoachingPage() {
   const { selectedStation } = useDashboardStore();

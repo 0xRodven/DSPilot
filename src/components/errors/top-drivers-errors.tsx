@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
-import { getTierBgColor } from "@/lib/utils/tier"
+import { getDwcBadgeClass } from "@/lib/utils/performance-color"
 import { useBuildFilteredHref } from "@/lib/filters"
 import { ArrowRight, GraduationCap, User } from "lucide-react"
 import type { DriverWithErrors } from "@/lib/types"
@@ -35,12 +35,6 @@ const metricOptions = [
   { value: "failed-attempts", label: "MS - Tentatives échouées" },
 ]
 
-const tierLabels = {
-  fantastic: "Fantastic",
-  great: "Great",
-  fair: "Fair",
-  poor: "Poor",
-}
 
 export function TopDriversErrors({ drivers, totalErrors, errorTypeFilter, onFilterChange }: TopDriversErrorsProps) {
   const buildHref = useBuildFilteredHref()
@@ -96,8 +90,8 @@ export function TopDriversErrors({ drivers, totalErrors, errorTypeFilter, onFilt
                     <span>• {driver.percentage}% du total</span>
                   </div>
                   <div className="mt-1.5 flex flex-wrap items-center gap-2">
-                    <Badge className={cn("text-xs", getTierBgColor(driver.tier))}>
-                      {tierLabels[driver.tier]} ({driver.dwcPercent}% DWC)
+                    <Badge className={cn("text-xs tabular-nums", getDwcBadgeClass(driver.dwcPercent))}>
+                      {driver.dwcPercent}% DWC
                     </Badge>
                     <span className="text-xs text-muted-foreground">
                       Principale : {driver.mainError} ({driver.mainErrorCount})

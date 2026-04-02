@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import type { DriverDetail } from "@/lib/types"
 import type { Id } from "@convex/_generated/dataModel"
-import { getTierColor } from "@/lib/utils/tier"
+import { getDwcTextClass, getDwcBadgeClass } from "@/lib/utils/performance-color"
 import { User, Calendar, Package, Zap, GraduationCap, FileDown, MessageCircle, Phone, Pencil, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
@@ -28,12 +28,6 @@ export function DriverHeader({ driver, driverId, stationId, year, week, onPlanCo
 
   const sendManualRecap = useAction(api.whatsapp.sendManualRecap)
 
-  const tierLabels = {
-    fantastic: "Fantastic",
-    great: "Great",
-    fair: "Fair",
-    poor: "Poor",
-  }
 
   const handleExportPDF = () => {
     toast.info("Export PDF", {
@@ -135,25 +129,27 @@ export function DriverHeader({ driver, driverId, stationId, year, week, onPlanCo
                 {driver.streak > 0 && (
                   <span className="flex items-center gap-1.5 text-amber-400">
                     <Zap className="h-4 w-4" />
-                    Streak: {driver.streak} semaines {tierLabels[driver.tier]}
+                    Streak: {driver.streak} semaines ≥{driver.dwcPercent >= 95 ? "95" : "90"}%
                   </span>
                 )}
               </div>
             </div>
           </div>
 
-          {/* Right: Big Badge */}
+          {/* Right: Big Badge - uses DWC% gradient colors */}
           <div
             className={cn(
               "flex flex-col items-center rounded-xl border-2 px-6 py-4",
-              driver.tier === "fantastic" && "border-emerald-500/50 bg-emerald-500/10",
-              driver.tier === "great" && "border-blue-500/50 bg-blue-500/10",
-              driver.tier === "fair" && "border-amber-500/50 bg-amber-500/10",
-              driver.tier === "poor" && "border-red-500/50 bg-red-500/10",
+              getDwcBadgeClass(driver.dwcPercent).replace("bg-", "border-").replace("/10", "/50"),
+              getDwcBadgeClass(driver.dwcPercent).split(" ")[0],
             )}
           >
-            <span className={cn("text-sm font-medium", getTierColor(driver.tier))}>{tierLabels[driver.tier]}</span>
-            <span className={cn("text-3xl font-bold", getTierColor(driver.tier))}>{driver.dwcPercent}%</span>
+            <span className={cn("text-sm font-medium tabular-nums", getDwcTextClass(driver.dwcPercent))}>
+              DWC
+            </span>
+            <span className={cn("text-3xl font-bold tabular-nums", getDwcTextClass(driver.dwcPercent))}>
+              {driver.dwcPercent}%
+            </span>
             <span className="mt-1 text-sm text-muted-foreground">
               {driver.rank !== null ? `Rang #${driver.rank} / ${driver.totalDrivers}` : "Non classé"}
             </span>

@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { TrendingUp, TrendingDown, Plus, Package, AlertTriangle, MapPin } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { getTierBgColor } from "@/lib/utils/tier"
+import { getDwcBadgeClass } from "@/lib/utils/performance-color"
 import type { Id } from "@convex/_generated/dataModel"
 
 interface DetectCardData {
@@ -33,8 +33,8 @@ export function DetectCard({ data, onPlanCoaching }: DetectCardProps) {
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
           <p className="font-medium text-card-foreground truncate">{data.driverName}</p>
-          <Badge className={cn("mt-1 text-xs", getTierBgColor(data.tier))}>
-            {data.tier.charAt(0).toUpperCase() + data.tier.slice(1)}
+          <Badge className={cn("mt-1 text-xs tabular-nums", getDwcBadgeClass(data.dwcPercent))}>
+            {data.dwcPercent}%
           </Badge>
         </div>
         <div className="text-right flex-shrink-0">

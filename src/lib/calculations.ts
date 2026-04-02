@@ -76,7 +76,7 @@ export const getIadcTotal = (
 };
 
 // ============================================
-// TIERS
+// TIERS (DEPRECATED - Use DWC% ranges for display)
 // ============================================
 
 /**
@@ -85,6 +85,9 @@ export const getIadcTotal = (
  * - Great: >= 90%
  * - Fair: >= 88%
  * - Poor: < 88%
+ *
+ * @deprecated For display, use getDwcTextClass/getDwcBadgeClass from @/lib/utils/performance-color
+ * This function is kept for backward compatibility with backend tierDistribution field.
  */
 export const getTier = (dwcPercent: number): Tier => {
   if (dwcPercent >= 95) return "fantastic";
@@ -95,6 +98,7 @@ export const getTier = (dwcPercent: number): Tier => {
 
 /**
  * Seuils des tiers
+ * @deprecated Use DWC% range thresholds (95, 90, 85, 80) instead for display
  */
 export const TIER_THRESHOLDS = {
   fantastic: 95,
@@ -105,6 +109,7 @@ export const TIER_THRESHOLDS = {
 
 /**
  * Labels des tiers en français
+ * @deprecated For display, show DWC% directly using getDwcBadgeClass from @/lib/utils/performance-color
  */
 export const TIER_LABELS: Record<Tier, string> = {
   fantastic: "Fantastic",

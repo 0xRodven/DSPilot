@@ -31,6 +31,8 @@ import { useDashboardStore } from "@/lib/store";
 import type { ParsedImportData } from "@/lib/types";
 import type { BatchImportSummary } from "@/lib/types/import";
 import { getTier } from "@/lib/utils/tier";
+// NOTE: getTier is still used here to compute tierDistribution for backward compat
+// with the backend. Display uses DWC% ranges instead of tier names.
 
 // Convert ParsedReport to ParsedImportData format for UI
 function convertToParsedImportData(report: ParsedReport): ParsedImportData {
