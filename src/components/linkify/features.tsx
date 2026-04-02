@@ -2,8 +2,8 @@
 
 import { AlertTriangle, BarChart3, Calendar, Clock, FileSpreadsheet, FileUp, Users } from "lucide-react";
 
-import { BrowserFrame } from "./browser-frame";
-import { CoachingMockup, DriverMockup, ImportMockup, ReportMockup } from "./mockups";
+import { BrowserFrame } from "@/components/linkify/browser-frame";
+import { CoachingMockup, DriverMockup, ImportMockup, ReportMockup } from "@/components/linkify/mockups";
 
 const painPoints = [
   {
@@ -26,7 +26,7 @@ const painPoints = [
   },
 ];
 
-const features = [
+const featuresSections = [
   {
     icon: FileUp,
     label: "Import",
@@ -34,7 +34,8 @@ const features = [
     description:
       "Copiez le tableau Amazon, collez dans DSPilot. Les métriques sont extraites, nettoyées et classées automatiquement. Votre lundi matin redevient un jour de management, pas de saisie.",
     mockup: ImportMockup,
-    imagePosition: "right" as const,
+    url: "app.dspilot.fr/dashboard/import",
+    imageRight: true,
   },
   {
     icon: Calendar,
@@ -43,7 +44,8 @@ const features = [
     description:
       "Un Kanban dédié — Détection, Attente, Évaluation, Terminé — avec pipeline d'escalade et calendrier de rendez-vous intégré. Vous ne laissez plus personne passer entre les mailles du filet.",
     mockup: CoachingMockup,
-    imagePosition: "left" as const,
+    url: "app.dspilot.fr/dashboard/coaching",
+    imageRight: false,
   },
   {
     icon: Users,
@@ -52,7 +54,8 @@ const features = [
     description:
       "Rapports individuels avec analyse personnalisée de ses métriques, points forts, axes d'amélioration. Le livreur sait exactement où il en est — et vous n'avez rien eu à rédiger.",
     mockup: DriverMockup,
-    imagePosition: "right" as const,
+    url: "app.dspilot.fr/dashboard/drivers/amadou-d",
+    imageRight: true,
   },
   {
     icon: BarChart3,
@@ -61,106 +64,115 @@ const features = [
     description:
       "Chaque semaine, DSPilot génère un rapport professionnel prêt à envoyer et envoie les récaps individuels par WhatsApp à chaque livreur. Vos interlocuteurs Amazon reçoivent un document propre ; vos livreurs reçoivent leur feuille de route.",
     mockup: ReportMockup,
-    imagePosition: "left" as const,
+    url: "app.dspilot.fr/dashboard/reports",
+    imageRight: false,
   },
 ];
 
 export function Features() {
   return (
-    <section id="features" className="relative py-24">
-      {/* Pain Points Section */}
-      <div className="mx-auto max-w-6xl px-6">
-        {/* Section Label */}
+    <section id="features" className="px-6">
+      {/* Pain Points */}
+      <div className="mx-auto max-w-[1200px] pt-28 pb-20">
         <div data-scroll-reveal>
-          <div className="mb-4 font-semibold text-sm uppercase tracking-wider" style={{ color: "#DC2626" }}>
+          <p className="mb-3 font-semibold text-[13px] uppercase tracking-[0.1em]" style={{ color: "#DC2626" }}>
             Le problème
-          </div>
-
-          {/* Title */}
+          </p>
           <h2
-            className="mb-12 max-w-2xl font-[family-name:var(--font-display)] text-4xl leading-tight md:text-5xl"
-            style={{ color: "#1A1A1A" }}
+            className="mb-12 font-[family-name:var(--font-display)] leading-[1.15] tracking-[-0.02em]"
+            style={{ fontSize: "clamp(32px, 4vw, 48px)", color: "#1A1A1A" }}
           >
-            Votre lundi matin ressemble à ça.
+            Votre lundi matin
+            <br />
+            ressemble à ça.
           </h2>
         </div>
 
-        {/* Pain Point Cards */}
-        <div className="mb-32 grid gap-6 md:grid-cols-3">
-          {painPoints.map((point) => {
-            const Icon = point.icon;
-            return (
+        <div className="grid gap-6 md:grid-cols-3">
+          {painPoints.map((pain, i) => (
+            <div
+              key={i}
+              data-scroll-reveal
+              data-scroll-delay={String(i * 0.1)}
+              className="group rounded-xl border border-[#E8E5DF] bg-white p-8 transition-all duration-300 hover:border-red-500 hover:shadow-lg"
+            >
               <div
-                key={point.title}
-                className="group rounded-xl border border-[#E8E5DF] bg-white p-6 transition-all hover:border-red-500 hover:shadow-lg"
+                className="mb-5 flex size-11 items-center justify-center rounded-xl"
+                style={{ background: "#FEF2F2", color: "#DC2626" }}
               >
-                <div className="mb-4 inline-flex rounded-lg p-3" style={{ background: "#FEF2F2" }}>
-                  <Icon className="h-6 w-6" style={{ color: "#DC2626" }} />
-                </div>
-                <h3 className="mb-2 font-semibold text-lg" style={{ color: "#1A1A1A" }}>
-                  {point.title}
-                </h3>
-                <p className="text-sm leading-relaxed" style={{ color: "#4A4A4A" }}>
-                  {point.description}
-                </p>
+                <pain.icon className="size-5" />
               </div>
-            );
-          })}
+              <h3
+                className="mb-3 font-[family-name:var(--font-display)] text-[22px] leading-[1.3]"
+                style={{ color: "#1A1A1A" }}
+              >
+                {pain.title}
+              </h3>
+              <p className="text-[15px] leading-[1.7]" style={{ color: "#4A4A4A" }}>
+                {pain.description}
+              </p>
+            </div>
+          ))}
         </div>
+      </div>
 
-        {/* Solution Section */}
-        <div data-scroll-reveal>
-          <div className="mb-4 font-semibold text-sm uppercase tracking-wider" style={{ color: "#2563EB" }}>
+      {/* Features — alternating text/image sections */}
+      <div className="mx-auto max-w-[1200px] pt-12 pb-28">
+        <div className="mb-16 text-center" data-scroll-reveal>
+          <p className="mb-3 font-semibold text-[13px] uppercase tracking-[0.1em]" style={{ color: "#2563EB" }}>
             La solution
-          </div>
-
+          </p>
           <h2
-            className="mb-16 max-w-3xl font-[family-name:var(--font-display)] text-4xl leading-tight md:text-5xl"
-            style={{ color: "#1A1A1A" }}
+            className="font-[family-name:var(--font-display)] leading-[1.15] tracking-[-0.02em]"
+            style={{ fontSize: "clamp(32px, 4vw, 48px)", color: "#1A1A1A" }}
           >
-            Un dashboard conçu pour les station managers.
+            Un dashboard conçu pour
+            <br />
+            les station managers.
           </h2>
         </div>
 
-        {/* Feature Rows */}
         <div className="space-y-24">
-          {features.map((feature) => {
-            const Icon = feature.icon;
-            const Mockup = feature.mockup;
-            const isImageRight = feature.imagePosition === "right";
-
+          {featuresSections.map((feature, i) => {
+            const MockupComponent = feature.mockup;
             return (
               <div
-                key={feature.title}
+                key={i}
+                className={`grid items-center gap-12 md:grid-cols-2 lg:gap-20 ${
+                  feature.imageRight ? "" : "md:direction-rtl"
+                }`}
                 data-scroll-reveal
-                className={`flex flex-col items-center gap-12 lg:flex-row ${isImageRight ? "" : "lg:flex-row-reverse"}`}
               >
-                {/* Text Content */}
-                <div className="flex-1 lg:max-w-md">
-                  <div
-                    className="mb-4 inline-flex items-center gap-2 rounded-full px-3 py-1"
-                    style={{ background: "#EFF6FF" }}
-                  >
-                    <Icon className="h-4 w-4" style={{ color: "#2563EB" }} />
-                    <span className="font-medium text-sm" style={{ color: "#2563EB" }}>
+                {/* Text */}
+                <div className={feature.imageRight ? "md:order-1" : "md:order-2"}>
+                  <div className="mb-4 flex items-center gap-2">
+                    <div
+                      className="flex size-8 items-center justify-center rounded-lg"
+                      style={{ background: "#EFF6FF", color: "#2563EB" }}
+                    >
+                      <feature.icon className="size-4" />
+                    </div>
+                    <span className="font-semibold text-[13px] uppercase tracking-[0.1em]" style={{ color: "#2563EB" }}>
                       {feature.label}
                     </span>
                   </div>
+
                   <h3
-                    className="mb-4 font-[family-name:var(--font-display)] text-3xl leading-tight"
+                    className="mb-4 font-[family-name:var(--font-display)] text-[32px] leading-[1.2] tracking-[-0.02em]"
                     style={{ color: "#1A1A1A" }}
                   >
                     {feature.title}
                   </h3>
-                  <p className="text-lg leading-relaxed" style={{ color: "#4A4A4A" }}>
+
+                  <p className="text-[16px] leading-[1.7]" style={{ color: "#4A4A4A" }}>
                     {feature.description}
                   </p>
                 </div>
 
-                {/* Mockup */}
-                <div className="flex-1">
-                  <BrowserFrame url={`app.dspilot.fr/${feature.label.toLowerCase()}`}>
-                    <Mockup />
+                {/* Product image in browser frame */}
+                <div className={feature.imageRight ? "md:order-2" : "md:order-1"}>
+                  <BrowserFrame url={feature.url} perspective={false}>
+                    <MockupComponent />
                   </BrowserFrame>
                 </div>
               </div>

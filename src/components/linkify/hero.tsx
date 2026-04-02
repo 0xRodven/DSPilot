@@ -2,123 +2,143 @@
 
 import Link from "next/link";
 
-import { ArrowRight, Play } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 
-import { BrowserFrame } from "./browser-frame";
-import { DashboardMockup } from "./mockups";
+import { BrowserFrame } from "@/components/linkify/browser-frame";
+import { DashboardMockup } from "@/components/linkify/mockups";
 
 export function Hero() {
   return (
-    <section className="relative overflow-hidden pt-32 pb-20">
-      {/* Background Orbs */}
-      <div
-        className="pointer-events-none absolute top-20 right-0 h-96 w-96 rounded-full blur-3xl"
-        style={{ background: "rgba(37,99,235,0.08)" }}
-      />
-      <div
-        className="pointer-events-none absolute top-1/2 left-0 h-80 w-80 rounded-full blur-3xl"
-        style={{ background: "rgba(8,145,178,0.06)" }}
-      />
-      <div
-        className="-translate-x-1/2 pointer-events-none absolute bottom-0 left-1/2 h-96 w-96 rounded-full blur-3xl"
-        style={{ background: "rgba(37,99,235,0.05)" }}
-      />
-
-      <div className="relative z-10 mx-auto max-w-4xl px-6 text-center" data-scroll-reveal>
-        {/* Badge */}
+    <section className="relative overflow-hidden px-6 pt-24 pb-8 md:pt-28 md:pb-16">
+      {/* Premium mesh gradient background — multiple soft blurred orbs */}
+      <div className="pointer-events-none absolute inset-0 z-0">
+        {/* Top-right blue orb */}
         <div
-          className="mb-8 inline-flex items-center gap-2 rounded-full px-4 py-2"
-          style={{ background: "#EFF6FF", border: "1px solid #BFDBFE" }}
-        >
-          <span className="h-2 w-2 animate-pulse rounded-full" style={{ background: "#2563EB" }} />
-          <span className="font-medium text-sm" style={{ color: "#1e40af" }}>
-            Le seul outil DSP Amazon en France
-          </span>
-        </div>
-
-        {/* Headline */}
-        <h1
-          className="mb-6 font-[family-name:var(--font-display)] text-5xl leading-tight tracking-tight md:text-6xl lg:text-7xl"
-          style={{ color: "#1A1A1A" }}
-        >
-          Pilotez votre{" "}
-          <span
-            className="italic"
-            style={{
-              background: "linear-gradient(135deg, #2563EB 0%, #0891b2 100%)",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-              backgroundClip: "text",
-            }}
-          >
-            station DSP
-          </span>
-          .<br />
-          Pas vos tableurs.
-        </h1>
-
-        {/* Subtitle */}
-        <p className="mx-auto mb-10 max-w-2xl text-lg leading-relaxed md:text-xl" style={{ color: "#4A4A4A" }}>
-          Scores DWC, IADC, coaching livreurs, rapports hebdomadaires — tout ce que vous faites aujourd&apos;hui en 5
-          heures sur Excel, DSPilot le fait en 30 secondes. Gardez votre tier Fantastic sans y laisser vos soirées.
-        </p>
-
-        {/* CTAs */}
-        <div className="mb-6 flex flex-col items-center justify-center gap-4 sm:flex-row">
-          <Link
-            href="/sign-up"
-            className="inline-flex items-center gap-2 rounded-lg px-6 py-3 font-medium text-white transition-all"
-            style={{ background: "#2563EB" }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = "#1d4ed8";
-              e.currentTarget.style.transform = "translateY(-1px)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = "#2563EB";
-              e.currentTarget.style.transform = "translateY(0)";
-            }}
-          >
-            Démarrer avec DSPilot
-            <ArrowRight className="h-4 w-4" />
-          </Link>
-          <Link
-            href="#demo"
-            className="inline-flex items-center gap-2 rounded-lg px-6 py-3 font-medium transition-all"
-            style={{
-              background: "transparent",
-              border: "1px solid #E8E5DF",
-              color: "#1A1A1A",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = "#2563EB";
-              e.currentTarget.style.color = "#2563EB";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = "#E8E5DF";
-              e.currentTarget.style.color = "#1A1A1A";
-            }}
-          >
-            <Play className="h-4 w-4" />
-            Voir une démo
-          </Link>
-        </div>
-
-        {/* Reassurance */}
-        <p className="text-sm" style={{ color: "#8A8A8A" }}>
-          14 jours satisfait ou remboursé · Import en 30 secondes
-        </p>
+          className="-right-[150px] -top-[150px] absolute"
+          style={{
+            width: "500px",
+            height: "500px",
+            background: "radial-gradient(circle, rgba(37,99,235,0.08) 0%, transparent 65%)",
+          }}
+        />
+        {/* Center-left teal orb */}
+        <div
+          className="-left-[100px] absolute top-[30%]"
+          style={{
+            width: "400px",
+            height: "400px",
+            background: "radial-gradient(circle, rgba(8,145,178,0.05) 0%, transparent 65%)",
+          }}
+        />
+        {/* Bottom-center warm orb */}
+        <div
+          className="absolute bottom-0 left-[40%]"
+          style={{
+            width: "600px",
+            height: "400px",
+            background: "radial-gradient(ellipse, rgba(37,99,235,0.04) 0%, transparent 70%)",
+          }}
+        />
       </div>
 
-      {/* Browser Frame with Dashboard */}
-      <div className="relative z-10 mx-auto mt-16 max-w-5xl px-6" data-scroll-reveal data-scroll-delay="0.2">
-        {/* Glow Effect */}
-        <div
-          className="-z-10 -translate-x-1/2 -translate-y-1/2 absolute top-1/2 left-1/2 h-full w-full rounded-3xl blur-3xl"
-          style={{ background: "rgba(37,99,235,0.1)" }}
-        />
-        <BrowserFrame url="app.dspilot.fr/dashboard">
-          <DashboardMockup />
-        </BrowserFrame>
+      <div className="relative z-10 mx-auto max-w-[1200px]">
+        {/* Text + CTAs */}
+        <div className="mx-auto max-w-3xl text-center" data-scroll-reveal>
+          <div
+            className="mb-6 inline-flex items-center gap-2 rounded-full border px-4 py-1.5 font-medium text-[13px]"
+            style={{
+              background: "#EFF6FF",
+              borderColor: "#DBEAFE",
+              color: "#2563EB",
+            }}
+          >
+            <span className="relative flex size-1.5">
+              <span
+                className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-75"
+                style={{ background: "#2563EB" }}
+              />
+              <span className="relative inline-flex size-1.5 rounded-full" style={{ background: "#2563EB" }} />
+            </span>
+            Le seul outil DSP Amazon en France
+          </div>
+
+          <h1
+            className="font-[family-name:var(--font-display)] leading-[1.08] tracking-[-0.03em]"
+            style={{ fontSize: "clamp(42px, 5vw, 72px)", color: "#1A1A1A" }}
+          >
+            Pilotez votre{" "}
+            <em className="bg-gradient-to-br from-[#2563EB] to-[#0891B2] bg-clip-text text-transparent italic">
+              station&nbsp;DSP.
+            </em>
+            <br />
+            Pas vos tableurs.
+          </h1>
+
+          <p className="mx-auto mt-6 max-w-xl text-lg leading-[1.7]" style={{ color: "#4A4A4A" }}>
+            Scores DWC, IADC, coaching livreurs, rapports hebdomadaires — tout ce que vous faites aujourd&apos;hui en
+            5&nbsp;heures sur Excel, DSPilot le fait en 30&nbsp;secondes. Gardez votre tier Fantastic sans y laisser vos
+            soirées.
+          </p>
+
+          <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
+            <Link
+              href="/sign-up"
+              className="hover:-translate-y-0.5 inline-flex items-center gap-2 rounded-xl px-8 py-3.5 font-semibold text-base text-white transition-all duration-200"
+              style={{
+                background: "#2563EB",
+                boxShadow: "0 4px 14px rgba(37,99,235,0.25)",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "#1d4ed8";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "#2563EB";
+              }}
+            >
+              Démarrer avec DSPilot
+              <ArrowRight className="size-4" />
+            </Link>
+            <Link
+              href="/demo"
+              className="inline-flex items-center rounded-xl border px-8 py-3.5 font-medium text-base transition-all duration-200"
+              style={{ borderColor: "#E8E5DF", color: "#1A1A1A" }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = "#8A8A8A";
+                e.currentTarget.style.background = "#F5F3EE";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = "#E8E5DF";
+                e.currentTarget.style.background = "transparent";
+              }}
+            >
+              Voir une démo
+            </Link>
+          </div>
+
+          <p className="mt-4 text-[13px] tracking-wide" style={{ color: "#8A8A8A" }}>
+            14 jours satisfait ou remboursé · Import en 30 secondes
+          </p>
+        </div>
+
+        {/* Product screenshot in browser frame — full width, centered */}
+        <div className="mt-16 px-4" data-scroll-reveal data-scroll-delay="0.2">
+          <div className="mx-auto max-w-5xl">
+            {/* Glow behind frame */}
+            <div className="relative">
+              <div
+                className="-inset-8 pointer-events-none absolute z-0 rounded-3xl opacity-60"
+                style={{
+                  background: "radial-gradient(ellipse at center, rgba(37,99,235,0.12) 0%, transparent 70%)",
+                }}
+              />
+              <div className="relative z-10">
+                <BrowserFrame>
+                  <DashboardMockup />
+                </BrowserFrame>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
   );

@@ -7,51 +7,46 @@ import { ArrowRight } from "lucide-react";
 export function CTA() {
   return (
     <section
-      className="py-24"
+      className="px-6 py-28 text-center"
       style={{
-        background: "linear-gradient(to bottom, #FAFAF8, #EFF6FF)",
+        background: "linear-gradient(180deg, #FAFAF8 0%, #EFF6FF 100%)",
       }}
     >
-      <div className="mx-auto max-w-4xl px-6 text-center" data-scroll-reveal>
+      <div className="mx-auto max-w-[1200px]" data-scroll-reveal>
         <h2
-          className="mb-8 font-[family-name:var(--font-display)] text-4xl leading-tight md:text-5xl"
-          style={{ color: "#1A1A1A" }}
+          className="mb-4 font-[family-name:var(--font-display)] leading-[1.15] tracking-[-0.02em]"
+          style={{ fontSize: "clamp(36px, 4vw, 52px)", color: "#1A1A1A" }}
         >
           Vous avez lu jusqu&apos;ici.
           <br />
-          <span
-            className="italic"
-            style={{
-              background: "linear-gradient(135deg, #2563EB 0%, #0891b2 100%)",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-              backgroundClip: "text",
-            }}
-          >
+          <em className="bg-gradient-to-br from-[#2563EB] to-[#0891B2] bg-clip-text text-transparent italic">
             Vos lundis matins peuvent changer maintenant.
-          </span>
+          </em>
         </h2>
+
+        <p className="mx-auto mb-8 max-w-[500px] text-lg" style={{ color: "#4A4A4A" }}>
+          Commencez avec le plan Pro. Pas d&apos;engagement, pas de mauvaise surprise. 14 jours satisfait ou remboursé.
+        </p>
 
         <Link
           href="/sign-up"
-          className="mb-6 inline-flex items-center gap-2 rounded-lg px-8 py-4 font-medium text-lg text-white transition-all"
-          style={{ background: "#2563EB" }}
+          className="hover:-translate-y-0.5 inline-flex items-center gap-2 rounded-xl px-8 py-4 font-semibold text-base text-white transition-all duration-200"
+          style={{
+            background: "#2563EB",
+            boxShadow: "0 4px 14px rgba(37,99,235,0.25)",
+          }}
           onMouseEnter={(e) => {
             e.currentTarget.style.background = "#1d4ed8";
-            e.currentTarget.style.transform = "translateY(-2px)";
-            e.currentTarget.style.boxShadow = "0 10px 30px rgba(37,99,235,0.3)";
           }}
           onMouseLeave={(e) => {
             e.currentTarget.style.background = "#2563EB";
-            e.currentTarget.style.transform = "translateY(0)";
-            e.currentTarget.style.boxShadow = "none";
           }}
         >
           Démarrer avec DSPilot
-          <ArrowRight className="h-5 w-5" />
+          <ArrowRight className="size-4" />
         </Link>
 
-        <p className="text-sm" style={{ color: "#8A8A8A" }}>
+        <p className="mt-4 text-[13px]" style={{ color: "#8A8A8A" }}>
           14 jours satisfait ou remboursé · Opérationnel en 2 minutes
         </p>
       </div>

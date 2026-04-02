@@ -27,63 +27,74 @@ const comparisons = [
 
 export function Process() {
   return (
-    <section id="process" className="py-24" style={{ background: "#F5F3EE" }}>
-      <div className="mx-auto max-w-5xl px-6">
-        {/* Section Label */}
+    <section id="process" className="px-6 py-28" style={{ background: "#F5F3EE" }}>
+      <div className="mx-auto max-w-[1200px]">
         <div className="text-center" data-scroll-reveal>
-          <div className="mb-4 font-semibold text-sm uppercase tracking-wider" style={{ color: "#2563EB" }}>
+          <p className="mb-3 font-semibold text-[13px] uppercase tracking-[0.1em]" style={{ color: "#2563EB" }}>
             Comment ça marche
-          </div>
-
+          </p>
           <h2
-            className="mb-4 font-[family-name:var(--font-display)] text-4xl leading-tight md:text-5xl"
-            style={{ color: "#1A1A1A" }}
+            className="mb-4 font-[family-name:var(--font-display)] leading-[1.15] tracking-[-0.02em]"
+            style={{ fontSize: "clamp(32px, 4vw, 48px)", color: "#1A1A1A" }}
           >
-            Avant DSPilot vs. Avec DSPilot.
+            Avant DSPilot vs.
+            <br />
+            Avec DSPilot.
           </h2>
-          <p className="mb-12" style={{ color: "#8A8A8A" }}>
+          <p className="mb-12 text-base" style={{ color: "#8A8A8A" }}>
             Ce qui change concrètement dans votre semaine.
           </p>
         </div>
 
-        {/* Comparison Table */}
-        <div className="overflow-hidden rounded-2xl" style={{ background: "#FFFFFF", border: "1px solid #E8E5DF" }}>
+        <div className="mx-auto max-w-[900px]">
           {/* Headers */}
-          <div className="grid grid-cols-2" style={{ borderBottom: "1px solid #E8E5DF" }}>
-            <div className="px-6 py-4 text-center font-semibold" style={{ color: "#DC2626", background: "#FEF2F2" }}>
-              Avant DSPilot
+          <div className="mb-1 grid grid-cols-1 gap-0.5 md:grid-cols-2" data-scroll-reveal>
+            <div className="px-6 py-3">
+              <span className="font-semibold text-xs uppercase tracking-wider" style={{ color: "#DC2626" }}>
+                Avant DSPilot
+              </span>
             </div>
-            <div className="px-6 py-4 text-center font-semibold" style={{ color: "#059669", background: "#ECFDF5" }}>
-              Avec DSPilot
+            <div className="px-6 py-3">
+              <span className="font-semibold text-xs uppercase tracking-wider" style={{ color: "#059669" }}>
+                Avec DSPilot
+              </span>
             </div>
           </div>
 
           {/* Rows */}
-          {comparisons.map((comparison, index) => (
-            <div
-              key={index}
-              className="grid grid-cols-2"
-              style={{
-                borderBottom: index < comparisons.length - 1 ? "1px solid #E8E5DF" : "none",
-              }}
-            >
-              {/* Before */}
-              <div className="flex items-start gap-3 p-6" style={{ borderLeft: "3px solid #DC2626" }}>
-                <X className="mt-0.5 h-5 w-5 shrink-0" style={{ color: "#DC2626" }} />
-                <p className="text-sm leading-relaxed" style={{ color: "#4A4A4A" }}>
-                  {comparison.before}
-                </p>
+          <div className="space-y-0.5">
+            {comparisons.map((item, i) => (
+              <div
+                key={i}
+                className="grid grid-cols-1 gap-0.5 md:grid-cols-2"
+                data-scroll-reveal
+                data-scroll-delay={String(i * 0.08)}
+              >
+                <div
+                  className="flex items-start gap-3 border-l-[3px] px-6 py-5"
+                  style={{
+                    background: "#FFFFFF",
+                    borderLeftColor: "#DC2626",
+                    color: "#4A4A4A",
+                  }}
+                >
+                  <X className="mt-0.5 size-4 shrink-0" style={{ color: "#DC2626" }} />
+                  <p className="text-[15px] leading-relaxed">{item.before}</p>
+                </div>
+                <div
+                  className="flex items-start gap-3 border-l-[3px] px-6 py-5"
+                  style={{
+                    background: "#FFFFFF",
+                    borderLeftColor: "#059669",
+                    color: "#1A1A1A",
+                  }}
+                >
+                  <Check className="mt-0.5 size-4 shrink-0" style={{ color: "#059669" }} />
+                  <p className="text-[15px] leading-relaxed">{item.after}</p>
+                </div>
               </div>
-
-              {/* After */}
-              <div className="flex items-start gap-3 p-6" style={{ borderLeft: "3px solid #059669" }}>
-                <Check className="mt-0.5 h-5 w-5 shrink-0" style={{ color: "#059669" }} />
-                <p className="text-sm leading-relaxed" style={{ color: "#4A4A4A" }}>
-                  {comparison.after}
-                </p>
-              </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </div>
     </section>

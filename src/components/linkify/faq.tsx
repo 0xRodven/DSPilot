@@ -4,6 +4,8 @@ import { useState } from "react";
 
 import { ChevronDown } from "lucide-react";
 
+import { cn } from "@/lib/utils";
+
 const faqs = [
   {
     question: "C'est quoi exactement DSPilot ? Ça remplace quoi dans mon quotidien ?",
@@ -37,62 +39,78 @@ const faqs = [
   },
 ];
 
+function FAQItem({
+  question,
+  answer,
+  isOpen,
+  onToggle,
+}: {
+  question: string;
+  answer: string;
+  isOpen: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <div className="border-b" style={{ borderColor: "#E8E5DF" }}>
+      <button
+        type="button"
+        onClick={onToggle}
+        className="flex w-full items-center justify-between py-6 text-left font-medium text-[17px] transition-colors duration-200"
+        style={{ color: "#1A1A1A" }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.color = "#2563EB";
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.color = "#1A1A1A";
+        }}
+      >
+        <span className="pr-4">{question}</span>
+        <ChevronDown
+          className={cn("size-5 shrink-0 transition-transform duration-300", isOpen && "rotate-180")}
+          style={{ color: "#8A8A8A" }}
+        />
+      </button>
+      <div
+        className={cn("overflow-hidden transition-all", isOpen ? "max-h-[300px]" : "max-h-0")}
+        style={{ transitionTimingFunction: "cubic-bezier(0.16, 1, 0.3, 1)", transitionDuration: "400ms" }}
+      >
+        <p className="pb-6 text-[15px] leading-[1.8]" style={{ color: "#4A4A4A" }}>
+          {answer}
+        </p>
+      </div>
+    </div>
+  );
+}
+
 export function FAQ() {
-  const [openIndex, setOpenIndex] = useState<number | null>(null);
+  const [openIndex, setOpenIndex] = useState<number | null>(0);
 
   return (
-    <section id="faq" className="py-24">
-      <div className="mx-auto max-w-3xl px-6">
-        {/* Header */}
-        <div className="mb-12 text-center">
-          <div className="mb-4 font-semibold text-sm uppercase tracking-wider" style={{ color: "#2563EB" }}>
+    <section id="faq" className="px-6 py-28">
+      <div className="mx-auto max-w-[1200px]">
+        <div className="text-center" data-scroll-reveal>
+          <p className="mb-3 font-semibold text-[13px] uppercase tracking-[0.1em]" style={{ color: "#2563EB" }}>
             FAQ
-          </div>
+          </p>
           <h2
-            className="font-[family-name:var(--font-display)] text-4xl leading-tight md:text-5xl"
-            style={{ color: "#1A1A1A" }}
+            className="mb-12 font-[family-name:var(--font-display)] leading-[1.15] tracking-[-0.02em]"
+            style={{ fontSize: "clamp(32px, 4vw, 48px)", color: "#1A1A1A" }}
           >
             Questions fréquentes
           </h2>
         </div>
 
-        {/* Accordion */}
-        <div className="space-y-4">
-          {faqs.map((faq, index) => (
-            <div
-              key={index}
-              className="overflow-hidden rounded-xl transition-all"
-              style={{
-                background: "#FFFFFF",
-                border: "1px solid #E8E5DF",
+        <div className="mx-auto max-w-[800px]" data-scroll-reveal>
+          {faqs.map((faq, i) => (
+            <FAQItem
+              key={i}
+              question={faq.question}
+              answer={faq.answer}
+              isOpen={openIndex === i}
+              onToggle={() => {
+                setOpenIndex(openIndex === i ? null : i);
               }}
-            >
-              <button
-                type="button"
-                onClick={() => {
-                  setOpenIndex(openIndex === index ? null : index);
-                }}
-                className="flex w-full items-center justify-between p-6 text-left"
-              >
-                <span className="pr-4 font-medium" style={{ color: "#1A1A1A" }}>
-                  {faq.question}
-                </span>
-                <ChevronDown
-                  className="h-5 w-5 shrink-0 transition-transform"
-                  style={{
-                    color: "#8A8A8A",
-                    transform: openIndex === index ? "rotate(180deg)" : "rotate(0deg)",
-                  }}
-                />
-              </button>
-              {openIndex === index && (
-                <div className="px-6 pb-6" style={{ borderTop: "1px solid #E8E5DF" }}>
-                  <p className="pt-4 leading-relaxed" style={{ color: "#4A4A4A" }}>
-                    {faq.answer}
-                  </p>
-                </div>
-              )}
-            </div>
+            />
           ))}
         </div>
       </div>

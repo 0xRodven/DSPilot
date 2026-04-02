@@ -4,14 +4,13 @@ import { useState } from "react";
 
 import Link from "next/link";
 
-import { Check } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const plans = [
   {
     name: "Pro",
-    description: "Le tableau de bord complet pour piloter votre station au quotidien.",
-    monthlyPrice: 499,
-    yearlyPrice: 399,
+    tagline: "Le tableau de bord complet pour piloter votre station au quotidien.",
+    price: { monthly: 499, yearly: 399 },
     features: [
       "Livreurs illimités",
       "Dashboard complet tendances 8 semaines",
@@ -22,14 +21,13 @@ const plans = [
       "Support email prioritaire",
     ],
     cta: "Passer au Pro",
-    popular: false,
     href: "/sign-up?plan=pro",
   },
   {
     name: "Business",
-    description: "Performance, coaching et rapports — sans friction.",
-    monthlyPrice: 999,
-    yearlyPrice: 799,
+    tagline: "Performance, coaching et rapports — sans friction.",
+    price: { monthly: 999, yearly: 799 },
+    popular: true,
     features: [
       "Tout Pro +",
       "Coaching intégré (Kanban, escalade, calendrier)",
@@ -40,14 +38,12 @@ const plans = [
       "Support prioritaire",
     ],
     cta: "Choisir Business",
-    popular: true,
     href: "/sign-up?plan=business",
   },
   {
     name: "Enterprise",
-    description: "Pour les groupes multi-stations qui veulent un partenaire, pas un outil.",
-    monthlyPrice: null,
-    yearlyPrice: null,
+    tagline: "Pour les groupes multi-stations qui veulent un partenaire, pas un outil.",
+    price: { monthly: null, yearly: null },
     features: [
       "Tout Business +",
       "Multi-stations centralisé",
@@ -58,7 +54,6 @@ const plans = [
       "Onboarding + formation",
     ],
     cta: "Contactez-nous",
-    popular: false,
     href: "mailto:sales@dspilot.fr",
   },
 ];
@@ -67,39 +62,42 @@ export function Pricing() {
   const [isYearly, setIsYearly] = useState(false);
 
   return (
-    <section id="pricing" className="py-24">
-      <div className="mx-auto max-w-6xl px-6">
+    <section id="pricing" className="px-6 py-28">
+      <div className="mx-auto max-w-[1200px]">
         {/* Header */}
-        <div className="mb-12 text-center">
-          <div className="mb-4 font-semibold text-sm uppercase tracking-wider" style={{ color: "#2563EB" }}>
+        <div className="mb-12 text-center" data-scroll-reveal>
+          <p className="mb-3 font-semibold text-[13px] uppercase tracking-[0.1em]" style={{ color: "#2563EB" }}>
             Tarifs
-          </div>
+          </p>
           <h2
-            className="mb-4 font-[family-name:var(--font-display)] text-4xl leading-tight md:text-5xl"
-            style={{ color: "#1A1A1A" }}
+            className="mb-4 font-[family-name:var(--font-display)] leading-[1.15] tracking-[-0.02em]"
+            style={{ fontSize: "clamp(32px, 4vw, 48px)", color: "#1A1A1A" }}
           >
             Un abonnement qui se rembourse
             <br />
             dès la première semaine.
           </h2>
-          <p className="text-lg" style={{ color: "#4A4A4A" }}>
+          <p className="mx-auto max-w-3xl text-lg" style={{ color: "#4A4A4A" }}>
             DSPilot vous fait gagner 3 à 5 heures par semaine. À l&apos;échelle d&apos;un mois, c&apos;est
             l&apos;équivalent de 3 jours de travail récupérés.
           </p>
         </div>
 
         {/* Toggle */}
-        <div className="mb-12 flex items-center justify-center gap-4">
+        <div
+          className="mx-auto mb-12 flex w-fit gap-2 rounded-xl p-1"
+          style={{ background: "#F5F3EE" }}
+          data-scroll-reveal
+        >
           <button
             type="button"
             onClick={() => {
               setIsYearly(false);
             }}
-            className="px-4 py-2 font-medium text-sm transition-all"
-            style={{
-              color: isYearly ? "#8A8A8A" : "#1A1A1A",
-              borderBottom: isYearly ? "2px solid transparent" : "2px solid #2563EB",
-            }}
+            className={cn(
+              "rounded-lg px-6 py-2.5 font-medium text-sm transition-all duration-200",
+              !isYearly ? "bg-white text-[#1A1A1A] shadow-sm" : "bg-transparent text-[#4A4A4A]",
+            )}
           >
             Mensuel
           </button>
@@ -108,32 +106,30 @@ export function Pricing() {
             onClick={() => {
               setIsYearly(true);
             }}
-            className="px-4 py-2 font-medium text-sm transition-all"
-            style={{
-              color: isYearly ? "#1A1A1A" : "#8A8A8A",
-              borderBottom: isYearly ? "2px solid #2563EB" : "2px solid transparent",
-            }}
+            className={cn(
+              "rounded-lg px-6 py-2.5 font-medium text-sm transition-all duration-200",
+              isYearly ? "bg-white text-[#1A1A1A] shadow-sm" : "bg-transparent text-[#4A4A4A]",
+            )}
           >
-            Annuel
-            <span className="ml-2 rounded-full px-2 py-0.5 text-xs" style={{ background: "#ECFDF5", color: "#059669" }}>
-              -20%
-            </span>
+            Annuel <span style={{ color: "#2563EB" }}>-20%</span>
           </button>
         </div>
 
-        {/* Plans Grid */}
-        <div className="mb-12 grid gap-8 lg:grid-cols-3">
-          {plans.map((plan) => (
+        {/* Cards */}
+        <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3" data-scroll-reveal>
+          {plans.map((plan, i) => (
             <div
-              key={plan.name}
-              className="relative flex flex-col rounded-2xl p-8 transition-all"
+              key={i}
+              className={cn(
+                "hover:-translate-y-1 relative flex flex-col rounded-2xl border p-8 transition-all duration-300",
+                plan.popular ? "border-2" : "",
+              )}
               style={{
                 background: "#FFFFFF",
-                border: plan.popular ? "2px solid #2563EB" : "1px solid #E8E5DF",
-                boxShadow: plan.popular ? "0 8px 30px rgba(37,99,235,0.15)" : "none",
+                borderColor: plan.popular ? "#2563EB" : "#E8E5DF",
+                boxShadow: plan.popular ? "0 8px 30px rgba(37,99,235,0.1)" : undefined,
               }}
             >
-              {/* Popular Badge */}
               {plan.popular && (
                 <div
                   className="-top-3 -translate-x-1/2 absolute left-1/2 rounded-full px-4 py-1 font-semibold text-white text-xs"
@@ -143,64 +139,75 @@ export function Pricing() {
                 </div>
               )}
 
-              {/* Plan Name */}
-              <h3 className="mb-2 font-semibold text-xl" style={{ color: "#1A1A1A" }}>
-                {plan.name}
-              </h3>
-              <p className="mb-6 text-sm" style={{ color: "#4A4A4A" }}>
-                {plan.description}
-              </p>
+              <div className="mb-5">
+                <h3 className="font-semibold text-xl" style={{ color: "#1A1A1A" }}>
+                  {plan.name}
+                </h3>
+                <p className="mt-1 min-h-[40px] text-sm" style={{ color: "#8A8A8A" }}>
+                  {plan.tagline}
+                </p>
+              </div>
 
-              {/* Price */}
-              <div className="mb-6">
-                {plan.monthlyPrice ? (
-                  <>
-                    <span className="font-bold text-4xl" style={{ color: "#1A1A1A" }}>
-                      {isYearly ? plan.yearlyPrice : plan.monthlyPrice}€
-                    </span>
-                    <span className="text-sm" style={{ color: "#8A8A8A" }}>
-                      /mois
-                    </span>
-                    {isYearly && (
-                      <p className="mt-1 text-xs" style={{ color: "#059669" }}>
-                        Facturé annuellement
-                      </p>
+              <div className="mb-1">
+                {plan.price.monthly !== null ? (
+                  <span
+                    className="font-[family-name:var(--font-display)]"
+                    style={{ fontSize: "42px", color: "#1A1A1A" }}
+                  >
+                    {isYearly ? plan.price.yearly : plan.price.monthly}
+                    {plan.price.monthly > 0 && (
+                      <span className="font-normal text-sm" style={{ color: "#8A8A8A" }}>
+                        &euro;
+                      </span>
                     )}
-                  </>
+                  </span>
                 ) : (
-                  <span className="font-semibold text-2xl" style={{ color: "#1A1A1A" }}>
+                  <span
+                    className="font-[family-name:var(--font-display)]"
+                    style={{ fontSize: "32px", color: "#1A1A1A" }}
+                  >
                     Sur devis
                   </span>
                 )}
               </div>
+              {plan.price.monthly !== null && plan.price.monthly > 0 && (
+                <p className="mb-6 text-sm" style={{ color: "#8A8A8A" }}>
+                  par mois
+                </p>
+              )}
+              {plan.price.monthly === null && <div className="mb-6" />}
 
-              {/* Features */}
-              <ul className="mb-8 flex-1 space-y-3">
-                {plan.features.map((feature) => (
-                  <li key={feature} className="flex items-start gap-3">
-                    <Check className="mt-0.5 h-5 w-5 shrink-0" style={{ color: "#059669" }} />
-                    <span className="text-sm" style={{ color: "#4A4A4A" }}>
-                      {feature}
+              <ul className="mb-8 flex-1 space-y-0">
+                {plan.features.map((feature, j) => (
+                  <li
+                    key={j}
+                    className="flex items-start gap-2.5 border-b py-2.5 text-sm"
+                    style={{ borderColor: "#f0eeea", color: "#4A4A4A" }}
+                  >
+                    <span className="shrink-0 font-semibold" style={{ color: "#2563EB" }}>
+                      &#10003;
                     </span>
+                    {feature}
                   </li>
                 ))}
               </ul>
 
-              {/* CTA */}
               <Link
                 href={plan.href}
-                className="block rounded-lg py-3 text-center font-medium transition-all"
+                className={cn(
+                  "block w-full rounded-xl py-3.5 text-center font-semibold text-[15px] transition-all duration-200",
+                  plan.popular ? "text-white" : "border",
+                )}
                 style={{
                   background: plan.popular ? "#2563EB" : "transparent",
+                  borderColor: plan.popular ? undefined : "#E8E5DF",
                   color: plan.popular ? "#FFFFFF" : "#1A1A1A",
-                  border: plan.popular ? "none" : "1px solid #E8E5DF",
                 }}
                 onMouseEnter={(e) => {
                   if (plan.popular) {
                     e.currentTarget.style.background = "#1d4ed8";
                   } else {
-                    e.currentTarget.style.borderColor = "#2563EB";
-                    e.currentTarget.style.color = "#2563EB";
+                    e.currentTarget.style.borderColor = "#8A8A8A";
                   }
                 }}
                 onMouseLeave={(e) => {
@@ -208,7 +215,6 @@ export function Pricing() {
                     e.currentTarget.style.background = "#2563EB";
                   } else {
                     e.currentTarget.style.borderColor = "#E8E5DF";
-                    e.currentTarget.style.color = "#1A1A1A";
                   }
                 }}
               >
@@ -219,9 +225,9 @@ export function Pricing() {
         </div>
 
         {/* Reassurance */}
-        <p className="text-center text-sm" style={{ color: "#8A8A8A" }}>
+        <div className="mt-8 text-center text-[13px]" style={{ color: "#8A8A8A" }} data-scroll-reveal>
           14 jours satisfait ou remboursé · Sans engagement · Données chiffrées · Conforme RGPD
-        </p>
+        </div>
       </div>
     </section>
   );

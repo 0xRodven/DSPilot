@@ -4,49 +4,47 @@ import Image from "next/image";
 import Link from "next/link";
 
 const footerLinks = {
-  produit: [
-    { label: "Fonctionnalités", href: "#features" },
-    { label: "Comment ça marche", href: "#process" },
-    { label: "Tarifs", href: "#pricing" },
-    { label: "FAQ", href: "#faq" },
+  product: [
+    { name: "Fonctionnalités", href: "#features" },
+    { name: "Comment ça marche", href: "#process" },
+    { name: "Tarifs", href: "#pricing" },
+    { name: "FAQ", href: "#faq" },
   ],
-  entreprise: [
-    { label: "À propos", href: "/about" },
-    { label: "Contact", href: "mailto:contact@dspilot.fr" },
+  company: [
+    { name: "À propos", href: "/about" },
+    { name: "Contact", href: "mailto:contact@dspilot.fr" },
   ],
   legal: [
-    { label: "Mentions légales", href: "/legal" },
-    { label: "CGU", href: "/terms" },
-    { label: "Confidentialité", href: "/privacy" },
+    { name: "Mentions légales", href: "/legal" },
+    { name: "CGU", href: "/terms" },
+    { name: "Confidentialité", href: "/privacy" },
   ],
 };
 
 export function Footer() {
   return (
-    <footer style={{ borderTop: "1px solid #E8E5DF" }}>
-      <div className="mx-auto max-w-6xl px-6 py-16">
+    <footer className="border-t px-6" style={{ borderColor: "#E8E5DF" }}>
+      <div className="mx-auto max-w-[1200px] py-16">
         <div className="grid gap-12 md:grid-cols-2 lg:grid-cols-5">
-          {/* Brand */}
           <div className="lg:col-span-2">
-            <Link href="/" className="mb-4 inline-block">
-              <Image src="/logo/DSPilot_Full.png" alt="DSPilot" width={120} height={32} className="h-8 w-auto" />
+            <Link href="/">
+              <Image src="/logo/DSPilot_Full.png" alt="DSPilot" width={180} height={68} className="h-10 w-auto" />
             </Link>
-            <p className="mb-4 max-w-xs text-sm leading-relaxed" style={{ color: "#4A4A4A" }}>
-              Le premier outil de gestion DSP Amazon en France. Pilotez votre station, pas vos tableurs.
+            <p className="mt-4 max-w-xs text-sm leading-relaxed" style={{ color: "#8A8A8A" }}>
+              La plateforme de gestion des performances pour stations DSP Amazon.
             </p>
           </div>
 
-          {/* Produit */}
           <div>
-            <h4 className="mb-4 font-semibold text-sm uppercase tracking-wider" style={{ color: "#8A8A8A" }}>
+            <h4 className="mb-4 font-semibold text-[13px] uppercase tracking-wider" style={{ color: "#8A8A8A" }}>
               Produit
             </h4>
             <ul className="space-y-3">
-              {footerLinks.produit.map((link) => (
-                <li key={link.href}>
+              {footerLinks.product.map((link) => (
+                <li key={link.name}>
                   <Link
                     href={link.href}
-                    className="text-sm transition-colors"
+                    className="text-sm transition-colors duration-200"
                     style={{ color: "#4A4A4A" }}
                     onMouseEnter={(e) => {
                       e.currentTarget.style.color = "#1A1A1A";
@@ -55,24 +53,23 @@ export function Footer() {
                       e.currentTarget.style.color = "#4A4A4A";
                     }}
                   >
-                    {link.label}
+                    {link.name}
                   </Link>
                 </li>
               ))}
             </ul>
           </div>
 
-          {/* Entreprise */}
           <div>
-            <h4 className="mb-4 font-semibold text-sm uppercase tracking-wider" style={{ color: "#8A8A8A" }}>
+            <h4 className="mb-4 font-semibold text-[13px] uppercase tracking-wider" style={{ color: "#8A8A8A" }}>
               Entreprise
             </h4>
             <ul className="space-y-3">
-              {footerLinks.entreprise.map((link) => (
-                <li key={link.href}>
+              {footerLinks.company.map((link) => (
+                <li key={link.name}>
                   <Link
                     href={link.href}
-                    className="text-sm transition-colors"
+                    className="text-sm transition-colors duration-200"
                     style={{ color: "#4A4A4A" }}
                     onMouseEnter={(e) => {
                       e.currentTarget.style.color = "#1A1A1A";
@@ -81,24 +78,23 @@ export function Footer() {
                       e.currentTarget.style.color = "#4A4A4A";
                     }}
                   >
-                    {link.label}
+                    {link.name}
                   </Link>
                 </li>
               ))}
             </ul>
           </div>
 
-          {/* Légal */}
           <div>
-            <h4 className="mb-4 font-semibold text-sm uppercase tracking-wider" style={{ color: "#8A8A8A" }}>
+            <h4 className="mb-4 font-semibold text-[13px] uppercase tracking-wider" style={{ color: "#8A8A8A" }}>
               Légal
             </h4>
             <ul className="space-y-3">
               {footerLinks.legal.map((link) => (
-                <li key={link.href}>
+                <li key={link.name}>
                   <Link
                     href={link.href}
-                    className="text-sm transition-colors"
+                    className="text-sm transition-colors duration-200"
                     style={{ color: "#4A4A4A" }}
                     onMouseEnter={(e) => {
                       e.currentTarget.style.color = "#1A1A1A";
@@ -107,7 +103,7 @@ export function Footer() {
                       e.currentTarget.style.color = "#4A4A4A";
                     }}
                   >
-                    {link.label}
+                    {link.name}
                   </Link>
                 </li>
               ))}
@@ -115,11 +111,8 @@ export function Footer() {
           </div>
         </div>
 
-        {/* Bottom */}
-        <div className="mt-12 pt-8" style={{ borderTop: "1px solid #E8E5DF" }}>
-          <p className="text-center text-sm" style={{ color: "#8A8A8A" }}>
-            © 2026 DSPilot. Tous droits réservés.
-          </p>
+        <div className="mt-12 border-t pt-6 text-[13px]" style={{ borderColor: "#E8E5DF", color: "#B8B8B8" }}>
+          &copy; 2026 DSPilot. Tous droits réservés.
         </div>
       </div>
     </footer>

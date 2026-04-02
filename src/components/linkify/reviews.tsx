@@ -25,51 +25,51 @@ const trustBlocks = [
 
 export function Reviews() {
   return (
-    <section id="reviews" className="py-24" style={{ background: "#F5F3EE" }}>
-      <div className="mx-auto max-w-6xl px-6">
-        {/* Header */}
-        <div className="mb-16 text-center" data-scroll-reveal>
-          <div className="mb-4 font-semibold text-sm uppercase tracking-wider" style={{ color: "#2563EB" }}>
-            Pourquoi nous faire confiance
-          </div>
+    <section className="px-6 py-28" style={{ background: "#F5F3EE" }}>
+      <div className="mx-auto max-w-[1200px]">
+        <div className="text-center" data-scroll-reveal>
+          <p className="mb-3 font-semibold text-[13px] uppercase tracking-[0.1em]" style={{ color: "#2563EB" }}>
+            Confiance
+          </p>
           <h2
-            className="font-[family-name:var(--font-display)] text-4xl leading-tight md:text-5xl"
-            style={{ color: "#1A1A1A" }}
+            className="mb-12 font-[family-name:var(--font-display)] leading-[1.15] tracking-[-0.02em]"
+            style={{ fontSize: "clamp(32px, 4vw, 48px)", color: "#1A1A1A" }}
           >
-            Conçu par un manager DSP.
-            <br />
-            Pour les managers DSP.
+            Conçu par un manager DSP. Pour les managers DSP.
           </h2>
         </div>
 
-        {/* Trust Blocks */}
-        <div className="mb-16 grid gap-8 md:grid-cols-3">
-          {trustBlocks.map((block) => {
-            const Icon = block.icon;
-            return (
+        <div className="mb-12 grid gap-6 md:grid-cols-3">
+          {trustBlocks.map((block, i) => (
+            <div
+              key={i}
+              data-scroll-reveal
+              data-scroll-delay={String(i * 0.1)}
+              className="rounded-xl border p-8"
+              style={{
+                background: "#FFFFFF",
+                borderColor: "#E8E5DF",
+              }}
+            >
               <div
-                key={block.title}
-                className="rounded-xl p-6"
-                style={{ background: "#FFFFFF", border: "1px solid #E8E5DF" }}
+                className="mb-5 flex size-11 items-center justify-center rounded-xl"
+                style={{ background: "#EFF6FF", color: "#2563EB" }}
               >
-                <div className="mb-4 inline-flex rounded-lg p-3" style={{ background: "#EFF6FF" }}>
-                  <Icon className="h-6 w-6" style={{ color: "#2563EB" }} />
-                </div>
-                <h3 className="mb-3 font-semibold text-lg" style={{ color: "#1A1A1A" }}>
-                  {block.title}
-                </h3>
-                <p className="text-sm leading-relaxed" style={{ color: "#4A4A4A" }}>
-                  {block.description}
-                </p>
+                <block.icon className="size-5" />
               </div>
-            );
-          })}
+              <h3 className="mb-3 font-[family-name:var(--font-display)] text-xl" style={{ color: "#1A1A1A" }}>
+                {block.title}
+              </h3>
+              <p className="text-[15px] leading-[1.7]" style={{ color: "#4A4A4A" }}>
+                {block.description}
+              </p>
+            </div>
+          ))}
         </div>
 
-        {/* Narrative */}
-        <div className="mx-auto max-w-3xl text-center" data-scroll-reveal>
+        <div data-scroll-reveal>
           <p
-            className="font-[family-name:var(--font-display)] text-xl italic leading-relaxed md:text-2xl"
+            className="mx-auto max-w-[720px] text-center font-[family-name:var(--font-display)] text-xl italic leading-[1.8]"
             style={{ color: "#4A4A4A" }}
           >
             DSPilot n&apos;est pas sorti d&apos;un brainstorm en salle de réunion. Il est né d&apos;un constat simple :
