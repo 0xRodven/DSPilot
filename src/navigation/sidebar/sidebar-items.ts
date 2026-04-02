@@ -3,6 +3,7 @@ import {
   BarChart3,
   Calendar,
   ClipboardList,
+  FileText,
   GraduationCap,
   LayoutDashboard,
   type LucideIcon,
@@ -100,6 +101,11 @@ export function getSidebarItems(orgName?: string): NavGroup[] {
       id: 3,
       label: "Configuration",
       items: [
+        {
+          title: "Rapports",
+          url: "/dashboard/reports",
+          icon: FileText,
+        },
         {
           title: "Parametres",
           url: "/dashboard/settings",

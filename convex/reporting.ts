@@ -180,6 +180,33 @@ export const getReportData = query({
 /**
  * Store a generated report. Called by the post-ingest script via deploy key.
  */
+/**
+ * List reports for a station, optionally filtered by type.
+ * Used by the /dashboard/reports page.
+ */
+export const listReports = query({
+  args: {
+    stationId: v.id("stations"),
+    reportType: v.optional(v.union(v.literal("daily"), v.literal("weekly"))),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const allReports = await ctx.db
+      .query("reportDeliveries")
+      .withIndex("by_station", (q) => q.eq("stationId", args.stationId))
+      .order("desc")
+      .take(args.limit ?? 50);
+
+    if (args.reportType) {
+      return allReports.filter((r) => r.reportType === args.reportType);
+    }
+    return allReports;
+  },
+});
+
+/**
+ * Store a generated report. Called by the post-ingest script via deploy key.
+ */
 export const storeReport = mutation({
   args: {
     stationId: v.id("stations"),
