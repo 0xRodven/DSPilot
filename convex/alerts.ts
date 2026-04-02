@@ -4,15 +4,20 @@ import type { Id } from "./_generated/dataModel";
 import { internalMutation, type MutationCtx, mutation, query } from "./_generated/server";
 import {
   qualifyCoachingPendingAlert,
-  qualifyDwcCriticalAlert,
+  qualifyDwcBelowTargetAlert,
   qualifyDwcDropAlert,
   qualifyNewDriverAlert,
-  qualifyTierDowngradeAlert,
 } from "./lib/automationPolicy";
 import { checkStationAccess, requireWriteAccess } from "./lib/permissions";
-import { getTier } from "./lib/tier";
 
-export type AlertType = "dwc_drop" | "dwc_critical" | "coaching_pending" | "new_driver" | "tier_downgrade";
+// Includes legacy types for backward compatibility with existing data
+export type AlertType =
+  | "dwc_drop"
+  | "dwc_below_target"
+  | "dwc_critical" // legacy
+  | "coaching_pending"
+  | "new_driver"
+  | "tier_downgrade"; // legacy
 
 export type AlertSeverity = "warning" | "critical";
 
@@ -192,6 +197,15 @@ export const generateQualifiedAlertsInternal = internalMutation({
   },
 });
 
+// Default objectives if station has none configured
+const DEFAULT_OBJECTIVES = {
+  dwcTarget: 92,
+  iadcTarget: 65,
+  dwcAlertDrop: 5,
+  dnrDpmoMax: 1500,
+  coachingMaxDays: 14,
+};
+
 async function createQualifiedAlerts(
   ctx: MutationCtx,
   args: {
@@ -207,6 +221,14 @@ async function createQualifiedAlerts(
   let maxConfidenceScore = 0;
   let lowConfidenceCount = 0;
   const alertSummaries: GeneratedAlertSummary[] = [];
+
+  // Fetch station objectives (or use defaults)
+  const stationObjectives = await ctx.db
+    .query("stationObjectives")
+    .withIndex("by_station", (q) => q.eq("stationId", args.stationId))
+    .unique();
+
+  const objectives = stationObjectives ?? DEFAULT_OBJECTIVES;
 
   const prevWeek = args.week === 1 ? 52 : args.week - 1;
   const prevYear = args.week === 1 ? args.year - 1 : args.year;
@@ -238,12 +260,14 @@ async function createQualifiedAlerts(
 
     const candidates = [];
 
-    if (dwcPercent < 90) {
+    // Alert if DWC is below the station's target
+    if (dwcPercent < objectives.dwcTarget) {
       candidates.push(
-        qualifyDwcCriticalAlert({
+        qualifyDwcBelowTargetAlert({
           driverName: driver.name,
           driverId: driver._id,
           dwcPercent,
+          dwcTarget: objectives.dwcTarget,
         }),
       );
     }
@@ -254,30 +278,20 @@ async function createQualifiedAlerts(
       const prevDwc = prevTotal > 0 ? (prevStat.dwcCompliant / prevTotal) * 100 : 0;
       const drop = prevDwc - dwcPercent;
 
-      if (drop > 5) {
+      // Alert if drop exceeds station's configured threshold
+      if (drop > objectives.dwcAlertDrop) {
         candidates.push(
           qualifyDwcDropAlert({
             driverName: driver.name,
             driverId: driver._id,
             currentDwc: dwcPercent,
             previousDwc: prevDwc,
+            dropThreshold: objectives.dwcAlertDrop,
           }),
         );
       }
 
-      const currentTier = getTier(dwcPercent);
-      const previousTier = getTier(prevDwc);
-      const tierOrder = ["fantastic", "great", "fair", "poor"];
-      if (tierOrder.indexOf(currentTier) > tierOrder.indexOf(previousTier)) {
-        candidates.push(
-          qualifyTierDowngradeAlert({
-            driverName: driver.name,
-            driverId: driver._id,
-            currentDwc: dwcPercent,
-            previousDwc: prevDwc,
-          }),
-        );
-      }
+      // tier_downgrade alerts removed - tiers are invented and no longer used
     } else {
       candidates.push(
         qualifyNewDriverAlert({
@@ -363,10 +377,11 @@ async function createQualifiedAlerts(
     .withIndex("by_station_status", (q) => q.eq("stationId", args.stationId).eq("status", "pending"))
     .collect();
 
-  const fourteenDaysAgo = now - 14 * 24 * 60 * 60 * 1000;
+  const maxDaysMs = objectives.coachingMaxDays * 24 * 60 * 60 * 1000;
+  const thresholdDate = now - maxDaysMs;
 
   for (const coaching of pendingCoaching) {
-    if (coaching.createdAt >= fourteenDaysAgo) continue;
+    if (coaching.createdAt >= thresholdDate) continue;
 
     const driver = await ctx.db.get(coaching.driverId);
     if (!driver) continue;
@@ -379,6 +394,7 @@ async function createQualifiedAlerts(
       driverName: driver.name,
       driverId: driver._id,
       daysPending,
+      maxDays: objectives.coachingMaxDays,
     });
 
     const decisionScoreId =

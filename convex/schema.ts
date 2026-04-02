@@ -504,11 +504,12 @@ export default defineSchema({
     stationId: v.id("stations"),
     driverId: v.optional(v.id("drivers")), // Optional: driver-specific alerts
     type: v.union(
-      v.literal("dwc_drop"), // DWC dropped > 5%
-      v.literal("dwc_critical"), // DWC under 90%
-      v.literal("coaching_pending"), // Coaching > 14 days pending
+      v.literal("dwc_drop"), // DWC dropped > configured threshold
+      v.literal("dwc_below_target"), // DWC under station target
+      v.literal("dwc_critical"), // legacy: kept for existing data
+      v.literal("coaching_pending"), // Coaching > configured max days
       v.literal("new_driver"), // New driver needs attention
-      v.literal("tier_downgrade"), // Driver dropped tier
+      v.literal("tier_downgrade"), // legacy: kept for existing data
     ),
     severity: v.union(v.literal("warning"), v.literal("critical")),
     title: v.string(),

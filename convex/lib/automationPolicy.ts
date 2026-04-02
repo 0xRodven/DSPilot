@@ -1,5 +1,3 @@
-import { getTier } from "./tier";
-
 export type AutomationSeverity = "info" | "warning" | "critical";
 export type AutomationConfidenceLevel = "low" | "medium" | "high";
 export type AutomationDecisionType = "alert" | "digest" | "report_daily" | "report_weekly";
@@ -11,7 +9,7 @@ export type AlertEvidence = {
 };
 
 export type QualifiedAlertCandidate = {
-  type: "dwc_drop" | "dwc_critical" | "coaching_pending" | "new_driver" | "tier_downgrade";
+  type: "dwc_drop" | "dwc_below_target" | "coaching_pending" | "new_driver";
   severity: Exclude<AutomationSeverity, "info">;
   title: string;
   message: string;
@@ -44,22 +42,29 @@ function buildCandidate(candidate: Omit<QualifiedAlertCandidate, "confidenceLeve
   };
 }
 
-export function qualifyDwcCriticalAlert(args: { driverName: string; driverId: string; dwcPercent: number }) {
-  const severity = args.dwcPercent < 88 ? "critical" : "warning";
-  const confidenceScore = args.dwcPercent < 88 ? 0.96 : 0.9;
+export function qualifyDwcBelowTargetAlert(args: {
+  driverName: string;
+  driverId: string;
+  dwcPercent: number;
+  dwcTarget: number;
+}) {
+  // Critical if more than 5 points below target, warning otherwise
+  const gapFromTarget = args.dwcTarget - args.dwcPercent;
+  const severity = gapFromTarget >= 5 ? "critical" : "warning";
+  const confidenceScore = gapFromTarget >= 5 ? 0.96 : 0.9;
 
   return buildCandidate({
-    type: "dwc_critical",
+    type: "dwc_below_target",
     severity,
-    title: severity === "critical" ? "DWC critique" : "DWC à surveiller",
-    message: `${args.driverName} a un DWC de ${round1(args.dwcPercent)}%`,
-    summary: `Le driver est sous le seuil d'attention DSPilot sur la semaine en cours.`,
+    title: severity === "critical" ? "DWC critique" : "DWC sous objectif",
+    message: `${args.driverName} a un DWC de ${round1(args.dwcPercent)}% (objectif: ${args.dwcTarget}%)`,
+    summary: `Le driver est sous l'objectif station de ${args.dwcTarget}% sur la semaine en cours.`,
     confidenceScore,
     logicalChannel: "alerts",
     evidence: [
       { label: "Driver", value: args.driverName },
       { label: "DWC", value: `${round1(args.dwcPercent)}%` },
-      { label: "Tier DSPilot", value: getTier(args.dwcPercent) },
+      { label: "Objectif station", value: `${args.dwcTarget}%` },
     ],
     recommendedAction:
       severity === "critical"
@@ -67,7 +72,7 @@ export function qualifyDwcCriticalAlert(args: { driverName: string; driverId: st
         : "Surveiller la trajectoire du driver et préparer un coaching ciblé.",
     targetPath: `/dashboard/drivers/${args.driverId}`,
     currentValue: round1(args.dwcPercent),
-    threshold: 90,
+    threshold: args.dwcTarget,
   });
 }
 
@@ -76,10 +81,12 @@ export function qualifyDwcDropAlert(args: {
   driverId: string;
   currentDwc: number;
   previousDwc: number;
+  dropThreshold: number;
 }) {
   const drop = args.previousDwc - args.currentDwc;
-  const severity = drop >= 10 ? "critical" : "warning";
-  const confidenceScore = drop >= 10 ? 0.92 : 0.82;
+  // Critical if drop is double the threshold
+  const severity = drop >= args.dropThreshold * 2 ? "critical" : "warning";
+  const confidenceScore = drop >= args.dropThreshold * 2 ? 0.92 : 0.82;
 
   return buildCandidate({
     type: "dwc_drop",
@@ -93,6 +100,7 @@ export function qualifyDwcDropAlert(args: {
       { label: "Driver", value: args.driverName },
       { label: "Semaine courante", value: `${round1(args.currentDwc)}%` },
       { label: "Semaine précédente", value: `${round1(args.previousDwc)}%` },
+      { label: "Seuil alerte", value: `${args.dropThreshold} pts` },
     ],
     recommendedAction:
       severity === "critical"
@@ -101,41 +109,7 @@ export function qualifyDwcDropAlert(args: {
     targetPath: `/dashboard/drivers/${args.driverId}`,
     currentValue: round1(args.currentDwc),
     previousValue: round1(args.previousDwc),
-    threshold: 5,
-  });
-}
-
-export function qualifyTierDowngradeAlert(args: {
-  driverName: string;
-  driverId: string;
-  currentDwc: number;
-  previousDwc: number;
-}) {
-  const currentTier = getTier(args.currentDwc);
-  const previousTier = getTier(args.previousDwc);
-  const severity = currentTier === "poor" ? "critical" : "warning";
-  const confidenceScore = currentTier === "poor" ? 0.9 : 0.78;
-
-  return buildCandidate({
-    type: "tier_downgrade",
-    severity,
-    title: "Rétrogradation de tier",
-    message: `${args.driverName} passe de ${previousTier} à ${currentTier}`,
-    summary: "La classification DSPilot du driver se dégrade par rapport à la semaine précédente.",
-    confidenceScore,
-    logicalChannel: "alerts",
-    evidence: [
-      { label: "Driver", value: args.driverName },
-      { label: "Tier précédent", value: previousTier },
-      { label: "Tier actuel", value: currentTier },
-    ],
-    recommendedAction:
-      severity === "critical"
-        ? "Traiter ce driver comme une priorité haute et vérifier l'historique des défauts."
-        : "Suivre la dérive et confirmer qu'elle se traduit par un besoin de coaching.",
-    targetPath: `/dashboard/drivers/${args.driverId}`,
-    currentValue: round1(args.currentDwc),
-    previousValue: round1(args.previousDwc),
+    threshold: args.dropThreshold,
   });
 }
 
@@ -158,21 +132,29 @@ export function qualifyNewDriverAlert(args: { driverName: string; driverId: stri
   });
 }
 
-export function qualifyCoachingPendingAlert(args: { driverName: string; driverId: string; daysPending: number }) {
-  const severity = args.daysPending > 21 ? "critical" : "warning";
-  const confidenceScore = args.daysPending > 21 ? 0.88 : 0.76;
+export function qualifyCoachingPendingAlert(args: {
+  driverName: string;
+  driverId: string;
+  daysPending: number;
+  maxDays: number;
+}) {
+  // Critical if pending for more than 1.5x the max days
+  const criticalThreshold = Math.round(args.maxDays * 1.5);
+  const severity = args.daysPending > criticalThreshold ? "critical" : "warning";
+  const confidenceScore = args.daysPending > criticalThreshold ? 0.88 : 0.76;
 
   return buildCandidate({
     type: "coaching_pending",
     severity,
     title: "Coaching en attente",
-    message: `Le suivi de ${args.driverName} est en attente depuis ${args.daysPending} jours`,
+    message: `Le suivi de ${args.driverName} est en attente depuis ${args.daysPending} jours (max: ${args.maxDays}j)`,
     summary: "Une action de coaching ouverte n'a pas été clôturée dans les délais attendus.",
     confidenceScore,
     logicalChannel: "ops",
     evidence: [
       { label: "Driver", value: args.driverName },
       { label: "Jours en attente", value: `${args.daysPending}` },
+      { label: "Seuil station", value: `${args.maxDays} jours` },
     ],
     recommendedAction:
       severity === "critical"
@@ -180,7 +162,7 @@ export function qualifyCoachingPendingAlert(args: { driverName: string; driverId
         : "Mettre à jour le statut du coaching ou fixer une nouvelle échéance.",
     targetPath: `/dashboard/drivers/${args.driverId}`,
     currentValue: args.daysPending,
-    threshold: 14,
+    threshold: args.maxDays,
   });
 }
 
