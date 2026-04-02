@@ -4,38 +4,57 @@ import Link from "next/link";
 
 import { ArrowRight } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
-import { LampContainer } from "@/components/ui/lamp";
-
 export function CTA() {
   return (
-    <section className="relative">
-      <LampContainer>
-        <h2 className="mt-8 text-center font-bold text-3xl tracking-tight md:text-5xl">
-          <span className="bg-gradient-to-br from-slate-300 to-slate-500 bg-clip-text text-transparent">
-            Votre station merite mieux qu&apos;un tableur.
-          </span>
+    <section
+      className="py-24"
+      style={{
+        background: "linear-gradient(to bottom, #FAFAF8, #EFF6FF)",
+      }}
+    >
+      <div className="mx-auto max-w-4xl px-6 text-center">
+        <h2
+          className="mb-8 font-[family-name:var(--font-display)] text-4xl leading-tight md:text-5xl"
+          style={{ color: "#1A1A1A" }}
+        >
+          Vous avez lu jusqu&apos;ici.
           <br />
-          <span className="bg-gradient-to-r from-blue-500 to-cyan-400 bg-clip-text text-transparent">
-            Passez a DSPilot.
+          <span
+            className="italic"
+            style={{
+              background: "linear-gradient(135deg, #2563EB 0%, #0891b2 100%)",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              backgroundClip: "text",
+            }}
+          >
+            Vos lundis matins peuvent changer maintenant.
           </span>
         </h2>
-        <p className="mx-auto mt-4 max-w-xl text-center text-muted-foreground">
-          Commencez gratuitement avec 20 livreurs. Pas de carte bancaire, pas d&apos;engagement, pas de mauvaise
-          surprise.
+
+        <Link
+          href="/sign-up"
+          className="mb-6 inline-flex items-center gap-2 rounded-lg px-8 py-4 font-medium text-lg text-white transition-all"
+          style={{ background: "#2563EB" }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = "#1d4ed8";
+            e.currentTarget.style.transform = "translateY(-2px)";
+            e.currentTarget.style.boxShadow = "0 10px 30px rgba(37,99,235,0.3)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = "#2563EB";
+            e.currentTarget.style.transform = "translateY(0)";
+            e.currentTarget.style.boxShadow = "none";
+          }}
+        >
+          Démarrer avec DSPilot
+          <ArrowRight className="h-5 w-5" />
+        </Link>
+
+        <p className="text-sm" style={{ color: "#8A8A8A" }}>
+          14 jours satisfait ou remboursé · Opérationnel en 2 minutes
         </p>
-        <div className="mt-8 flex flex-col items-center gap-3">
-          <Button size="lg" asChild className="gap-2 bg-blue-500 hover:bg-blue-600">
-            <Link href="/sign-up">
-              Creer mon compte gratuit
-              <ArrowRight className="size-4" />
-            </Link>
-          </Button>
-          <p className="text-muted-foreground text-xs">
-            Operationnel en 2 minutes · Import de vos premieres donnees en 30 secondes
-          </p>
-        </div>
-      </LampContainer>
+      </div>
     </section>
   );
 }

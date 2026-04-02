@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-import { Inter } from "next/font/google";
+import { Instrument_Serif, Inter, Outfit } from "next/font/google";
 
 import { frFR } from "@clerk/localizations";
 import { ClerkProvider } from "@clerk/nextjs";
@@ -17,6 +17,20 @@ import { PreferencesStoreProvider } from "@/stores/preferences/preferences-provi
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"] });
+
+const instrumentSerif = Instrument_Serif({
+  weight: "400",
+  subsets: ["latin"],
+  style: ["normal", "italic"],
+  variable: "--font-display",
+  display: "swap",
+});
+
+const outfit = Outfit({
+  subsets: ["latin"],
+  variable: "--font-body",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "DSPilot - Dashboard",
@@ -42,7 +56,7 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
           {/* Applies theme and layout preferences on load to avoid flicker and unnecessary server rerenders. */}
           <ThemeBootScript />
         </head>
-        <body className={`${inter.className} min-h-screen antialiased`}>
+        <body className={`${inter.className} ${instrumentSerif.variable} ${outfit.variable} min-h-screen antialiased`}>
           <NuqsAdapter>
             <ConvexClientProvider>
               <PreferencesStoreProvider

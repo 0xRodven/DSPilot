@@ -2,142 +2,167 @@
 
 import { AlertTriangle, BarChart3, Calendar, Clock, FileSpreadsheet, FileUp, Users } from "lucide-react";
 
-import { AnimationContainer } from "@/components/global/animation-container";
-import { BentoCard, BentoGrid } from "@/components/ui/bento-grid";
-import { MagicCard } from "@/components/ui/magic-card";
+import { BrowserFrame } from "./browser-frame";
+import { CoachingMockup, DriverMockup, ImportMockup, ReportMockup } from "./mockups";
 
 const painPoints = [
   {
-    icon: <Clock className="size-8 text-blue-500" />,
+    icon: Clock,
     title: "5 heures par semaine dans Excel. Chaque semaine.",
     description:
-      "Copier les scorecards Amazon, coller dans un tableur, reformater, croiser les données, préparer le reporting. Vous ne managez plus votre station — vous faites de la saisie.",
+      "Copier-coller, formules cassées, fichiers qui ne s'ouvrent plus. Vous avez mieux à faire que de vous battre avec des cellules.",
   },
   {
-    icon: <AlertTriangle className="size-8 text-blue-500" />,
+    icon: AlertTriangle,
     title: "Un livreur décroche. Vous le voyez trop tard.",
     description:
-      "Sans vue centralisée, un score DWC qui chute passe inaperçu pendant deux, trois semaines. Le temps de réagir, c'est le tier de toute la station qui en pâtit.",
+      "Le temps de repérer la baisse, de planifier un coaching, d'agir — c'est le tier de toute la station qui trinque.",
   },
   {
-    icon: <FileSpreadsheet className="size-8 text-blue-500" />,
+    icon: FileSpreadsheet,
     title: "Du coaching sur post-it, des résultats sur papier.",
     description:
-      "Vous savez qui coacher. Mais entre les notes volantes, les messages WhatsApp éparpillés et les réunions non suivies, rien n'est structuré. Le même livreur repasse en rouge le mois suivant.",
+      "Pas de suivi, pas d'historique, pas de preuve. Quand Amazon demande des comptes, c'est votre parole contre la leur.",
   },
 ];
 
 const features = [
   {
-    name: "Toute votre station en un coup d'œil.",
+    icon: FileUp,
+    label: "Import",
+    title: "30 secondes. Pas 3 heures.",
     description:
-      "Scores DWC, IADC, répartition par tier, tendances sur 8 semaines — visualisez la performance de chaque livreur sans ouvrir un seul fichier Excel. Vous identifiez les urgences en 10 secondes, pas en 2 heures.",
-    icon: <BarChart3 className="size-5" />,
-    className: "md:col-span-2",
-    background: (
-      <div className="absolute inset-0 flex items-center justify-center opacity-30">
-        <div className="grid grid-cols-4 gap-2 p-8">
-          {[0.6, 0.8, 0.7, 0.9, 0.65, 0.85, 0.75, 0.55, 0.7, 0.8, 0.6, 0.9, 0.7, 0.8, 0.65, 0.75].map((opacity, i) => (
-            <div key={i} className="h-8 w-8 rounded bg-blue-500/20" style={{ opacity }} />
-          ))}
-        </div>
-      </div>
-    ),
+      "Un simple copier-coller depuis Amazon. DSPilot parse automatiquement les données, les valide et vous montre immédiatement les problèmes. Zéro saisie manuelle, zéro erreur de formule.",
+    mockup: ImportMockup,
+    imagePosition: "right" as const,
   },
   {
-    name: "30 secondes. Pas 3 heures.",
+    icon: Calendar,
+    label: "Coaching",
+    title: "Chaque livreur en difficulté a un plan d'action.",
     description:
-      "Copiez le tableau Amazon, collez dans DSPilot. Les métriques sont extraites, nettoyées et classées automatiquement. Votre lundi matin redevient un jour de management, pas de saisie.",
-    icon: <FileUp className="size-5" />,
-    className: "md:col-span-1",
-    background: (
-      <div className="absolute top-4 right-4 opacity-20">
-        <FileUp className="size-32 text-blue-500" />
-      </div>
-    ),
+      "DSPilot détecte les baisses de performance, suggère des actions de coaching et garde l'historique de tout. Terminé les post-it perdus et les oublis.",
+    mockup: CoachingMockup,
+    imagePosition: "left" as const,
   },
   {
-    name: "Chaque livreur en difficulté a un plan d'action.",
+    icon: Users,
+    label: "Suivi individuel",
+    title: "Chaque livreur reçoit son propre bilan.",
     description:
-      "Un Kanban dédié — Détection, Attente, Évaluation, Terminé — avec pipeline d'escalade et calendrier de rendez-vous intégré. Vous ne laissez plus personne passer entre les mailles du filet.",
-    icon: <Calendar className="size-5" />,
-    className: "md:col-span-1",
-    background: (
-      <div className="absolute top-4 right-4 opacity-20">
-        <Calendar className="size-32 text-blue-500" />
-      </div>
-    ),
+      "Une page personnalisée pour chaque livreur avec ses KPIs, son évolution, et des recommandations concrètes. Partagez-la directement avec lui.",
+    mockup: DriverMockup,
+    imagePosition: "right" as const,
   },
   {
-    name: "Chaque livreur reçoit son propre bilan.",
+    icon: BarChart3,
+    label: "Rapports",
+    title: "Le rapport du lundi ? Il est déjà prêt.",
     description:
-      "Rapports individuels avec analyse personnalisée de ses métriques, points forts, axes d'amélioration. Le livreur sait exactement où il en est — et vous n'avez rien eu à rédiger.",
-    icon: <Users className="size-5" />,
-    className: "md:col-span-1",
-    background: (
-      <div className="absolute inset-0 flex items-end justify-center opacity-20">
-        <div className="flex gap-1 p-4">
-          {[40, 60, 80, 70, 90, 85, 95].map((h, i) => (
-            <div key={i} className="w-4 rounded-t bg-blue-500" style={{ height: `${h}%` }} />
-          ))}
-        </div>
-      </div>
-    ),
-  },
-  {
-    name: "Le rapport du lundi ? Il est déjà prêt.",
-    description:
-      "Chaque semaine, DSPilot génère un rapport consulting-grade et envoie les récaps individuels par WhatsApp à chaque livreur.",
-    icon: <BarChart3 className="size-5" />,
-    className: "md:col-span-1",
-    background: (
-      <div className="absolute top-4 right-4 opacity-20">
-        <BarChart3 className="size-32 text-blue-500" />
-      </div>
-    ),
+      "Chaque semaine, DSPilot génère automatiquement un rapport professionnel prêt à envoyer. Graphiques, tendances, recommandations — tout est là.",
+    mockup: ReportMockup,
+    imagePosition: "left" as const,
   },
 ];
 
 export function Features() {
   return (
-    <section id="features" className="py-20 md:py-32">
+    <section id="features" className="relative py-24">
       {/* Pain Points Section */}
-      <AnimationContainer className="mb-20">
-        <h2 className="mb-12 text-center font-bold text-3xl text-foreground tracking-tight md:text-5xl">
+      <div className="mx-auto max-w-6xl px-6">
+        {/* Section Label */}
+        <div className="mb-4 font-semibold text-sm uppercase tracking-wider" style={{ color: "#DC2626" }}>
+          Le problème
+        </div>
+
+        {/* Title */}
+        <h2
+          className="mb-12 max-w-2xl font-[family-name:var(--font-display)] text-4xl leading-tight md:text-5xl"
+          style={{ color: "#1A1A1A" }}
+        >
           Votre lundi matin ressemble à ça.
         </h2>
-        <div className="grid gap-6 md:grid-cols-3">
-          {painPoints.map((pain, i) => (
-            <MagicCard key={i} className="flex flex-col gap-4">
-              <div className="flex size-14 items-center justify-center rounded-lg bg-blue-500/10">
-                {pain.icon}
+
+        {/* Pain Point Cards */}
+        <div className="mb-32 grid gap-6 md:grid-cols-3">
+          {painPoints.map((point) => {
+            const Icon = point.icon;
+            return (
+              <div
+                key={point.title}
+                className="group rounded-xl border border-[#E8E5DF] bg-white p-6 transition-all hover:border-red-500 hover:shadow-lg"
+              >
+                <div className="mb-4 inline-flex rounded-lg p-3" style={{ background: "#FEF2F2" }}>
+                  <Icon className="h-6 w-6" style={{ color: "#DC2626" }} />
+                </div>
+                <h3 className="mb-2 font-semibold text-lg" style={{ color: "#1A1A1A" }}>
+                  {point.title}
+                </h3>
+                <p className="text-sm leading-relaxed" style={{ color: "#4A4A4A" }}>
+                  {point.description}
+                </p>
               </div>
-              <h3 className="font-semibold text-foreground text-lg">{pain.title}</h3>
-              <p className="text-muted-foreground text-sm leading-relaxed">{pain.description}</p>
-            </MagicCard>
-          ))}
+            );
+          })}
         </div>
-      </AnimationContainer>
 
-      {/* Features Section */}
-      <AnimationContainer className="mb-12 text-center">
-        <span className="font-medium text-blue-500 text-sm">Fonctionnalités</span>
-        <h2 className="mt-2 font-bold text-3xl text-foreground tracking-tight sm:text-4xl md:text-5xl">
-          Tout ce dont vous avez besoin pour{" "}
-          <span className="bg-gradient-to-r from-blue-500 to-cyan-400 bg-clip-text text-transparent">exceller</span>
+        {/* Solution Section */}
+        <div className="mb-4 font-semibold text-sm uppercase tracking-wider" style={{ color: "#059669" }}>
+          La solution
+        </div>
+
+        <h2
+          className="mb-16 max-w-3xl font-[family-name:var(--font-display)] text-4xl leading-tight md:text-5xl"
+          style={{ color: "#1A1A1A" }}
+        >
+          Un dashboard conçu pour les station managers.
         </h2>
-        <p className="mx-auto mt-4 max-w-2xl text-lg text-muted-foreground">
-          DSPilot vous offre tous les outils nécessaires pour optimiser les performances de votre station DSP Amazon.
-        </p>
-      </AnimationContainer>
 
-      <AnimationContainer delay={0.1}>
-        <BentoGrid>
-          {features.map((feature, i) => (
-            <BentoCard key={i} {...feature} />
-          ))}
-        </BentoGrid>
-      </AnimationContainer>
+        {/* Feature Rows */}
+        <div className="space-y-24">
+          {features.map((feature) => {
+            const Icon = feature.icon;
+            const Mockup = feature.mockup;
+            const isImageRight = feature.imagePosition === "right";
+
+            return (
+              <div
+                key={feature.title}
+                className={`flex flex-col items-center gap-12 lg:flex-row ${isImageRight ? "" : "lg:flex-row-reverse"}`}
+              >
+                {/* Text Content */}
+                <div className="flex-1 lg:max-w-md">
+                  <div
+                    className="mb-4 inline-flex items-center gap-2 rounded-full px-3 py-1"
+                    style={{ background: "#EFF6FF" }}
+                  >
+                    <Icon className="h-4 w-4" style={{ color: "#2563EB" }} />
+                    <span className="font-medium text-sm" style={{ color: "#2563EB" }}>
+                      {feature.label}
+                    </span>
+                  </div>
+                  <h3
+                    className="mb-4 font-[family-name:var(--font-display)] text-3xl leading-tight"
+                    style={{ color: "#1A1A1A" }}
+                  >
+                    {feature.title}
+                  </h3>
+                  <p className="text-lg leading-relaxed" style={{ color: "#4A4A4A" }}>
+                    {feature.description}
+                  </p>
+                </div>
+
+                {/* Mockup */}
+                <div className="flex-1">
+                  <BrowserFrame url={`app.dspilot.fr/${feature.label.toLowerCase()}`}>
+                    <Mockup />
+                  </BrowserFrame>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
     </section>
   );
 }

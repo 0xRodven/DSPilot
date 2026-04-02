@@ -2,73 +2,84 @@
 
 import { Check, X } from "lucide-react";
 
-import { AnimationContainer } from "@/components/global/animation-container";
-
 const comparisons = [
   {
-    before: "3 heures de copier-coller chaque lundi",
-    after: "Import en 30 secondes, données prêtes à l'analyse",
+    before: "Télécharger les fichiers Amazon, ouvrir Excel, copier-coller, formater...",
+    after: "Un copier-coller, 30 secondes, c'est importé.",
   },
   {
-    before: "Un livreur chute, vous le découvrez au reporting mensuel",
-    after: "Alerte dès que le score DWC passe sous le seuil",
+    before: "Chercher qui a des mauvais scores, noter sur un post-it, espérer ne pas oublier.",
+    after: "Alertes automatiques, actions de coaching suggérées, historique complet.",
   },
   {
-    before: "Coaching au feeling, sans suivi structuré",
-    after: "Kanban avec pipeline d'escalade et historique complet",
+    before: "Refaire les mêmes graphiques chaque semaine. À la main.",
+    after: "Rapport automatique chaque lundi. Prêt à envoyer.",
   },
   {
-    before: "Reporting Amazon bricolé sur Excel chaque semaine",
-    after: "PDF consulting-grade généré automatiquement",
+    before: "Un fichier Excel partagé qui plante quand deux personnes l'ouvrent.",
+    after: "Une app web temps réel. PDF professionnel en un clic.",
   },
   {
-    before: "Chaque livreur demande où il en est — vous cherchez dans vos fichiers",
-    after: "Rapport individuel envoyé par WhatsApp, sans intervention",
+    before: "Amazon demande des preuves de coaching ? Bonne chance.",
+    after: "Tout est tracé, daté, exportable. Vous êtes couvert.",
   },
 ];
 
 export function Process() {
   return (
-    <section id="process" className="py-20 md:py-32">
-      <AnimationContainer className="mb-12 text-center">
-        <h2 className="font-bold text-3xl text-foreground tracking-tight md:text-5xl">
-          Avant DSPilot vs. Avec DSPilot.
-        </h2>
-        <p className="mx-auto mt-4 max-w-2xl text-lg text-muted-foreground">
-          Ce qui change concrètement dans votre semaine.
-        </p>
-      </AnimationContainer>
+    <section id="process" className="py-24" style={{ background: "#F5F3EE" }}>
+      <div className="mx-auto max-w-5xl px-6">
+        {/* Section Label */}
+        <div className="text-center">
+          <div className="mb-4 font-semibold text-sm uppercase tracking-wider" style={{ color: "#2563EB" }}>
+            Comment ça marche
+          </div>
 
-      <div className="mx-auto max-w-5xl">
-        {/* Headers */}
-        <AnimationContainer delay={0.1}>
-          <div className="mb-4 grid grid-cols-2 gap-4">
-            <div className="rounded-t-lg bg-red-500/10 px-4 py-3 text-center">
-              <span className="font-semibold text-red-500">Avant DSPilot</span>
+          <h2
+            className="mb-16 font-[family-name:var(--font-display)] text-4xl leading-tight md:text-5xl"
+            style={{ color: "#1A1A1A" }}
+          >
+            Avant DSPilot vs. Avec DSPilot.
+          </h2>
+        </div>
+
+        {/* Comparison Table */}
+        <div className="overflow-hidden rounded-2xl" style={{ background: "#FFFFFF", border: "1px solid #E8E5DF" }}>
+          {/* Headers */}
+          <div className="grid grid-cols-2" style={{ borderBottom: "1px solid #E8E5DF" }}>
+            <div className="px-6 py-4 text-center font-semibold" style={{ color: "#DC2626", background: "#FEF2F2" }}>
+              Avant DSPilot
             </div>
-            <div className="rounded-t-lg bg-blue-500/10 px-4 py-3 text-center">
-              <span className="font-semibold text-blue-500">Avec DSPilot</span>
+            <div className="px-6 py-4 text-center font-semibold" style={{ color: "#059669", background: "#ECFDF5" }}>
+              Avec DSPilot
             </div>
           </div>
-        </AnimationContainer>
 
-        {/* Comparison rows */}
-        <div className="space-y-3">
-          {comparisons.map((item, i) => (
-            <AnimationContainer key={i} delay={0.15 + i * 0.05}>
-              <div className="grid grid-cols-2 gap-4">
-                {/* Before */}
-                <div className="flex items-start gap-3 rounded-lg border-l-2 border-red-500/30 bg-red-500/5 p-4">
-                  <X className="mt-0.5 size-5 shrink-0 text-red-500" />
-                  <p className="text-muted-foreground text-sm md:text-base">{item.before}</p>
-                </div>
-                {/* After */}
-                <div className="flex items-start gap-3 rounded-lg border-l-2 border-blue-500/30 bg-blue-500/5 p-4">
-                  <Check className="mt-0.5 size-5 shrink-0 text-emerald-500" />
-                  <p className="text-foreground text-sm md:text-base">{item.after}</p>
-                </div>
+          {/* Rows */}
+          {comparisons.map((comparison, index) => (
+            <div
+              key={index}
+              className="grid grid-cols-2"
+              style={{
+                borderBottom: index < comparisons.length - 1 ? "1px solid #E8E5DF" : "none",
+              }}
+            >
+              {/* Before */}
+              <div className="flex items-start gap-3 p-6" style={{ borderLeft: "3px solid #DC2626" }}>
+                <X className="mt-0.5 h-5 w-5 shrink-0" style={{ color: "#DC2626" }} />
+                <p className="text-sm leading-relaxed" style={{ color: "#4A4A4A" }}>
+                  {comparison.before}
+                </p>
               </div>
-            </AnimationContainer>
+
+              {/* After */}
+              <div className="flex items-start gap-3 p-6" style={{ borderLeft: "3px solid #059669" }}>
+                <Check className="mt-0.5 h-5 w-5 shrink-0" style={{ color: "#059669" }} />
+                <p className="text-sm leading-relaxed" style={{ color: "#4A4A4A" }}>
+                  {comparison.after}
+                </p>
+              </div>
+            </div>
           ))}
         </div>
       </div>

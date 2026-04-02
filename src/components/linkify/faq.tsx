@@ -4,90 +4,98 @@ import { useState } from "react";
 
 import { ChevronDown } from "lucide-react";
 
-import { AnimationContainer } from "@/components/global/animation-container";
-import { cn } from "@/lib/utils";
-
 const faqs = [
   {
-    question: "C'est quoi exactement DSPilot ? Ca remplace quoi dans mon quotidien ?",
+    question: "C'est quoi exactement, DSPilot ?",
     answer:
-      "DSPilot est un outil de gestion dedie aux stations Amazon DSP. Il remplace vos fichiers Excel de suivi des scores DWC et IADC, vos exports manuels, vos reportings bricoles et vos notes de coaching eparpillees. Concretement, tout ce que vous faites aujourd'hui sur tableur pour suivre la performance de vos livreurs, DSPilot le centralise et l'automatise.",
+      "DSPilot est une application web qui centralise toutes vos données de performance Amazon (DWC, IADC, scorecard) et vous aide à piloter votre station : dashboard en temps réel, alertes automatiques, coaching livreurs, rapports hebdomadaires. Tout ce que vous faites aujourd'hui dans Excel, mais en 10x plus rapide et sans erreur.",
   },
   {
-    question: "Je n'ai pas le budget pour un outil a 999 euros par mois.",
+    question: "499 ou 999 € par mois, c'est cher. Ça vaut vraiment le coup ?",
     answer:
-      "Un DSP genere entre 500 000 et 2 millions d'euros de chiffre d'affaires par an. A 999 euros par mois, DSPilot represente moins de 0.1% de votre CA. En face, il vous fait gagner 3 a 5 heures par semaine — soit l'equivalent de 3 jours de travail par mois. C'est moins cher qu'un livreur a mi-temps, et ca protege directement votre tier Fantastic. Commencez gratuitement avec le plan Starter pour juger par vous-meme.",
+      "Faites le calcul : si vous passez 5 heures par semaine sur Excel et les rapports, c'est 20 heures par mois. À 50€/h de votre temps (estimation basse), ça fait 1000€. DSPilot vous rend ces heures — et vous évite les erreurs qui coûtent des primes. Testez pendant 14 jours, satisfait ou remboursé.",
   },
   {
-    question: "Est-ce que c'est compatible avec les rapports Amazon ?",
+    question: "Mes données sont-elles en sécurité ?",
     answer:
-      "Oui. Vous copiez le tableau de metriques livreurs directement depuis votre interface Amazon, vous le collez dans DSPilot, et les donnees sont extraites automatiquement en 30 secondes. Pas de fichier a reformater, pas de colonne a ajuster. Si Amazon change son format, on met a jour l'import dans la journee.",
+      "Oui. Hébergement en Europe, chiffrement AES-256 au repos et en transit, authentification sécurisée via Clerk, accès strictement limité. Vos données ne sont jamais revendues ni partagées. Nous sommes conformes RGPD.",
   },
   {
-    question: "Mes donnees de station sont sensibles. C'est securise ?",
+    question: "Comment fonctionne l'import des données ?",
     answer:
-      "Absolument. DSPilot utilise une authentification Clerk, un chiffrement TLS de bout en bout, et un hebergement sur Vercel conforme aux standards europeens. Vos donnees de performance livreurs et metriques IADC ne sont jamais partagees ni revendues. Vous restez proprietaire de tout ce que vous importez.",
+      "Vous copiez-collez le tableau HTML depuis votre page Amazon Logistics (Scorecard, DWC, IADC). DSPilot parse automatiquement les données, les valide et vous montre immédiatement s'il y a des erreurs ou des anomalies. 30 secondes chrono.",
   },
   {
-    question: "Je gere une station en Afrique de l'Ouest, ca fonctionne aussi ?",
+    question: "Je peux tester avant de m'engager ?",
     answer:
-      "Oui. DSPilot est concu pour les stations Amazon DSP en France et en Afrique de l'Ouest. L'interface est 100% francophone, les metriques sont les memes, et l'acces est 100% web — il suffit d'une connexion internet.",
+      "Oui. Le plan Pro est accessible directement, et vous pouvez annuler en un clic à tout moment. Pas de contrat, pas de durée minimum. Vous jugez sur pièce.",
   },
   {
-    question: "Et si Amazon change ses metriques ou son format de rapport ?",
+    question: "Et si j'ai besoin d'aide ?",
     answer:
-      "C'est notre metier de suivre ca. DSPilot est maintenu et mis a jour en continu. Si Amazon modifie le format des scorecards ou ajoute de nouvelles metriques de performance livreurs, nous adaptons l'outil. Vous n'avez rien a faire de votre cote.",
+      "Support par email inclus dans tous les plans (prioritaire pour Business et Enterprise). Nous proposons aussi des sessions de formation pour vous aider à tirer le maximum de DSPilot. Et si vous avez une demande spécifique, on en discute.",
   },
 ];
 
-function FAQItem({
-  question,
-  answer,
-  isOpen,
-  onToggle,
-}: {
-  question: string;
-  answer: string;
-  isOpen: boolean;
-  onToggle: () => void;
-}) {
-  return (
-    <div className="border-border/40 border-b">
-      <button onClick={onToggle} className="flex w-full items-center justify-between py-4 text-left">
-        <span className="font-medium text-base text-foreground">{question}</span>
-        <ChevronDown
-          className={cn("size-5 text-muted-foreground transition-transform duration-200", isOpen && "rotate-180")}
-        />
-      </button>
-      <div className={cn("overflow-hidden transition-all duration-200", isOpen ? "max-h-96 pb-4" : "max-h-0")}>
-        <p className="text-muted-foreground">{answer}</p>
-      </div>
-    </div>
-  );
-}
-
 export function FAQ() {
-  const [openIndex, setOpenIndex] = useState<number | null>(0);
+  const [openIndex, setOpenIndex] = useState<number | null>(null);
 
   return (
-    <section id="faq" className="py-20 md:py-32">
-      <AnimationContainer className="mb-12 text-center">
-        <h2 className="font-bold text-3xl text-foreground tracking-tight md:text-5xl">Questions frequentes</h2>
-      </AnimationContainer>
+    <section id="faq" className="py-24">
+      <div className="mx-auto max-w-3xl px-6">
+        {/* Header */}
+        <div className="mb-12 text-center">
+          <div className="mb-4 font-semibold text-sm uppercase tracking-wider" style={{ color: "#2563EB" }}>
+            FAQ
+          </div>
+          <h2
+            className="font-[family-name:var(--font-display)] text-4xl leading-tight md:text-5xl"
+            style={{ color: "#1A1A1A" }}
+          >
+            Questions fréquentes
+          </h2>
+        </div>
 
-      <AnimationContainer delay={0.1}>
-        <div className="mx-auto max-w-3xl">
-          {faqs.map((faq, i) => (
-            <FAQItem
-              key={i}
-              question={faq.question}
-              answer={faq.answer}
-              isOpen={openIndex === i}
-              onToggle={() => setOpenIndex(openIndex === i ? null : i)}
-            />
+        {/* Accordion */}
+        <div className="space-y-4">
+          {faqs.map((faq, index) => (
+            <div
+              key={index}
+              className="overflow-hidden rounded-xl transition-all"
+              style={{
+                background: "#FFFFFF",
+                border: "1px solid #E8E5DF",
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => {
+                  setOpenIndex(openIndex === index ? null : index);
+                }}
+                className="flex w-full items-center justify-between p-6 text-left"
+              >
+                <span className="pr-4 font-medium" style={{ color: "#1A1A1A" }}>
+                  {faq.question}
+                </span>
+                <ChevronDown
+                  className="h-5 w-5 shrink-0 transition-transform"
+                  style={{
+                    color: "#8A8A8A",
+                    transform: openIndex === index ? "rotate(180deg)" : "rotate(0deg)",
+                  }}
+                />
+              </button>
+              {openIndex === index && (
+                <div className="px-6 pb-6" style={{ borderTop: "1px solid #E8E5DF" }}>
+                  <p className="pt-4 leading-relaxed" style={{ color: "#4A4A4A" }}>
+                    {faq.answer}
+                  </p>
+                </div>
+              )}
+            </div>
           ))}
         </div>
-      </AnimationContainer>
+      </div>
     </section>
   );
 }

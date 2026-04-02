@@ -4,74 +4,58 @@ import { useState } from "react";
 
 import Link from "next/link";
 
-import { Check, Shield, Sparkles } from "lucide-react";
-
-import { AnimationContainer } from "@/components/global/animation-container";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { Check } from "lucide-react";
 
 const plans = [
   {
-    name: "Starter",
-    tagline: "Testez DSPilot sans engagement sur votre station.",
-    price: { monthly: 0, yearly: 0 },
-    features: [
-      "Jusqu'à 20 livreurs",
-      "Dashboard métriques essentielles",
-      "Import manuel",
-      "Historique 4 semaines",
-    ],
-    cta: "Commencer gratuitement",
-    href: "/sign-up",
-  },
-  {
     name: "Pro",
-    tagline: "Le tableau de bord complet pour piloter votre station au quotidien.",
-    price: { monthly: 499, yearly: 399 },
+    description: "Pour les DSP qui veulent gagner du temps.",
+    monthlyPrice: 499,
+    yearlyPrice: 399,
     features: [
-      "Livreurs illimités",
-      "Dashboard complet tendances 8 semaines",
-      "Historique illimité",
-      "Export PDF et Excel",
-      "Alertes automatiques",
-      "Analyse erreurs par livreur",
+      "Import automatique des données Amazon",
+      "Dashboard temps réel",
+      "Historique 12 semaines",
+      "Alertes performance",
+      "Export PDF",
       "Support email prioritaire",
     ],
-    cta: "Passer au Pro",
-    href: "/sign-up?plan=pro",
+    cta: "Démarrer avec Pro",
+    popular: false,
   },
   {
     name: "Business",
-    tagline: "Performance, coaching et rapports — sans friction.",
-    price: { monthly: 999, yearly: 799 },
-    popular: true,
+    description: "Pour les DSP qui veulent performer.",
+    monthlyPrice: 999,
+    yearlyPrice: 799,
     features: [
-      "Tout Pro +",
-      "Coaching intégré (Kanban, escalade, calendrier)",
-      "Rapports individuels par livreur",
-      "Récaps WhatsApp hebdomadaires",
-      "Rapports consulting-grade auto",
-      "Accès API",
+      "Tout le plan Pro",
+      "Coaching livreurs intégré",
+      "Rapports professionnels auto",
+      "Suivi individuel livreurs",
+      "Historique illimité",
       "Support prioritaire",
+      "Formations incluses",
     ],
-    cta: "Choisir Business",
-    href: "/sign-up?plan=business",
+    cta: "Démarrer avec Business",
+    popular: true,
   },
   {
     name: "Enterprise",
-    tagline: "Pour les groupes multi-stations qui veulent un partenaire, pas un outil.",
-    price: { monthly: null, yearly: null },
+    description: "Pour les groupes multi-stations.",
+    monthlyPrice: null,
+    yearlyPrice: null,
     features: [
-      "Tout Business +",
-      "Multi-stations centralisé",
-      "SSO/SAML",
+      "Tout le plan Business",
+      "Multi-stations",
+      "SSO / SAML",
+      "API personnalisée",
       "Account manager dédié",
-      "SLA 99.9%",
-      "Support téléphonique",
-      "Onboarding + formation",
+      "SLA garanti",
+      "Déploiement sur mesure",
     ],
-    cta: "Contactez-nous",
-    href: "mailto:sales@dspilot.fr",
+    cta: "Nous contacter",
+    popular: false,
   },
 ];
 
@@ -79,118 +63,159 @@ export function Pricing() {
   const [isYearly, setIsYearly] = useState(false);
 
   return (
-    <section id="pricing" className="py-20 md:py-32">
-      <AnimationContainer className="mb-12 text-center">
-        <span className="font-medium text-blue-500 text-sm">Tarifs</span>
-        <h2 className="mt-2 font-bold text-3xl text-foreground tracking-tight sm:text-4xl md:text-5xl">
-          Un abonnement qui se rembourse{" "}
-          <span className="bg-gradient-to-r from-blue-500 to-cyan-400 bg-clip-text text-transparent">
-            dès la première semaine
-          </span>
-          .
-        </h2>
-        <p className="mx-auto mt-4 max-w-3xl text-lg text-muted-foreground">
-          DSPilot vous fait gagner 3 à 5 heures par semaine. À l'échelle d'un mois, c'est l'équivalent de 3 jours de
-          travail récupérés.
-        </p>
-
-        {/* Billing toggle */}
-        <div className="mt-8 flex items-center justify-center gap-4">
-          <span className={cn("text-sm", !isYearly && "font-medium text-foreground")}>Mensuel</span>
-          <button
-            onClick={() => setIsYearly(!isYearly)}
-            className={cn(
-              "relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out",
-              isYearly ? "bg-blue-500" : "bg-muted",
-            )}
+    <section id="pricing" className="py-24">
+      <div className="mx-auto max-w-6xl px-6">
+        {/* Header */}
+        <div className="mb-12 text-center">
+          <div className="mb-4 font-semibold text-sm uppercase tracking-wider" style={{ color: "#2563EB" }}>
+            Tarifs
+          </div>
+          <h2
+            className="mb-4 font-[family-name:var(--font-display)] text-4xl leading-tight md:text-5xl"
+            style={{ color: "#1A1A1A" }}
           >
-            <span
-              className={cn(
-                "pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow-lg transition duration-200 ease-in-out",
-                isYearly ? "translate-x-5" : "translate-x-0",
-              )}
-            />
-          </button>
-          <span className={cn("text-sm", isYearly && "font-medium text-foreground")}>
-            Annuel
-            <span className="ml-1 text-blue-500 text-xs">-20%</span>
-          </span>
+            Simple, transparent, sans surprise.
+          </h2>
+          <p className="text-lg" style={{ color: "#4A4A4A" }}>
+            Choisissez le plan adapté à votre station.
+          </p>
         </div>
-      </AnimationContainer>
 
-      <AnimationContainer delay={0.1}>
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-          {plans.map((plan, i) => (
+        {/* Toggle */}
+        <div className="mb-12 flex items-center justify-center gap-4">
+          <button
+            type="button"
+            onClick={() => {
+              setIsYearly(false);
+            }}
+            className="px-4 py-2 font-medium text-sm transition-all"
+            style={{
+              color: isYearly ? "#8A8A8A" : "#1A1A1A",
+              borderBottom: isYearly ? "2px solid transparent" : "2px solid #2563EB",
+            }}
+          >
+            Mensuel
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setIsYearly(true);
+            }}
+            className="px-4 py-2 font-medium text-sm transition-all"
+            style={{
+              color: isYearly ? "#1A1A1A" : "#8A8A8A",
+              borderBottom: isYearly ? "2px solid #2563EB" : "2px solid transparent",
+            }}
+          >
+            Annuel
+            <span className="ml-2 rounded-full px-2 py-0.5 text-xs" style={{ background: "#ECFDF5", color: "#059669" }}>
+              -20%
+            </span>
+          </button>
+        </div>
+
+        {/* Plans Grid */}
+        <div className="mb-12 grid gap-8 lg:grid-cols-3">
+          {plans.map((plan) => (
             <div
-              key={i}
-              className={cn(
-                "relative flex flex-col rounded-2xl border p-6",
-                plan.popular ? "border-blue-500 bg-blue-500/5" : "border-border/60 bg-background/50",
-              )}
+              key={plan.name}
+              className="relative flex flex-col rounded-2xl p-8 transition-all"
+              style={{
+                background: "#FFFFFF",
+                border: plan.popular ? "2px solid #2563EB" : "1px solid #E8E5DF",
+                boxShadow: plan.popular ? "0 8px 30px rgba(37,99,235,0.15)" : "none",
+              }}
             >
+              {/* Popular Badge */}
               {plan.popular && (
-                <div className="-top-3 -translate-x-1/2 absolute left-1/2">
-                  <span className="inline-flex items-center gap-1 rounded-full bg-blue-500 px-3 py-1 font-medium text-white text-xs">
-                    <Sparkles className="size-3" />
-                    Recommandé
-                  </span>
+                <div
+                  className="-top-3 -translate-x-1/2 absolute left-1/2 rounded-full px-4 py-1 font-semibold text-white text-xs"
+                  style={{ background: "#2563EB" }}
+                >
+                  Le plus populaire
                 </div>
               )}
 
-              <div className="mb-4">
-                <h3 className="font-semibold text-foreground text-xl">{plan.name}</h3>
-                <p className="mt-1 min-h-[40px] text-muted-foreground text-sm">{plan.tagline}</p>
-              </div>
+              {/* Plan Name */}
+              <h3 className="mb-2 font-semibold text-xl" style={{ color: "#1A1A1A" }}>
+                {plan.name}
+              </h3>
+              <p className="mb-6 text-sm" style={{ color: "#4A4A4A" }}>
+                {plan.description}
+              </p>
 
+              {/* Price */}
               <div className="mb-6">
-                {plan.price.monthly !== null ? (
+                {plan.monthlyPrice ? (
                   <>
-                    <span className="font-bold text-4xl text-foreground">
-                      {isYearly ? plan.price.yearly : plan.price.monthly}
+                    <span className="font-bold text-4xl" style={{ color: "#1A1A1A" }}>
+                      {isYearly ? plan.yearlyPrice : plan.monthlyPrice}€
                     </span>
-                    <span className="text-muted-foreground">{plan.price.monthly === 0 ? "" : "\u20AC/mois"}</span>
+                    <span className="text-sm" style={{ color: "#8A8A8A" }}>
+                      /mois
+                    </span>
+                    {isYearly && (
+                      <p className="mt-1 text-xs" style={{ color: "#059669" }}>
+                        Facturé annuellement
+                      </p>
+                    )}
                   </>
                 ) : (
-                  <span className="font-bold text-2xl text-foreground">Sur devis</span>
+                  <span className="font-semibold text-2xl" style={{ color: "#1A1A1A" }}>
+                    Sur devis
+                  </span>
                 )}
               </div>
 
+              {/* Features */}
               <ul className="mb-8 flex-1 space-y-3">
-                {plan.features.map((feature, j) => (
-                  <li key={j} className="flex items-start gap-2 text-sm">
-                    <Check className="mt-0.5 size-4 shrink-0 text-blue-500" />
-                    <span className="text-muted-foreground">{feature}</span>
+                {plan.features.map((feature) => (
+                  <li key={feature} className="flex items-start gap-3">
+                    <Check className="mt-0.5 h-5 w-5 shrink-0" style={{ color: "#059669" }} />
+                    <span className="text-sm" style={{ color: "#4A4A4A" }}>
+                      {feature}
+                    </span>
                   </li>
                 ))}
               </ul>
 
-              <Button
-                asChild
-                variant={plan.popular ? "default" : "outline"}
-                className={cn("w-full", plan.popular && "bg-blue-500 hover:bg-blue-600")}
+              {/* CTA */}
+              <Link
+                href={plan.name === "Enterprise" ? "/contact" : "/sign-up"}
+                className="block rounded-lg py-3 text-center font-medium transition-all"
+                style={{
+                  background: plan.popular ? "#2563EB" : "transparent",
+                  color: plan.popular ? "#FFFFFF" : "#1A1A1A",
+                  border: plan.popular ? "none" : "1px solid #E8E5DF",
+                }}
+                onMouseEnter={(e) => {
+                  if (plan.popular) {
+                    e.currentTarget.style.background = "#1d4ed8";
+                  } else {
+                    e.currentTarget.style.borderColor = "#2563EB";
+                    e.currentTarget.style.color = "#2563EB";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (plan.popular) {
+                    e.currentTarget.style.background = "#2563EB";
+                  } else {
+                    e.currentTarget.style.borderColor = "#E8E5DF";
+                    e.currentTarget.style.color = "#1A1A1A";
+                  }
+                }}
               >
-                <Link href={plan.href}>{plan.cta}</Link>
-              </Button>
+                {plan.cta}
+              </Link>
             </div>
           ))}
         </div>
-      </AnimationContainer>
 
-      {/* Reassurance */}
-      <AnimationContainer delay={0.2}>
-        <div className="mt-12 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-muted-foreground text-sm">
-          <span className="flex items-center gap-1.5">
-            <Shield className="size-4" />
-            Sans engagement
-          </span>
-          <span className="text-border">|</span>
-          <span>Données chiffrées TLS</span>
-          <span className="text-border">|</span>
-          <span>Annulation en un clic</span>
-          <span className="text-border">|</span>
-          <span>Conforme RGPD</span>
-        </div>
-      </AnimationContainer>
+        {/* Reassurance */}
+        <p className="text-center text-sm" style={{ color: "#8A8A8A" }}>
+          14 jours satisfait ou remboursé · Sans engagement · Données chiffrées · Conforme RGPD
+        </p>
+      </div>
     </section>
   );
 }

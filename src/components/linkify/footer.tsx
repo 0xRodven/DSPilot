@@ -3,84 +3,110 @@
 import Image from "next/image";
 import Link from "next/link";
 
-import { ModeToggle } from "@/components/mode-toggle";
-
 const footerLinks = {
-  product: [
-    { name: "Fonctionnalites", href: "#features" },
-    { name: "Comment ca marche", href: "#process" },
-    { name: "Tarifs", href: "#pricing" },
-    { name: "FAQ", href: "#faq" },
+  produit: [
+    { label: "Fonctionnalités", href: "#features" },
+    { label: "Tarifs", href: "#pricing" },
+    { label: "FAQ", href: "#faq" },
   ],
-  company: [
-    { name: "À propos", href: "/about" },
-    { name: "Contact", href: "mailto:contact@dspilot.fr" },
+  entreprise: [
+    { label: "À propos", href: "/about" },
+    { label: "Contact", href: "/contact" },
   ],
   legal: [
-    { name: "Mentions légales", href: "/legal" },
-    { name: "CGU", href: "/terms" },
-    { name: "Confidentialité", href: "/privacy" },
+    { label: "Mentions légales", href: "/legal/mentions" },
+    { label: "CGU", href: "/legal/cgu" },
+    { label: "Politique de confidentialité", href: "/legal/privacy" },
   ],
 };
 
 export function Footer() {
   return (
-    <footer className="border-border/40 border-t bg-background/50 backdrop-blur-sm">
-      <div className="mx-auto max-w-7xl px-4 py-12 md:px-8">
-        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-5">
+    <footer style={{ borderTop: "1px solid #E8E5DF" }}>
+      <div className="mx-auto max-w-6xl px-6 py-16">
+        <div className="grid gap-12 md:grid-cols-2 lg:grid-cols-5">
           {/* Brand */}
           <div className="lg:col-span-2">
-            <Link href="/">
-              <Image src="/logo/DSPilot_Full.png" alt="DSPilot" width={180} height={68} className="h-10 w-auto" />
+            <Link href="/" className="mb-4 inline-block">
+              <Image src="/logo/DSPilot_Full.png" alt="DSPilot" width={120} height={32} className="h-8 w-auto" />
             </Link>
-            <p className="mt-4 max-w-xs text-muted-foreground text-sm">
-              La plateforme de gestion des performances pour stations DSP Amazon.
+            <p className="mb-4 max-w-xs text-sm leading-relaxed" style={{ color: "#4A4A4A" }}>
+              Le premier outil de gestion DSP Amazon en France. Pilotez votre station, pas vos tableurs.
             </p>
           </div>
 
-          {/* Links */}
+          {/* Produit */}
           <div>
-            <h3 className="mb-4 font-semibold text-foreground text-sm">Produit</h3>
+            <h4 className="mb-4 font-semibold text-sm uppercase tracking-wider" style={{ color: "#8A8A8A" }}>
+              Produit
+            </h4>
             <ul className="space-y-3">
-              {footerLinks.product.map((link) => (
-                <li key={link.name}>
+              {footerLinks.produit.map((link) => (
+                <li key={link.href}>
                   <Link
                     href={link.href}
-                    className="text-muted-foreground text-sm transition-colors hover:text-foreground"
+                    className="text-sm transition-colors"
+                    style={{ color: "#4A4A4A" }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.color = "#1A1A1A";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.color = "#4A4A4A";
+                    }}
                   >
-                    {link.name}
+                    {link.label}
                   </Link>
                 </li>
               ))}
             </ul>
           </div>
 
+          {/* Entreprise */}
           <div>
-            <h3 className="mb-4 font-semibold text-foreground text-sm">Entreprise</h3>
+            <h4 className="mb-4 font-semibold text-sm uppercase tracking-wider" style={{ color: "#8A8A8A" }}>
+              Entreprise
+            </h4>
             <ul className="space-y-3">
-              {footerLinks.company.map((link) => (
-                <li key={link.name}>
+              {footerLinks.entreprise.map((link) => (
+                <li key={link.href}>
                   <Link
                     href={link.href}
-                    className="text-muted-foreground text-sm transition-colors hover:text-foreground"
+                    className="text-sm transition-colors"
+                    style={{ color: "#4A4A4A" }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.color = "#1A1A1A";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.color = "#4A4A4A";
+                    }}
                   >
-                    {link.name}
+                    {link.label}
                   </Link>
                 </li>
               ))}
             </ul>
           </div>
 
+          {/* Légal */}
           <div>
-            <h3 className="mb-4 font-semibold text-foreground text-sm">Légal</h3>
+            <h4 className="mb-4 font-semibold text-sm uppercase tracking-wider" style={{ color: "#8A8A8A" }}>
+              Légal
+            </h4>
             <ul className="space-y-3">
               {footerLinks.legal.map((link) => (
-                <li key={link.name}>
+                <li key={link.href}>
                   <Link
                     href={link.href}
-                    className="text-muted-foreground text-sm transition-colors hover:text-foreground"
+                    className="text-sm transition-colors"
+                    style={{ color: "#4A4A4A" }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.color = "#1A1A1A";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.color = "#4A4A4A";
+                    }}
                   >
-                    {link.name}
+                    {link.label}
                   </Link>
                 </li>
               ))}
@@ -89,9 +115,10 @@ export function Footer() {
         </div>
 
         {/* Bottom */}
-        <div className="mt-12 flex flex-col items-center justify-between gap-4 border-border/40 border-t pt-8 md:flex-row">
-          <p className="text-muted-foreground text-sm">© 2026 DSPilot. Tous droits reserves.</p>
-          <ModeToggle />
+        <div className="mt-12 pt-8" style={{ borderTop: "1px solid #E8E5DF" }}>
+          <p className="text-center text-sm" style={{ color: "#8A8A8A" }}>
+            © 2026 DSPilot. Tous droits réservés.
+          </p>
         </div>
       </div>
     </footer>
