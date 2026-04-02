@@ -9,53 +9,57 @@ import { Check } from "lucide-react";
 const plans = [
   {
     name: "Pro",
-    description: "Pour les DSP qui veulent gagner du temps.",
+    description: "Le tableau de bord complet pour piloter votre station au quotidien.",
     monthlyPrice: 499,
     yearlyPrice: 399,
     features: [
-      "Import automatique des données Amazon",
-      "Dashboard temps réel",
-      "Historique 12 semaines",
-      "Alertes performance",
-      "Export PDF",
+      "Livreurs illimités",
+      "Dashboard complet tendances 8 semaines",
+      "Historique illimité",
+      "Export PDF et Excel",
+      "Alertes automatiques",
+      "Analyse erreurs par livreur",
       "Support email prioritaire",
     ],
-    cta: "Démarrer avec Pro",
+    cta: "Passer au Pro",
     popular: false,
+    href: "/sign-up?plan=pro",
   },
   {
     name: "Business",
-    description: "Pour les DSP qui veulent performer.",
+    description: "Performance, coaching et rapports — sans friction.",
     monthlyPrice: 999,
     yearlyPrice: 799,
     features: [
-      "Tout le plan Pro",
-      "Coaching livreurs intégré",
+      "Tout Pro +",
+      "Coaching intégré (Kanban, escalade, calendrier)",
+      "Rapports individuels par livreur",
+      "Récaps WhatsApp hebdomadaires",
       "Rapports professionnels auto",
-      "Suivi individuel livreurs",
-      "Historique illimité",
+      "Accès API",
       "Support prioritaire",
-      "Formations incluses",
     ],
-    cta: "Démarrer avec Business",
+    cta: "Choisir Business",
     popular: true,
+    href: "/sign-up?plan=business",
   },
   {
     name: "Enterprise",
-    description: "Pour les groupes multi-stations.",
+    description: "Pour les groupes multi-stations qui veulent un partenaire, pas un outil.",
     monthlyPrice: null,
     yearlyPrice: null,
     features: [
-      "Tout le plan Business",
-      "Multi-stations",
-      "SSO / SAML",
-      "API personnalisée",
+      "Tout Business +",
+      "Multi-stations centralisé",
+      "SSO/SAML",
       "Account manager dédié",
-      "SLA garanti",
-      "Déploiement sur mesure",
+      "SLA 99.9%",
+      "Support téléphonique",
+      "Onboarding + formation",
     ],
-    cta: "Nous contacter",
+    cta: "Contactez-nous",
     popular: false,
+    href: "mailto:sales@dspilot.fr",
   },
 ];
 
@@ -74,10 +78,13 @@ export function Pricing() {
             className="mb-4 font-[family-name:var(--font-display)] text-4xl leading-tight md:text-5xl"
             style={{ color: "#1A1A1A" }}
           >
-            Simple, transparent, sans surprise.
+            Un abonnement qui se rembourse
+            <br />
+            dès la première semaine.
           </h2>
           <p className="text-lg" style={{ color: "#4A4A4A" }}>
-            Choisissez le plan adapté à votre station.
+            DSPilot vous fait gagner 3 à 5 heures par semaine. À l&apos;échelle d&apos;un mois, c&apos;est
+            l&apos;équivalent de 3 jours de travail récupérés.
           </p>
         </div>
 
@@ -132,7 +139,7 @@ export function Pricing() {
                   className="-top-3 -translate-x-1/2 absolute left-1/2 rounded-full px-4 py-1 font-semibold text-white text-xs"
                   style={{ background: "#2563EB" }}
                 >
-                  Le plus populaire
+                  Recommandé
                 </div>
               )}
 
@@ -181,7 +188,7 @@ export function Pricing() {
 
               {/* CTA */}
               <Link
-                href={plan.name === "Enterprise" ? "/contact" : "/sign-up"}
+                href={plan.href}
                 className="block rounded-lg py-3 text-center font-medium transition-all"
                 style={{
                   background: plan.popular ? "#2563EB" : "transparent",

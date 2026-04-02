@@ -6,24 +6,24 @@ import { ChevronDown } from "lucide-react";
 
 const faqs = [
   {
-    question: "C'est quoi exactement, DSPilot ?",
+    question: "C'est quoi exactement DSPilot ? Ça remplace quoi dans mon quotidien ?",
     answer:
-      "DSPilot est une application web qui centralise toutes vos données de performance Amazon (DWC, IADC, scorecard) et vous aide à piloter votre station : dashboard en temps réel, alertes automatiques, coaching livreurs, rapports hebdomadaires. Tout ce que vous faites aujourd'hui dans Excel, mais en 10x plus rapide et sans erreur.",
+      "DSPilot est un outil de gestion dédié aux stations Amazon DSP. Il remplace vos fichiers Excel de suivi des scores DWC et IADC, vos exports manuels, vos reportings bricolés et vos notes de coaching éparpillées. Concrètement, tout ce que vous faites aujourd'hui sur tableur pour suivre la performance de vos livreurs, DSPilot le centralise et l'automatise.",
   },
   {
-    question: "499 ou 999 € par mois, c'est cher. Ça vaut vraiment le coup ?",
+    question: "499 ou 999\u00A0\u20AC par mois, c'est cher. Ça vaut vraiment le coup ?",
     answer:
-      "Faites le calcul : si vous passez 5 heures par semaine sur Excel et les rapports, c'est 20 heures par mois. À 50€/h de votre temps (estimation basse), ça fait 1000€. DSPilot vous rend ces heures — et vous évite les erreurs qui coûtent des primes. Testez pendant 14 jours, satisfait ou remboursé.",
+      "Un DSP génère entre 500\u00A0000 et 2 millions d'euros de chiffre d'affaires par an. À 999\u00A0\u20AC par mois, DSPilot représente moins de 0,1\u00A0% de votre CA. En face, il vous fait gagner 3 à 5 heures par semaine — soit l'équivalent de 3 jours de travail par mois. C'est moins cher qu'un livreur à mi-temps, et ça protège directement votre tier Fantastic. Testez pendant 14 jours, satisfait ou remboursé.",
   },
   {
-    question: "Mes données sont-elles en sécurité ?",
+    question: "Est-ce que c'est compatible avec les rapports Amazon ?",
     answer:
-      "Oui. Hébergement en Europe, chiffrement AES-256 au repos et en transit, authentification sécurisée via Clerk, accès strictement limité. Vos données ne sont jamais revendues ni partagées. Nous sommes conformes RGPD.",
+      "Oui. Vous copiez le tableau de métriques livreurs directement depuis votre interface Amazon, vous le collez dans DSPilot, et les données sont extraites automatiquement en 30 secondes. Pas de fichier à reformater, pas de colonne à ajuster. Si Amazon change son format, on met à jour l'import dans la journée.",
   },
   {
-    question: "Comment fonctionne l'import des données ?",
+    question: "Mes données de station sont sensibles. C'est sécurisé ?",
     answer:
-      "Vous copiez-collez le tableau HTML depuis votre page Amazon Logistics (Scorecard, DWC, IADC). DSPilot parse automatiquement les données, les valide et vous montre immédiatement s'il y a des erreurs ou des anomalies. 30 secondes chrono.",
+      "Absolument. DSPilot utilise une authentification Clerk, un chiffrement TLS de bout en bout, et un hébergement sur Vercel conforme aux standards européens. Vos données de performance livreurs et métriques IADC ne sont jamais partagées ni revendues. Vous restez propriétaire de tout ce que vous importez.",
   },
   {
     question: "Je peux tester avant de m'engager ?",
@@ -31,9 +31,9 @@ const faqs = [
       "Oui. Le plan Pro est accessible directement, et vous pouvez annuler en un clic à tout moment. Pas de contrat, pas de durée minimum. Vous jugez sur pièce.",
   },
   {
-    question: "Et si j'ai besoin d'aide ?",
+    question: "Et si Amazon change ses métriques ou son format de rapport ?",
     answer:
-      "Support par email inclus dans tous les plans (prioritaire pour Business et Enterprise). Nous proposons aussi des sessions de formation pour vous aider à tirer le maximum de DSPilot. Et si vous avez une demande spécifique, on en discute.",
+      "C'est notre métier de suivre ça. DSPilot est maintenu et mis à jour en continu. Si Amazon modifie le format des scorecards ou ajoute de nouvelles métriques de performance livreurs, nous adaptons l'outil. Vous n'avez rien à faire de votre côté.",
   },
 ];
 

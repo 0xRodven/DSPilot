@@ -4,24 +4,24 @@ import { Check, X } from "lucide-react";
 
 const comparisons = [
   {
-    before: "Télécharger les fichiers Amazon, ouvrir Excel, copier-coller, formater...",
-    after: "Un copier-coller, 30 secondes, c'est importé.",
+    before: "3 heures de copier-coller chaque lundi",
+    after: "Import en 30 secondes, données prêtes à l'analyse",
   },
   {
-    before: "Chercher qui a des mauvais scores, noter sur un post-it, espérer ne pas oublier.",
-    after: "Alertes automatiques, actions de coaching suggérées, historique complet.",
+    before: "Un livreur chute, vous le découvrez au reporting mensuel",
+    after: "Alerte dès que le score DWC passe sous le seuil",
   },
   {
-    before: "Refaire les mêmes graphiques chaque semaine. À la main.",
-    after: "Rapport automatique chaque lundi. Prêt à envoyer.",
+    before: "Coaching au feeling, sans suivi structuré",
+    after: "Kanban avec pipeline d'escalade et historique complet",
   },
   {
-    before: "Un fichier Excel partagé qui plante quand deux personnes l'ouvrent.",
-    after: "Une app web temps réel. PDF professionnel en un clic.",
+    before: "Reporting Amazon bricolé sur Excel chaque semaine",
+    after: "PDF professionnel généré automatiquement",
   },
   {
-    before: "Amazon demande des preuves de coaching ? Bonne chance.",
-    after: "Tout est tracé, daté, exportable. Vous êtes couvert.",
+    before: "Chaque livreur demande où il en est — vous cherchez dans vos fichiers",
+    after: "Rapport individuel envoyé par WhatsApp, sans intervention",
   },
 ];
 
@@ -30,17 +30,20 @@ export function Process() {
     <section id="process" className="py-24" style={{ background: "#F5F3EE" }}>
       <div className="mx-auto max-w-5xl px-6">
         {/* Section Label */}
-        <div className="text-center">
+        <div className="text-center" data-scroll-reveal>
           <div className="mb-4 font-semibold text-sm uppercase tracking-wider" style={{ color: "#2563EB" }}>
             Comment ça marche
           </div>
 
           <h2
-            className="mb-16 font-[family-name:var(--font-display)] text-4xl leading-tight md:text-5xl"
+            className="mb-4 font-[family-name:var(--font-display)] text-4xl leading-tight md:text-5xl"
             style={{ color: "#1A1A1A" }}
           >
             Avant DSPilot vs. Avec DSPilot.
           </h2>
+          <p className="mb-12" style={{ color: "#8A8A8A" }}>
+            Ce qui change concrètement dans votre semaine.
+          </p>
         </div>
 
         {/* Comparison Table */}

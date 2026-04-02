@@ -12,7 +12,7 @@ export function CTA() {
         background: "linear-gradient(to bottom, #FAFAF8, #EFF6FF)",
       }}
     >
-      <div className="mx-auto max-w-4xl px-6 text-center">
+      <div className="mx-auto max-w-4xl px-6 text-center" data-scroll-reveal>
         <h2
           className="mb-8 font-[family-name:var(--font-display)] text-4xl leading-tight md:text-5xl"
           style={{ color: "#1A1A1A" }}

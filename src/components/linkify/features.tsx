@@ -10,19 +10,19 @@ const painPoints = [
     icon: Clock,
     title: "5 heures par semaine dans Excel. Chaque semaine.",
     description:
-      "Copier-coller, formules cassées, fichiers qui ne s'ouvrent plus. Vous avez mieux à faire que de vous battre avec des cellules.",
+      "Copier les scorecards Amazon, coller dans un tableur, reformater, croiser les données, préparer le reporting. Vous ne managez plus votre station — vous faites de la saisie.",
   },
   {
     icon: AlertTriangle,
     title: "Un livreur décroche. Vous le voyez trop tard.",
     description:
-      "Le temps de repérer la baisse, de planifier un coaching, d'agir — c'est le tier de toute la station qui trinque.",
+      "Sans vue centralisée, un score DWC qui chute passe inaperçu pendant deux, trois semaines. Le temps de réagir, c'est le tier de toute la station qui trinque.",
   },
   {
     icon: FileSpreadsheet,
     title: "Du coaching sur post-it, des résultats sur papier.",
     description:
-      "Pas de suivi, pas d'historique, pas de preuve. Quand Amazon demande des comptes, c'est votre parole contre la leur.",
+      "Vous savez qui coacher. Mais entre les notes volantes, les messages WhatsApp éparpillés et les réunions non suivies, rien n'est structuré. Le même livreur repasse en rouge le mois suivant.",
   },
 ];
 
@@ -32,7 +32,7 @@ const features = [
     label: "Import",
     title: "30 secondes. Pas 3 heures.",
     description:
-      "Un simple copier-coller depuis Amazon. DSPilot parse automatiquement les données, les valide et vous montre immédiatement les problèmes. Zéro saisie manuelle, zéro erreur de formule.",
+      "Copiez le tableau Amazon, collez dans DSPilot. Les métriques sont extraites, nettoyées et classées automatiquement. Votre lundi matin redevient un jour de management, pas de saisie.",
     mockup: ImportMockup,
     imagePosition: "right" as const,
   },
@@ -41,7 +41,7 @@ const features = [
     label: "Coaching",
     title: "Chaque livreur en difficulté a un plan d'action.",
     description:
-      "DSPilot détecte les baisses de performance, suggère des actions de coaching et garde l'historique de tout. Terminé les post-it perdus et les oublis.",
+      "Un Kanban dédié — Détection, Attente, Évaluation, Terminé — avec pipeline d'escalade et calendrier de rendez-vous intégré. Vous ne laissez plus personne passer entre les mailles du filet.",
     mockup: CoachingMockup,
     imagePosition: "left" as const,
   },
@@ -50,7 +50,7 @@ const features = [
     label: "Suivi individuel",
     title: "Chaque livreur reçoit son propre bilan.",
     description:
-      "Une page personnalisée pour chaque livreur avec ses KPIs, son évolution, et des recommandations concrètes. Partagez-la directement avec lui.",
+      "Rapports individuels avec analyse personnalisée de ses métriques, points forts, axes d'amélioration. Le livreur sait exactement où il en est — et vous n'avez rien eu à rédiger.",
     mockup: DriverMockup,
     imagePosition: "right" as const,
   },
@@ -59,7 +59,7 @@ const features = [
     label: "Rapports",
     title: "Le rapport du lundi ? Il est déjà prêt.",
     description:
-      "Chaque semaine, DSPilot génère automatiquement un rapport professionnel prêt à envoyer. Graphiques, tendances, recommandations — tout est là.",
+      "Chaque semaine, DSPilot génère un rapport professionnel prêt à envoyer et envoie les récaps individuels par WhatsApp à chaque livreur. Vos interlocuteurs Amazon reçoivent un document propre ; vos livreurs reçoivent leur feuille de route.",
     mockup: ReportMockup,
     imagePosition: "left" as const,
   },
@@ -71,17 +71,19 @@ export function Features() {
       {/* Pain Points Section */}
       <div className="mx-auto max-w-6xl px-6">
         {/* Section Label */}
-        <div className="mb-4 font-semibold text-sm uppercase tracking-wider" style={{ color: "#DC2626" }}>
-          Le problème
-        </div>
+        <div data-scroll-reveal>
+          <div className="mb-4 font-semibold text-sm uppercase tracking-wider" style={{ color: "#DC2626" }}>
+            Le problème
+          </div>
 
-        {/* Title */}
-        <h2
-          className="mb-12 max-w-2xl font-[family-name:var(--font-display)] text-4xl leading-tight md:text-5xl"
-          style={{ color: "#1A1A1A" }}
-        >
-          Votre lundi matin ressemble à ça.
-        </h2>
+          {/* Title */}
+          <h2
+            className="mb-12 max-w-2xl font-[family-name:var(--font-display)] text-4xl leading-tight md:text-5xl"
+            style={{ color: "#1A1A1A" }}
+          >
+            Votre lundi matin ressemble à ça.
+          </h2>
+        </div>
 
         {/* Pain Point Cards */}
         <div className="mb-32 grid gap-6 md:grid-cols-3">
@@ -107,16 +109,18 @@ export function Features() {
         </div>
 
         {/* Solution Section */}
-        <div className="mb-4 font-semibold text-sm uppercase tracking-wider" style={{ color: "#059669" }}>
-          La solution
-        </div>
+        <div data-scroll-reveal>
+          <div className="mb-4 font-semibold text-sm uppercase tracking-wider" style={{ color: "#2563EB" }}>
+            La solution
+          </div>
 
-        <h2
-          className="mb-16 max-w-3xl font-[family-name:var(--font-display)] text-4xl leading-tight md:text-5xl"
-          style={{ color: "#1A1A1A" }}
-        >
-          Un dashboard conçu pour les station managers.
-        </h2>
+          <h2
+            className="mb-16 max-w-3xl font-[family-name:var(--font-display)] text-4xl leading-tight md:text-5xl"
+            style={{ color: "#1A1A1A" }}
+          >
+            Un dashboard conçu pour les station managers.
+          </h2>
+        </div>
 
         {/* Feature Rows */}
         <div className="space-y-24">
@@ -128,6 +132,7 @@ export function Features() {
             return (
               <div
                 key={feature.title}
+                data-scroll-reveal
                 className={`flex flex-col items-center gap-12 lg:flex-row ${isImageRight ? "" : "lg:flex-row-reverse"}`}
               >
                 {/* Text Content */}

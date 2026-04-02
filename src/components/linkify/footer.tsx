@@ -6,17 +6,18 @@ import Link from "next/link";
 const footerLinks = {
   produit: [
     { label: "Fonctionnalités", href: "#features" },
+    { label: "Comment ça marche", href: "#process" },
     { label: "Tarifs", href: "#pricing" },
     { label: "FAQ", href: "#faq" },
   ],
   entreprise: [
     { label: "À propos", href: "/about" },
-    { label: "Contact", href: "/contact" },
+    { label: "Contact", href: "mailto:contact@dspilot.fr" },
   ],
   legal: [
-    { label: "Mentions légales", href: "/legal/mentions" },
-    { label: "CGU", href: "/legal/cgu" },
-    { label: "Politique de confidentialité", href: "/legal/privacy" },
+    { label: "Mentions légales", href: "/legal" },
+    { label: "CGU", href: "/terms" },
+    { label: "Confidentialité", href: "/privacy" },
   ],
 };
 

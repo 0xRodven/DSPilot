@@ -7,7 +7,7 @@ const trustBlocks = [
     icon: User,
     title: "Né sur le terrain, pas en laboratoire.",
     description:
-      "DSPilot a été créé par un manager DSP, pour résoudre ses propres problèmes. Chaque fonctionnalité existe parce qu'elle répond à un vrai besoin du quotidien — pas parce qu'elle a l'air cool sur une démo.",
+      "DSPilot a été créé par un manager de station Amazon DSP qui passait ses lundis matin sur Excel. Chaque fonctionnalité répond à un problème vécu, pas à une hypothèse de consultant.",
   },
   {
     icon: Shield,
@@ -19,7 +19,7 @@ const trustBlocks = [
     icon: Lock,
     title: "Vos données ne quittent jamais l'infrastructure sécurisée.",
     description:
-      "Hébergement européen, chiffrement de bout en bout, accès strictement limité. Vos données de performance restent les vôtres — pas de revente, pas de partage, jamais.",
+      "Chiffrement TLS, authentification renforcée, hébergement européen. Vos métriques de station et données livreurs sont protégées selon les standards du marché.",
   },
 ];
 
@@ -28,7 +28,7 @@ export function Reviews() {
     <section id="reviews" className="py-24" style={{ background: "#F5F3EE" }}>
       <div className="mx-auto max-w-6xl px-6">
         {/* Header */}
-        <div className="mb-16 text-center">
+        <div className="mb-16 text-center" data-scroll-reveal>
           <div className="mb-4 font-semibold text-sm uppercase tracking-wider" style={{ color: "#2563EB" }}>
             Pourquoi nous faire confiance
           </div>
@@ -67,17 +67,17 @@ export function Reviews() {
         </div>
 
         {/* Narrative */}
-        <div className="mx-auto max-w-3xl text-center">
+        <div className="mx-auto max-w-3xl text-center" data-scroll-reveal>
           <p
             className="font-[family-name:var(--font-display)] text-xl italic leading-relaxed md:text-2xl"
             style={{ color: "#4A4A4A" }}
           >
-            &ldquo;J&apos;ai passé des années à jongler entre Excel, les emails d&apos;Amazon et les post-it de
-            coaching. Un jour, j&apos;ai décidé de construire l&apos;outil que j&apos;aurais aimé avoir dès le premier
-            jour. DSPilot, c&apos;est ça : tout ce que j&apos;ai appris sur le terrain, automatisé.&rdquo;
-          </p>
-          <p className="mt-6 font-medium text-sm" style={{ color: "#1A1A1A" }}>
-            — Ousmane, fondateur de DSPilot
+            DSPilot n&apos;est pas sorti d&apos;un brainstorm en salle de réunion. Il est né d&apos;un constat simple :
+            un manager de station Amazon DSP en France n&apos;a aucun outil adapté à son métier. Les solutions
+            américaines ne parlent pas français, ne comprennent pas les spécificités du marché, et coûtent une fortune.
+            Alors on a construit l&apos;outil qu&apos;on aurait voulu avoir dès le premier jour. Chaque écran, chaque
+            alerte, chaque rapport a été pensé par quelqu&apos;un qui a vécu le lundi matin à copier-coller des
+            scorecards dans Excel. On connaît le métier parce qu&apos;on le fait.
           </p>
         </div>
       </div>
