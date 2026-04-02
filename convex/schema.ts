@@ -24,6 +24,14 @@ const tierDistributionValidator = v.object({
   poor: v.number(),
 });
 
+const dwcDistributionValidator = v.object({
+  above95: v.number(),
+  pct90to95: v.number(),
+  pct85to90: v.number(),
+  pct80to85: v.number(),
+  below80: v.number(),
+});
+
 const confidenceLevelValidator = v.union(v.literal("low"), v.literal("medium"), v.literal("high"));
 
 const automationRunStatusValidator = v.union(
@@ -217,6 +225,7 @@ export default defineSchema({
 
     // Distribution tiers (comptés après calcul DWC%)
     tierDistribution: tierDistributionValidator,
+    dwcDistribution: v.optional(dwcDistributionValidator),
 
     // Breakdowns station
     dwcBreakdown: v.optional(dwcBreakdownValidator),
@@ -347,6 +356,7 @@ export default defineSchema({
     dwcScore: v.optional(v.number()),
     iadcScore: v.optional(v.number()),
     tierDistribution: v.optional(tierDistributionValidator),
+    dwcDistribution: v.optional(dwcDistributionValidator),
 
     // Erreurs
     errors: v.optional(v.array(v.string())),
