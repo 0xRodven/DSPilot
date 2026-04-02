@@ -1,10 +1,11 @@
-"use client"
+"use client";
 
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { OrganizationSettings } from "@/components/settings/organization-settings"
-import { AccountSettings } from "@/components/settings/account-settings"
-import { SubscriptionSettings } from "@/components/settings/subscription-settings"
-import { WhatsappSettings } from "@/components/settings/whatsapp-settings"
+import { AccountSettings } from "@/components/settings/account-settings";
+import { OrganizationSettings } from "@/components/settings/organization-settings";
+import { StationObjectivesForm } from "@/components/settings/station-objectives-form";
+import { SubscriptionSettings } from "@/components/settings/subscription-settings";
+import { WhatsappSettings } from "@/components/settings/whatsapp-settings";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function SettingsPage() {
   return (
@@ -17,11 +18,12 @@ export default function SettingsPage() {
 
         {/* Tabs */}
         <Tabs defaultValue="organisation" className="w-full">
-          <TabsList className="mb-6 grid w-full max-w-xl grid-cols-4">
+          <TabsList className="mb-6 grid w-full max-w-2xl grid-cols-5">
             <TabsTrigger value="organisation">Organisation</TabsTrigger>
             <TabsTrigger value="compte">Compte</TabsTrigger>
             <TabsTrigger value="whatsapp">WhatsApp</TabsTrigger>
             <TabsTrigger value="abonnement">Abonnement</TabsTrigger>
+            <TabsTrigger value="objectifs">Objectifs</TabsTrigger>
           </TabsList>
 
           <TabsContent value="organisation">
@@ -39,8 +41,12 @@ export default function SettingsPage() {
           <TabsContent value="abonnement">
             <SubscriptionSettings />
           </TabsContent>
+
+          <TabsContent value="objectifs">
+            <StationObjectivesForm />
+          </TabsContent>
         </Tabs>
       </div>
     </main>
-  )
+  );
 }
