@@ -188,9 +188,28 @@ export const listReports = query({
   args: {
     stationId: v.id("stations"),
     reportType: v.optional(v.union(v.literal("daily"), v.literal("weekly"))),
+    year: v.optional(v.number()),
+    week: v.optional(v.number()),
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    // Use week-specific index when year+week are provided
+    if (args.year !== undefined && args.week !== undefined) {
+      const reports = await ctx.db
+        .query("reportDeliveries")
+        .withIndex("by_station_week", (q) =>
+          q.eq("stationId", args.stationId).eq("year", args.year).eq("week", args.week),
+        )
+        .order("desc")
+        .collect();
+
+      if (args.reportType) {
+        return reports.filter((r) => r.reportType === args.reportType);
+      }
+      return reports;
+    }
+
+    // Fallback: all reports for station
     const allReports = await ctx.db
       .query("reportDeliveries")
       .withIndex("by_station", (q) => q.eq("stationId", args.stationId))
@@ -285,7 +304,7 @@ export const getDriverReportData = query({
           .withIndex("by_station_week", (q) => q.eq("stationId", station._id).eq("year", year).eq("week", week))
           .collect();
         return { week, year, stats };
-      })
+      }),
     );
 
     // Build driver history map
@@ -353,7 +372,7 @@ export const getDriverReportData = query({
           daysWorked,
           history: sortedHistory,
         };
-      })
+      }),
     );
 
     const valid = drivers.filter((d): d is NonNullable<typeof d> => d !== null);
