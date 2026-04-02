@@ -65,7 +65,7 @@ export function DrillDown({ subcategories, selectedSubcategory, onSubcategoryCha
           <div className="space-y-4">
             <p className="font-medium text-muted-foreground text-sm">Par localisation de livraison :</p>
             {selected.locations.map((location) => {
-              const maxCount = Math.max(...selected.locations?.map((l) => l.count));
+              const maxCount = Math.max(...(selected.locations?.map((l) => l.count) ?? [0]));
               const widthPercent = (location.count / maxCount) * 100;
 
               return (

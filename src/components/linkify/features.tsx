@@ -1,15 +1,37 @@
 "use client";
 
-import { AlertTriangle, BarChart3, Calendar, FileUp, LineChart, Users } from "lucide-react";
+import { AlertTriangle, BarChart3, Calendar, Clock, FileSpreadsheet, FileUp, Users } from "lucide-react";
 
 import { AnimationContainer } from "@/components/global/animation-container";
 import { BentoCard, BentoGrid } from "@/components/ui/bento-grid";
+import { MagicCard } from "@/components/ui/magic-card";
+
+const painPoints = [
+  {
+    icon: <Clock className="size-8 text-blue-500" />,
+    title: "5 heures par semaine dans Excel. Chaque semaine.",
+    description:
+      "Copier les scorecards Amazon, coller dans un tableur, reformater, croiser les données, préparer le reporting. Vous ne managez plus votre station — vous faites de la saisie.",
+  },
+  {
+    icon: <AlertTriangle className="size-8 text-blue-500" />,
+    title: "Un livreur décroche. Vous le voyez trop tard.",
+    description:
+      "Sans vue centralisée, un score DWC qui chute passe inaperçu pendant deux, trois semaines. Le temps de réagir, c'est le tier de toute la station qui en pâtit.",
+  },
+  {
+    icon: <FileSpreadsheet className="size-8 text-blue-500" />,
+    title: "Du coaching sur post-it, des résultats sur papier.",
+    description:
+      "Vous savez qui coacher. Mais entre les notes volantes, les messages WhatsApp éparpillés et les réunions non suivies, rien n'est structuré. Le même livreur repasse en rouge le mois suivant.",
+  },
+];
 
 const features = [
   {
-    name: "Dashboard temps réel",
+    name: "Toute votre station en un coup d'œil.",
     description:
-      "Visualisez les performances DWC et IADC de votre station en un coup d'œil avec des métriques actualisées.",
+      "Scores DWC, IADC, répartition par tier, tendances sur 8 semaines — visualisez la performance de chaque livreur sans ouvrir un seul fichier Excel. Vous identifiez les urgences en 10 secondes, pas en 2 heures.",
     icon: <BarChart3 className="size-5" />,
     className: "md:col-span-2",
     background: (
@@ -23,19 +45,21 @@ const features = [
     ),
   },
   {
-    name: "Analyse des erreurs",
-    description: "Identifiez les erreurs récurrentes et leurs causes pour améliorer la qualité des livraisons.",
-    icon: <AlertTriangle className="size-5" />,
+    name: "30 secondes. Pas 3 heures.",
+    description:
+      "Copiez le tableau Amazon, collez dans DSPilot. Les métriques sont extraites, nettoyées et classées automatiquement. Votre lundi matin redevient un jour de management, pas de saisie.",
+    icon: <FileUp className="size-5" />,
     className: "md:col-span-1",
     background: (
       <div className="absolute top-4 right-4 opacity-20">
-        <LineChart className="size-32 text-blue-500" />
+        <FileUp className="size-32 text-blue-500" />
       </div>
     ),
   },
   {
-    name: "Coaching intelligent",
-    description: "Planifiez des sessions de coaching ciblées basées sur les données de performance.",
+    name: "Chaque livreur en difficulté a un plan d'action.",
+    description:
+      "Un Kanban dédié — Détection, Attente, Évaluation, Terminé — avec pipeline d'escalade et calendrier de rendez-vous intégré. Vous ne laissez plus personne passer entre les mailles du filet.",
     icon: <Calendar className="size-5" />,
     className: "md:col-span-1",
     background: (
@@ -45,8 +69,9 @@ const features = [
     ),
   },
   {
-    name: "Suivi des livreurs",
-    description: "Suivez l'évolution de chaque livreur avec des profils détaillés et un historique complet.",
+    name: "Chaque livreur reçoit son propre bilan.",
+    description:
+      "Rapports individuels avec analyse personnalisée de ses métriques, points forts, axes d'amélioration. Le livreur sait exactement où il en est — et vous n'avez rien eu à rédiger.",
     icon: <Users className="size-5" />,
     className: "md:col-span-1",
     background: (
@@ -60,14 +85,14 @@ const features = [
     ),
   },
   {
-    name: "Import automatisé",
+    name: "Le rapport du lundi ? Il est déjà prêt.",
     description:
-      "Importez facilement les rapports Amazon avec notre parser intelligent qui extrait automatiquement les données.",
-    icon: <FileUp className="size-5" />,
+      "Chaque semaine, DSPilot génère un rapport consulting-grade et envoie les récaps individuels par WhatsApp à chaque livreur.",
+    icon: <BarChart3 className="size-5" />,
     className: "md:col-span-1",
     background: (
       <div className="absolute top-4 right-4 opacity-20">
-        <FileUp className="size-32 text-blue-500" />
+        <BarChart3 className="size-32 text-blue-500" />
       </div>
     ),
   },
@@ -76,6 +101,25 @@ const features = [
 export function Features() {
   return (
     <section id="features" className="py-20 md:py-32">
+      {/* Pain Points Section */}
+      <AnimationContainer className="mb-20">
+        <h2 className="mb-12 text-center font-bold text-3xl text-foreground tracking-tight md:text-5xl">
+          Votre lundi matin ressemble à ça.
+        </h2>
+        <div className="grid gap-6 md:grid-cols-3">
+          {painPoints.map((pain, i) => (
+            <MagicCard key={i} className="flex flex-col gap-4">
+              <div className="flex size-14 items-center justify-center rounded-lg bg-blue-500/10">
+                {pain.icon}
+              </div>
+              <h3 className="font-semibold text-foreground text-lg">{pain.title}</h3>
+              <p className="text-muted-foreground text-sm leading-relaxed">{pain.description}</p>
+            </MagicCard>
+          ))}
+        </div>
+      </AnimationContainer>
+
+      {/* Features Section */}
       <AnimationContainer className="mb-12 text-center">
         <span className="font-medium text-blue-500 text-sm">Fonctionnalités</span>
         <h2 className="mt-2 font-bold text-3xl text-foreground tracking-tight sm:text-4xl md:text-5xl">

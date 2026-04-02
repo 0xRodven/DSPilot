@@ -9,34 +9,34 @@ import { cn } from "@/lib/utils";
 
 const faqs = [
   {
-    question: "Comment fonctionne l'import des données Amazon ?",
+    question: "C'est quoi exactement DSPilot ? Ca remplace quoi dans mon quotidien ?",
     answer:
-      "Il vous suffit de copier-coller le tableau de performance depuis votre portail Amazon DSP. Notre parser intelligent extrait automatiquement toutes les métriques (DWC, IADC, erreurs, etc.) et les organise dans votre dashboard.",
+      "DSPilot est un outil de gestion dedie aux stations Amazon DSP. Il remplace vos fichiers Excel de suivi des scores DWC et IADC, vos exports manuels, vos reportings bricoles et vos notes de coaching eparpillees. Concretement, tout ce que vous faites aujourd'hui sur tableur pour suivre la performance de vos livreurs, DSPilot le centralise et l'automatise.",
   },
   {
-    question: "Puis-je essayer DSPilot gratuitement ?",
+    question: "Je n'ai pas le budget pour un outil a 999 euros par mois.",
     answer:
-      "Oui ! Le plan Gratuit vous permet de gérer jusqu'à 20 livreurs avec les fonctionnalités essentielles. Pour le plan Pro, nous offrons un essai gratuit de 14 jours sans engagement.",
+      "Un DSP genere entre 500 000 et 2 millions d'euros de chiffre d'affaires par an. A 999 euros par mois, DSPilot represente moins de 0.1% de votre CA. En face, il vous fait gagner 3 a 5 heures par semaine — soit l'equivalent de 3 jours de travail par mois. C'est moins cher qu'un livreur a mi-temps, et ca protege directement votre tier Fantastic. Commencez gratuitement avec le plan Starter pour juger par vous-meme.",
   },
   {
-    question: "Mes données sont-elles sécurisées ?",
+    question: "Est-ce que c'est compatible avec les rapports Amazon ?",
     answer:
-      "Absolument. Nous utilisons un chiffrement de bout en bout et vos données sont hébergées sur des serveurs sécurisés. Nous ne partageons jamais vos données avec des tiers.",
+      "Oui. Vous copiez le tableau de metriques livreurs directement depuis votre interface Amazon, vous le collez dans DSPilot, et les donnees sont extraites automatiquement en 30 secondes. Pas de fichier a reformater, pas de colonne a ajuster. Si Amazon change son format, on met a jour l'import dans la journee.",
   },
   {
-    question: "Puis-je gérer plusieurs stations ?",
+    question: "Mes donnees de station sont sensibles. C'est securise ?",
     answer:
-      "Le plan Enterprise permet de gérer plusieurs stations depuis un seul compte avec des tableaux de bord consolidés et une vue d'ensemble de votre réseau DSP.",
+      "Absolument. DSPilot utilise une authentification Clerk, un chiffrement TLS de bout en bout, et un hebergement sur Vercel conforme aux standards europeens. Vos donnees de performance livreurs et metriques IADC ne sont jamais partagees ni revendues. Vous restez proprietaire de tout ce que vous importez.",
   },
   {
-    question: "Proposez-vous une formation ?",
+    question: "Je gere une station en Afrique de l'Ouest, ca fonctionne aussi ?",
     answer:
-      "Oui, nous proposons des sessions de formation personnalisées pour vous aider à tirer le meilleur parti de DSPilot. Le support est inclus dans tous les plans payants.",
+      "Oui. DSPilot est concu pour les stations Amazon DSP en France et en Afrique de l'Ouest. L'interface est 100% francophone, les metriques sont les memes, et l'acces est 100% web — il suffit d'une connexion internet.",
   },
   {
-    question: "Comment fonctionne le module de coaching ?",
+    question: "Et si Amazon change ses metriques ou son format de rapport ?",
     answer:
-      "Le module de coaching vous permet de planifier des sessions avec vos livreurs, de définir des objectifs basés sur leurs métriques et de suivre leur progression. Vous pouvez ajouter des notes, des actions correctives et mesurer l'impact de chaque intervention.",
+      "C'est notre metier de suivre ca. DSPilot est maintenu et mis a jour en continu. Si Amazon modifie le format des scorecards ou ajoute de nouvelles metriques de performance livreurs, nous adaptons l'outil. Vous n'avez rien a faire de votre cote.",
   },
 ];
 
@@ -72,14 +72,7 @@ export function FAQ() {
   return (
     <section id="faq" className="py-20 md:py-32">
       <AnimationContainer className="mb-12 text-center">
-        <span className="font-medium text-blue-500 text-sm">FAQ</span>
-        <h2 className="mt-2 font-bold text-3xl text-foreground tracking-tight sm:text-4xl md:text-5xl">
-          Questions{" "}
-          <span className="bg-gradient-to-r from-blue-500 to-cyan-400 bg-clip-text text-transparent">fréquentes</span>
-        </h2>
-        <p className="mx-auto mt-4 max-w-2xl text-lg text-muted-foreground">
-          Tout ce que vous devez savoir sur DSPilot.
-        </p>
+        <h2 className="font-bold text-3xl text-foreground tracking-tight md:text-5xl">Questions frequentes</h2>
       </AnimationContainer>
 
       <AnimationContainer delay={0.1}>

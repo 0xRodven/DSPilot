@@ -1,103 +1,63 @@
 "use client";
 
-import { Star } from "lucide-react";
+import { Lock, Shield, User } from "lucide-react";
 
 import { AnimationContainer } from "@/components/global/animation-container";
 import { MagicCard } from "@/components/ui/magic-card";
 
-const reviews = [
+const trustBlocks = [
   {
-    name: "Mamadou Diallo",
-    role: "DSP Manager, Dakar",
-    avatar: "MD",
-    rating: 5,
-    content:
-      "DSPilot a transformé notre façon de gérer notre station. Les métriques sont claires et le coaching est beaucoup plus efficace.",
+    icon: User,
+    title: "Ne sur le terrain, pas en laboratoire.",
+    description:
+      "DSPilot a ete cree par un manager de station Amazon DSP qui passait ses lundis matin sur Excel. Chaque fonctionnalite repond a un probleme vecu, pas a une hypothese de consultant.",
   },
   {
-    name: "Aissatou Ba",
-    role: "Operations Lead, Thiès",
-    avatar: "AB",
-    rating: 5,
-    content:
-      "L'import automatique nous fait gagner des heures chaque semaine. L'analyse des erreurs nous a permis de réduire nos incidents de 40%.",
+    icon: Shield,
+    title: "Construit sur les memes technologies que Netflix et Stripe.",
+    description:
+      "Next.js, React 19, base de donnees temps reel Convex, authentification Clerk, hebergement Vercel. Une infrastructure de niveau entreprise — pas un prototype sur Google Sheets.",
   },
   {
-    name: "Ousmane Sow",
-    role: "DSP Owner, Saint-Louis",
-    avatar: "OS",
-    rating: 5,
-    content:
-      "Enfin un outil pensé pour les DSP africaines. Le support est réactif et les fonctionnalités correspondent exactement à nos besoins.",
-  },
-  {
-    name: "Fatou Ndiaye",
-    role: "Performance Coach, Mbour",
-    avatar: "FN",
-    rating: 5,
-    content:
-      "Le module de coaching est un game-changer. Je peux suivre chaque livreur et voir l'impact réel de mes sessions.",
-  },
-  {
-    name: "Ibrahima Fall",
-    role: "Fleet Manager, Rufisque",
-    avatar: "IF",
-    rating: 5,
-    content:
-      "L'interface est intuitive et les graphiques sont parfaits pour présenter les résultats lors de nos réunions hebdomadaires.",
-  },
-  {
-    name: "Mariama Sy",
-    role: "DSP Manager, Kaolack",
-    avatar: "MS",
-    rating: 5,
-    content:
-      "Notre score IADC a augmenté de 3 points depuis qu'on utilise DSPilot. L'investissement est largement rentabilisé.",
+    icon: Lock,
+    title: "Vos donnees ne quittent jamais l'infrastructure securisee.",
+    description:
+      "Chiffrement TLS, authentification renforcee, hebergement europeen. Vos metriques de station et donnees livreurs sont protegees selon les standards du marche.",
   },
 ];
-
-function StarRating({ rating }: { rating: number }) {
-  return (
-    <div className="flex gap-0.5">
-      {Array.from({ length: 5 }).map((_, i) => (
-        <Star key={i} className={`size-4 ${i < rating ? "fill-yellow-400 text-yellow-400" : "text-muted"}`} />
-      ))}
-    </div>
-  );
-}
 
 export function Reviews() {
   return (
     <section className="py-20 md:py-32">
       <AnimationContainer className="mb-12 text-center">
-        <span className="font-medium text-blue-500 text-sm">Témoignages</span>
-        <h2 className="mt-2 font-bold text-3xl text-foreground tracking-tight sm:text-4xl md:text-5xl">
-          Ils nous font{" "}
-          <span className="bg-gradient-to-r from-blue-500 to-cyan-400 bg-clip-text text-transparent">confiance</span>
+        <h2 className="font-bold text-3xl text-foreground tracking-tight md:text-5xl">
+          Concu par un manager DSP.
         </h2>
-        <p className="mx-auto mt-4 max-w-2xl text-lg text-muted-foreground">
-          Découvrez ce que nos clients disent de DSPilot.
-        </p>
       </AnimationContainer>
 
       <AnimationContainer delay={0.1}>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {reviews.map((review, i) => (
+        <div className="grid gap-4 md:grid-cols-3">
+          {trustBlocks.map((block, i) => (
             <MagicCard key={i} className="flex flex-col gap-4">
-              <StarRating rating={review.rating} />
-              <p className="flex-1 text-muted-foreground">{review.content}</p>
-              <div className="flex items-center gap-3">
-                <div className="flex size-10 items-center justify-center rounded-full bg-blue-500/10 font-medium text-blue-400 text-sm">
-                  {review.avatar}
-                </div>
-                <div>
-                  <p className="font-medium text-foreground text-sm">{review.name}</p>
-                  <p className="text-muted-foreground text-xs">{review.role}</p>
-                </div>
+              <div className="flex size-12 items-center justify-center rounded-lg bg-blue-500/10">
+                <block.icon className="size-6 text-blue-400" />
               </div>
+              <h3 className="font-semibold text-foreground text-lg">{block.title}</h3>
+              <p className="text-muted-foreground">{block.description}</p>
             </MagicCard>
           ))}
         </div>
+      </AnimationContainer>
+
+      <AnimationContainer delay={0.2}>
+        <p className="mx-auto mt-12 max-w-3xl text-center text-muted-foreground italic">
+          DSPilot n'est pas sorti d'un brainstorm en salle de reunion. Il est ne d'un constat simple : un
+          manager de station Amazon DSP en France n'a aucun outil adapte a son metier. Les solutions
+          americaines ne parlent pas francais, ne comprennent pas les specificites du marche, et coutent une
+          fortune. Alors on a construit l'outil qu'on aurait voulu avoir des le premier jour. Chaque ecran,
+          chaque alerte, chaque rapport a ete pense par quelqu'un qui a vecu le lundi matin a copier-coller des
+          scorecards dans Excel. On connait le metier parce qu'on le fait.
+        </p>
       </AnimationContainer>
     </section>
   );

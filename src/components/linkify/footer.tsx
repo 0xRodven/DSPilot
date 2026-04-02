@@ -7,9 +7,10 @@ import { ModeToggle } from "@/components/mode-toggle";
 
 const footerLinks = {
   product: [
-    { name: "Fonctionnalités", href: "#features" },
+    { name: "Fonctionnalites", href: "#features" },
+    { name: "Comment ca marche", href: "#process" },
     { name: "Tarifs", href: "#pricing" },
-    { name: "Témoignages", href: "#reviews" },
+    { name: "FAQ", href: "#faq" },
   ],
   company: [
     { name: "À propos", href: "/about" },

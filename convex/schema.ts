@@ -51,7 +51,7 @@ const logicalChannelValidator = v.union(
 
 const reportTypeValidator = v.union(v.literal("daily"), v.literal("weekly"));
 
-const reportAudienceValidator = v.union(v.literal("internal"), v.literal("manager"));
+const reportAudienceValidator = v.union(v.literal("internal"), v.literal("manager"), v.literal("driver"));
 
 const rosterStatusValidator = v.union(
   v.literal("ACTIVE"),

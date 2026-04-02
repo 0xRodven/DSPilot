@@ -231,3 +231,143 @@ export const storeReport = mutation({
     });
   },
 });
+
+/**
+ * Get individual driver report data for a station/week.
+ * Returns all drivers with their stats, rank, and history for individual reports.
+ */
+export const getDriverReportData = query({
+  args: {
+    stationCode: v.string(),
+    year: v.number(),
+    week: v.number(),
+  },
+  handler: async (ctx, args) => {
+    // Find station by code
+    const station = await ctx.db
+      .query("stations")
+      .withIndex("by_code", (q) => q.eq("code", args.stationCode))
+      .first();
+    if (!station) return null;
+
+    // Get all driver weekly stats for this week
+    const driverStats = await ctx.db
+      .query("driverWeeklyStats")
+      .withIndex("by_station_week", (q) => q.eq("stationId", station._id).eq("year", args.year).eq("week", args.week))
+      .collect();
+
+    if (driverStats.length === 0) return null;
+
+    // Previous week stats for delta calculation
+    const prevWeek = args.week === 1 ? 52 : args.week - 1;
+    const prevYear = args.week === 1 ? args.year - 1 : args.year;
+    const prevStats = await ctx.db
+      .query("driverWeeklyStats")
+      .withIndex("by_station_week", (q) => q.eq("stationId", station._id).eq("year", prevYear).eq("week", prevWeek))
+      .collect();
+    const prevMap = new Map(prevStats.map((s) => [s.driverId.toString(), s]));
+
+    // Build 4-week history
+    const historyWeeks: Array<{ week: number; year: number }> = [];
+    let hw = args.week;
+    let hy = args.year;
+    for (let i = 0; i < 4; i++) {
+      historyWeeks.push({ week: hw, year: hy });
+      hw = hw === 1 ? 52 : hw - 1;
+      if (hw === 52 && i < 3) hy = hy - 1;
+    }
+
+    // Get all historical stats for drivers
+    const allHistoricalStats = await Promise.all(
+      historyWeeks.map(async ({ week, year }) => {
+        const stats = await ctx.db
+          .query("driverWeeklyStats")
+          .withIndex("by_station_week", (q) => q.eq("stationId", station._id).eq("year", year).eq("week", week))
+          .collect();
+        return { week, year, stats };
+      })
+    );
+
+    // Build driver history map
+    const driverHistoryMap = new Map<string, Array<{ week: number; year: number; dwcPercent: number }>>();
+    for (const { week, year, stats } of allHistoricalStats) {
+      for (const stat of stats) {
+        const key = stat.driverId.toString();
+        const dwcTotal = stat.dwcCompliant + stat.dwcMisses + stat.failedAttempts;
+        const dwcPercent = dwcTotal > 0 ? Math.round((stat.dwcCompliant / dwcTotal) * 1000) / 10 : 0;
+        if (!driverHistoryMap.has(key)) {
+          driverHistoryMap.set(key, []);
+        }
+        driverHistoryMap.get(key)!.push({ week, year, dwcPercent });
+      }
+    }
+
+    // Get week date range for days worked calculation
+    const { start: weekStart, end: weekEnd } = getWeekDateRange(args.year, args.week);
+
+    // Build driver data
+    const drivers = await Promise.all(
+      driverStats.map(async (stat) => {
+        const driver = await ctx.db.get(stat.driverId);
+        if (!driver) return null;
+
+        const dwcTotal = stat.dwcCompliant + stat.dwcMisses + stat.failedAttempts;
+        const dwcPercent = dwcTotal > 0 ? Math.round((stat.dwcCompliant / dwcTotal) * 1000) / 10 : 0;
+        const iadcTotal = stat.iadcCompliant + stat.iadcNonCompliant;
+        const iadcPercent = iadcTotal > 0 ? Math.round((stat.iadcCompliant / iadcTotal) * 1000) / 10 : 0;
+
+        // Delta vs prev week
+        let dwcChange: number | undefined;
+        const prev = prevMap.get(stat.driverId.toString());
+        if (prev) {
+          const pTotal = prev.dwcCompliant + prev.dwcMisses + prev.failedAttempts;
+          const pPct = pTotal > 0 ? Math.round((prev.dwcCompliant / pTotal) * 1000) / 10 : 0;
+          dwcChange = Math.round((dwcPercent - pPct) * 10) / 10;
+        }
+
+        // Days worked from daily stats
+        const allDaily = await ctx.db
+          .query("driverDailyStats")
+          .withIndex("by_driver_date", (q) => q.eq("driverId", stat.driverId))
+          .collect();
+        const daysWorked = allDaily.filter((d) => {
+          if (d.date < weekStart || d.date > weekEnd) return false;
+          return d.dwcCompliant + d.dwcMisses + d.failedAttempts > 0;
+        }).length;
+
+        // Get 4-week history for this driver
+        const history = driverHistoryMap.get(stat.driverId.toString()) ?? [];
+        // Sort oldest first for chart display
+        const sortedHistory = [...history].sort((a, b) => {
+          if (a.year !== b.year) return a.year - b.year;
+          return a.week - b.week;
+        });
+
+        return {
+          driverId: driver._id,
+          driverName: driver.name,
+          dwcPercent,
+          iadcPercent,
+          dwcChange,
+          totalDeliveries: dwcTotal,
+          daysWorked,
+          history: sortedHistory,
+        };
+      })
+    );
+
+    const valid = drivers.filter((d): d is NonNullable<typeof d> => d !== null);
+    const sorted = [...valid].sort((a, b) => b.dwcPercent - a.dwcPercent);
+    const ranked = sorted.map((d, i) => ({ ...d, rank: i + 1 }));
+
+    return {
+      stationId: station._id,
+      stationName: station.name,
+      stationCode: station.code,
+      year: args.year,
+      week: args.week,
+      totalDrivers: ranked.length,
+      drivers: ranked,
+    };
+  },
+});

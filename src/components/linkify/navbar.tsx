@@ -12,8 +12,9 @@ import { cn } from "@/lib/utils";
 
 const navLinks = [
   { name: "Fonctionnalités", href: "#features" },
+  { name: "Comment ça marche", href: "#process" },
   { name: "Tarifs", href: "#pricing" },
-  { name: "Témoignages", href: "#reviews" },
+  { name: "FAQ", href: "#faq" },
 ];
 
 export function Navbar() {
@@ -46,7 +47,7 @@ export function Navbar() {
             <Link href="/sign-in">Connexion</Link>
           </Button>
           <Button asChild className="bg-blue-500 hover:bg-blue-600">
-            <Link href="/sign-up">Commencer</Link>
+            <Link href="/sign-up">Essai gratuit</Link>
           </Button>
         </div>
 
@@ -77,7 +78,7 @@ export function Navbar() {
               <Link href="/sign-in">Connexion</Link>
             </Button>
             <Button asChild className="w-full bg-blue-500 hover:bg-blue-600">
-              <Link href="/sign-up">Commencer</Link>
+              <Link href="/sign-up">Essai gratuit</Link>
             </Button>
           </div>
         </div>

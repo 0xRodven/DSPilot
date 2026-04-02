@@ -16,8 +16,17 @@ function DashboardPreview() {
       {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h2 className="font-semibold text-lg text-white">Performance Station</h2>
-          <p className="text-slate-400 text-sm">Semaine du 23 Décembre 2024</p>
+          <div className="flex items-center gap-2">
+            <h2 className="font-semibold text-lg text-white">Performance Station</h2>
+            <span className="flex items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-emerald-400 text-xs">
+              <span className="relative flex size-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                <span className="relative inline-flex size-2 rounded-full bg-emerald-500" />
+              </span>
+              Live
+            </span>
+          </div>
+          <p className="text-slate-400 text-sm">Semaine 12 — Mars 2026</p>
         </div>
         <Badge className="border-emerald-500/20 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20">
           Fantastic
@@ -86,9 +95,9 @@ function DashboardPreview() {
           <span className="text-center">Tier</span>
         </div>
         {[
-          { name: "Amadou D.", dwc: "99.5%", iadc: "99.8%", tier: "Fantastic" },
-          { name: "Fatou S.", dwc: "98.9%", iadc: "99.1%", tier: "Fantastic" },
-          { name: "Moussa K.", dwc: "97.2%", iadc: "98.4%", tier: "Great" },
+          { name: "A. D.", dwc: "99.5%", iadc: "99.8%", tier: "Fantastic" },
+          { name: "F. S.", dwc: "98.9%", iadc: "99.1%", tier: "Fantastic" },
+          { name: "M. K.", dwc: "97.2%", iadc: "98.4%", tier: "Great" },
         ].map((driver, i) => (
           <div key={i} className="grid grid-cols-4 gap-4 border-slate-800 border-b p-3 text-sm last:border-0">
             <span className="font-medium text-white">{driver.name}</span>
@@ -119,36 +128,37 @@ export function Hero() {
       <div className="-z-10 absolute top-0 right-0 left-0 m-auto h-[310px] w-[310px] rounded-full bg-blue-500 opacity-20 blur-[100px]" />
 
       <AnimationContainer className="flex flex-col items-center gap-6 text-center">
-        <MagicBadge>Plateforme de gestion DSP Amazon</MagicBadge>
+        <MagicBadge>Premier outil DSP en France</MagicBadge>
 
         <h1 className="max-w-4xl font-bold text-4xl text-foreground tracking-tight sm:text-5xl md:text-6xl lg:text-7xl">
-          Pilotez la performance de vos{" "}
+          Pilotez votre{" "}
           <span className="bg-gradient-to-r from-blue-500 to-cyan-400 bg-clip-text text-transparent">
-            livreurs Amazon
+            station DSP
           </span>
+          .<br />
+          Pas vos tableurs.
         </h1>
 
         <p className="max-w-2xl text-lg text-muted-foreground sm:text-xl">
-          Analysez les métriques DWC et IADC, identifiez les axes d&apos;amélioration et accompagnez vos livreurs vers
-          l&apos;excellence avec DSPilot.
+          Scores DWC, IADC, coaching livreurs, rapports hebdomadaires — tout ce que vous faites aujourd&apos;hui en 5
+          heures sur Excel, DSPilot le fait en 30 secondes. Gardez votre tier Fantastic sans y passer vos nuits.
         </p>
 
         <div className="flex flex-wrap items-center justify-center gap-4">
-          <Button size="lg" asChild className="gap-2">
+          <Button size="lg" asChild className="gap-2 bg-blue-500 hover:bg-blue-600">
             <Link href="/sign-up">
-              Commencer gratuitement
+              Demarrer gratuitement
               <ArrowRight className="size-4" />
             </Link>
           </Button>
-          <Button
-            size="lg"
-            variant="secondary"
-            asChild
-            className="gap-2 border-slate-700 bg-slate-800 text-white hover:bg-slate-700"
-          >
-            <Link href="/demo">Voir la démo</Link>
+          <Button size="lg" variant="outline" asChild className="gap-2">
+            <Link href="/demo">Voir une demo</Link>
           </Button>
         </div>
+
+        <p className="text-muted-foreground text-sm">
+          Aucune carte requise · Import en 30 secondes · 20 livreurs gratuits
+        </p>
       </AnimationContainer>
 
       <AnimationContainer delay={0.2} className="relative mt-16 w-full max-w-5xl px-4">

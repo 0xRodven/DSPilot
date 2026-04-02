@@ -12,14 +12,14 @@ import { Process } from "@/components/linkify/process";
 import { Reviews } from "@/components/linkify/reviews";
 
 export const metadata: Metadata = {
-  title: "DSPilot - Pilotez la performance de vos livreurs Amazon",
+  title: "DSPilot — Pilotez votre station DSP. Pas vos tableurs.",
   description:
-    "Dashboard temps réel, coaching intelligent, analyse des erreurs. La plateforme de gestion des performances pour les stations Amazon DSP.",
+    "Scores DWC, IADC, coaching livreurs, rapports hebdomadaires — tout ce que vous faites en 5 heures sur Excel, DSPilot le fait en 30 secondes. Le premier outil DSP en France.",
   keywords: ["Amazon DSP", "livraison", "performance", "DWC", "IADC", "coaching", "gestion", "livreurs"],
   openGraph: {
-    title: "DSPilot - Pilotez la performance de vos livreurs Amazon",
+    title: "DSPilot — Pilotez votre station DSP. Pas vos tableurs.",
     description:
-      "Dashboard temps réel, coaching intelligent, analyse des erreurs. La plateforme de gestion des performances pour les stations Amazon DSP.",
+      "Scores DWC, IADC, coaching livreurs, rapports hebdomadaires — tout ce que vous faites en 5 heures sur Excel, DSPilot le fait en 30 secondes. Le premier outil DSP en France.",
     type: "website",
     locale: "fr_FR",
   },
@@ -39,8 +39,8 @@ export default function LandingPage() {
           <Pricing />
           <Reviews />
           <FAQ />
+          <CTA />
         </MaxWidthWrapper>
-        <CTA />
       </main>
       <Footer />
     </div>
