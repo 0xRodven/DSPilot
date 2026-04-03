@@ -1,24 +1,20 @@
 "use client";
 
-import { useCallback, useState, useTransition } from "react";
+import { useCallback, useState } from "react";
 
 import { api } from "@convex/_generated/api";
 import { useQuery } from "convex/react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { Check, Download, ExternalLink, FileText, Loader2, Plus, Sparkles } from "lucide-react";
-import { toast } from "sonner";
+import { Download, ExternalLink, FileText } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useFilters } from "@/lib/filters";
 import { useDashboardStore } from "@/lib/store";
-
-import { runReportTrigger } from "./actions";
 
 type ReportType = "daily" | "weekly";
 type FilterTab = "all" | ReportType;
@@ -27,7 +23,6 @@ export default function ReportsPage() {
   const { selectedStation } = useDashboardStore();
   const { year, weekNum, displayLabel } = useFilters();
   const [activeTab, setActiveTab] = useState<FilterTab>("all");
-  const [generateModalOpen, setGenerateModalOpen] = useState(false);
 
   const station = useQuery(
     api.stations.getStationByCode,
@@ -120,14 +115,6 @@ export default function ReportsPage() {
               </p>
             </div>
           </div>
-          <Button
-            onClick={() => {
-              setGenerateModalOpen(true);
-            }}
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            Générer un rapport
-          </Button>
         </div>
 
         {/* Type filter tabs */}
@@ -239,129 +226,6 @@ export default function ReportsPage() {
           </div>
         )}
       </div>
-
-      {/* Generate Report Modal */}
-      <GenerateReportModal
-        open={generateModalOpen}
-        onOpenChange={setGenerateModalOpen}
-        stationCode={selectedStation.code}
-        year={year}
-        week={weekNum}
-      />
     </main>
-  );
-}
-
-// ── Generate Report Modal ──
-
-function GenerateReportModal({
-  open,
-  onOpenChange,
-  week,
-  year,
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  stationCode: string;
-  year: number;
-  week: number;
-}) {
-  const [selectedType, setSelectedType] = useState<ReportType>("weekly");
-  const [isPending, startTransition] = useTransition();
-  const [sent, setSent] = useState(false);
-
-  const handleGenerate = () => {
-    startTransition(async () => {
-      const result = await runReportTrigger(selectedType);
-      if (result.success) {
-        toast.success(result.message);
-        setSent(true);
-        setTimeout(() => {
-          onOpenChange(false);
-          setSent(false);
-        }, 2000);
-      } else {
-        toast.error(result.message);
-      }
-    });
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Générer un rapport</DialogTitle>
-          <DialogDescription>
-            Choisissez le type de rapport à générer pour la semaine {week} ({year}).
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="space-y-4 py-4">
-          {/* Type selector */}
-          <div className="grid grid-cols-2 gap-3">
-            <button
-              type="button"
-              onClick={() => {
-                setSelectedType("weekly");
-              }}
-              className={`rounded-lg border p-4 text-left transition-all ${
-                selectedType === "weekly"
-                  ? "border-primary bg-primary/5 ring-1 ring-primary"
-                  : "border-border hover:border-primary/50"
-              }`}
-            >
-              <div className="mb-1 font-semibold text-sm">Hebdomadaire</div>
-              <p className="text-muted-foreground text-xs">
-                Rapport complet avec tendances, classement et recommandations IA.
-              </p>
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setSelectedType("daily");
-              }}
-              className={`rounded-lg border p-4 text-left transition-all ${
-                selectedType === "daily"
-                  ? "border-primary bg-primary/5 ring-1 ring-primary"
-                  : "border-border hover:border-primary/50"
-              }`}
-            >
-              <div className="mb-1 font-semibold text-sm">Quotidien</div>
-              <p className="text-muted-foreground text-xs">KPIs du jour, alertes et actions urgentes.</p>
-            </button>
-          </div>
-
-          {/* Info */}
-          <div className="flex items-start gap-3 rounded-lg bg-blue-500/5 p-3">
-            <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-blue-500" />
-            <p className="text-muted-foreground text-xs">
-              L&apos;agent Claude analyse les données de votre station et génère un rapport avec synthèse IA,
-              recommandations stratégiques et plan d&apos;action par livreur. Le rapport apparaîtra ici dans 2-3
-              minutes.
-            </p>
-          </div>
-
-          {/* Generate button */}
-          <Button className="w-full" disabled={isPending || sent} onClick={handleGenerate}>
-            {sent ? (
-              <>
-                <Check className="mr-2 h-4 w-4" />
-                Génération lancée
-              </>
-            ) : isPending ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Lancement...
-              </>
-            ) : (
-              <>
-                <Sparkles className="mr-2 h-4 w-4" />
-                Générer le rapport {selectedType === "weekly" ? "hebdomadaire" : "quotidien"}
-              </>
-            )}
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
   );
 }
