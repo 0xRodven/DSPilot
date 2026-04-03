@@ -244,6 +244,23 @@ export const storeReport = mutation({
     confidenceScore: v.number(),
   },
   handler: async (ctx, args) => {
+    // Upsert: find existing report for same station+week+type and update it
+    const existing = await ctx.db
+      .query("reportDeliveries")
+      .withIndex("by_station_week", (q) =>
+        q.eq("stationId", args.stationId).eq("year", args.year).eq("week", args.week),
+      )
+      .collect();
+    const match = existing.find((r) => r.reportType === args.reportType);
+
+    if (match) {
+      await ctx.db.patch(match._id, {
+        ...args,
+        createdAt: Date.now(),
+      });
+      return match._id;
+    }
+
     return await ctx.db.insert("reportDeliveries", {
       ...args,
       createdAt: Date.now(),
