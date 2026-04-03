@@ -1,55 +1,53 @@
 # Daily Report - Rapport Quotidien
 
-Génère le rapport quotidien de performance pour la station avec analyse IA.
+Génère le rapport quotidien de performance avec analyse IA.
 
 ## Process
 
-### 1. Déterminer la semaine
+### 1. Déterminer la date
 
-```bash
-YEAR=$(date +%Y)
-WEEK=$(date +%V)
-```
+Par défaut : hier. Sinon utiliser la date fournie.
 
 ### 2. Query les données Convex
 
 ```bash
 source .env.secrets
-CONVEX_DEPLOYMENT="dev:pastel-snail-181" npx convex run reporting:getReportData '{"stationCode":"FR-PSUA-DIF1","year":YEAR,"week":WEEK}'
+export NEXT_PUBLIC_CONVEX_URL CONVEX_DEPLOY_KEY="$CONVEX_DEPLOY_KEY_DEV"
 ```
-
-Extraire : kpis (avgDwc, avgIadc, activeDrivers, totalDelivered), dwcDistribution, drivers (name, dwcPercent, dwcTrend, totalDeliveries, daysWorked).
 
 ### 3. Générer l'analyse IA
 
-TU ES CLAUDE. Analyse les données et écris `.artifacts/reports/ai-daily-YYYY-MM-DD.json` :
+Query les données brutes d'abord :
+```bash
+npx tsx scripts/generate-daily-report.ts --station-code FR-PSUA-DIF1 --date DATE 2>&1
+```
+Lire la sortie pour le nombre de drivers et DWC moyen.
 
+Puis query Convex pour les détails :
+```bash
+CONVEX_DEPLOYMENT="dev:pastel-snail-181" npx convex run reporting:getDailyReportData '{"stationCode":"FR-PSUA-DIF1","date":"DATE"}'
+```
+
+TU ES CLAUDE. Analyse les données et écris `.artifacts/reports/ai-daily-DATE.json` :
 ```json
 {
-  "aiSummary": "<p><strong>Point du jour.</strong></p><p>1-2 paragraphes courts. Urgences du jour.</p>",
-  "aiRecommendations": "<ol><li><strong>Action urgente</strong> — ce que le manager doit faire AUJOURD'HUI.</li></ol>",
-  "driverRecommendations": [
-    {"name": "AMAZON_ID", "recommendation": "Action pour aujourd'hui.", "why": "Raison factuelle."}
-  ]
+  "aiSummary": "<p><strong>Point du jour.</strong></p><p>1-2 paragraphes. Urgences, tendance vs veille.</p>"
 }
 ```
 
 Règles :
-- aiSummary : 1-2 paragraphes courts. Focus urgences.
-- aiRecommendations : 2-3 actions max. Actionnables AUJOURD'HUI.
-- driverRecommendations : 3-5 livreurs max. Cas critiques (<85% ou chute >5pp) uniquement.
-- Citer les chiffres exacts.
+- 1-2 paragraphes courts
+- Focus urgences : livreurs en chute, alertes
+- Citer les chiffres exacts
 
-### 4. Générer le rapport HTML
+### 4. Regénérer avec l'analyse IA
 
 ```bash
-source .env.secrets
-export NEXT_PUBLIC_CONVEX_URL CONVEX_DEPLOY_KEY="$CONVEX_DEPLOY_KEY_DEV"
-npx tsx scripts/generate-report.ts --station-code FR-PSUA-DIF1 --year YEAR --week WEEK --ai-file .artifacts/reports/ai-daily-YYYY-MM-DD.json --skip-telegram
+npx tsx scripts/generate-daily-report.ts --station-code FR-PSUA-DIF1 --date DATE --ai-file .artifacts/reports/ai-daily-DATE.json
 ```
 
-### 5. Vérifier
+Vérifier : "AI content loaded" et "stored in Convex ✓".
 
-La sortie doit contenir "AI content loaded" et "stored in Convex ✓".
+### 5. Afficher le résumé
 
-Afficher le résumé Markdown dans la console.
+Afficher en Markdown : KPIs, alertes, absents, top/bottom 5.

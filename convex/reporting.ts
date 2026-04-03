@@ -317,7 +317,7 @@ export const getDriverReportData = query({
         if (!driverHistoryMap.has(key)) {
           driverHistoryMap.set(key, []);
         }
-        driverHistoryMap.get(key)!.push({ week, year, dwcPercent });
+        driverHistoryMap.get(key)?.push({ week, year, dwcPercent });
       }
     }
 
@@ -387,6 +387,126 @@ export const getDriverReportData = query({
       week: args.week,
       totalDrivers: ranked.length,
       drivers: ranked,
+    };
+  },
+});
+
+/**
+ * Get daily report data for a station/date — everything needed for DailyReportData.
+ * No auth check — accessed via deploy key only.
+ */
+export const getDailyReportData = query({
+  args: {
+    stationCode: v.string(),
+    date: v.string(), // "2026-04-01"
+  },
+  handler: async (ctx, args) => {
+    const station = await ctx.db
+      .query("stations")
+      .withIndex("by_code", (q) => q.eq("code", args.stationCode))
+      .first();
+    if (!station) return null;
+
+    // Get daily stats for the date
+    const dailyStats = await ctx.db
+      .query("driverDailyStats")
+      .withIndex("by_station_date", (q) => q.eq("stationId", station._id).eq("date", args.date))
+      .collect();
+
+    if (dailyStats.length === 0) return null;
+
+    // Get previous day stats for trend
+    const prevDate = new Date(args.date);
+    prevDate.setDate(prevDate.getDate() - 1);
+    const prevDateStr = prevDate.toISOString().split("T")[0];
+    const prevStats = await ctx.db
+      .query("driverDailyStats")
+      .withIndex("by_station_date", (q) => q.eq("stationId", station._id).eq("date", prevDateStr))
+      .collect();
+    const _prevByDriver = new Map(prevStats.map((s) => [s.driverId.toString(), s]));
+
+    // Get all drivers for the station (to find absents)
+    const allDrivers = await ctx.db
+      .query("drivers")
+      .withIndex("by_station", (q) => q.eq("stationId", station._id))
+      .collect();
+    const activeDriverIds = new Set(dailyStats.map((s) => s.driverId.toString()));
+    const absentDrivers = allDrivers.filter((d) => !activeDriverIds.has(d._id.toString())).map((d) => d.name);
+
+    // Aggregate KPIs
+    let totalDwcCompliant = 0;
+    let totalDwcMisses = 0;
+    let totalFailed = 0;
+    let totalIncidents = 0;
+
+    const drivers = await Promise.all(
+      dailyStats.map(async (stat, _i) => {
+        const driver = await ctx.db.get(stat.driverId);
+        if (!driver) return null;
+
+        const dwcTotal = stat.dwcCompliant + stat.dwcMisses + stat.failedAttempts;
+        const dwcPercent = dwcTotal > 0 ? Math.round((stat.dwcCompliant / dwcTotal) * 1000) / 10 : 0;
+
+        totalDwcCompliant += stat.dwcCompliant;
+        totalDwcMisses += stat.dwcMisses;
+        totalFailed += stat.failedAttempts;
+        totalIncidents += stat.dwcMisses + stat.failedAttempts;
+
+        return {
+          name: driver.name,
+          dwcPercent,
+          totalDeliveries: dwcTotal,
+          dnrCount: stat.dwcMisses,
+          photoDefects: stat.iadcNonCompliant,
+          rtsCount: stat.failedAttempts,
+          isAlert: dwcPercent < 85,
+        };
+      }),
+    );
+
+    const validDrivers = drivers
+      .filter((d): d is NonNullable<typeof d> => d !== null)
+      .sort((a, b) => b.dwcPercent - a.dwcPercent)
+      .map((d, i) => ({ ...d, rank: i + 1 }));
+
+    const totalDelivered = totalDwcCompliant + totalDwcMisses + totalFailed;
+    const avgDwc = totalDelivered > 0 ? Math.round((totalDwcCompliant / totalDelivered) * 1000) / 10 : 0;
+
+    // Previous day avg DWC for trend
+    let prevAvgDwc: number | undefined;
+    if (prevStats.length > 0) {
+      let pComp = 0;
+      let pTotal = 0;
+      for (const s of prevStats) {
+        pComp += s.dwcCompliant;
+        pTotal += s.dwcCompliant + s.dwcMisses + s.failedAttempts;
+      }
+      prevAvgDwc = pTotal > 0 ? Math.round((pComp / pTotal) * 1000) / 10 : undefined;
+    }
+
+    // Week progress: determine day of week (1=Mon, 7=Sun)
+    const dateObj = new Date(args.date);
+    const dayOfWeek = dateObj.getDay() === 0 ? 7 : dateObj.getDay();
+
+    return {
+      stationId: station._id,
+      stationName: station.name ?? station.code,
+      stationCode: station.code,
+      date: args.date,
+      kpis: {
+        activeDrivers: validDrivers.length,
+        activeDriversChange: prevStats.length > 0 ? validDrivers.length - prevStats.length : undefined,
+        totalDelivered,
+        avgDwc,
+        dwcChange: prevAvgDwc !== undefined ? Math.round((avgDwc - prevAvgDwc) * 10) / 10 : undefined,
+        incidents: totalIncidents,
+      },
+      weekProgress: {
+        dayNumber: dayOfWeek,
+        weekDwcSoFar: avgDwc, // simplified — would need to aggregate all days of the week
+      },
+      drivers: validDrivers,
+      absentDrivers,
     };
   },
 });
