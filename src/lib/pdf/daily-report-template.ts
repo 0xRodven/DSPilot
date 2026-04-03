@@ -21,8 +21,8 @@ export interface DailyReportDriver {
   name: string;
   dwcPercent: number;
   totalDeliveries: number;
-  dnrCount: number;
-  photoDefects: number;
+  dnrCount: number; // Contact miss (from dwcBreakdown.contactMiss)
+  photoDefects: number; // Photo defects (from dwcBreakdown.photoDefect)
   rtsCount: number;
   isAlert: boolean; // DWC < 85%
 }
@@ -214,7 +214,7 @@ function renderDriverRow(d: DailyReportDriver): string {
 
 function renderTableHead(): string {
   return `<colgroup><col class="c-rank"><col class="c-name"><col class="c-num"><col class="c-num"><col class="c-num"><col class="c-num"><col class="c-num"><col class="c-status"></colgroup>
-  <thead><tr><th>#</th><th>Livreur</th><th class="r">DWC</th><th class="r">Colis</th><th class="r">DNR</th><th class="r">Photos</th><th class="r">RTS</th><th class="c">Status</th></tr></thead>`;
+  <thead><tr><th>#</th><th>Livreur</th><th class="r">DWC</th><th class="r">Colis</th><th class="r">Contact</th><th class="r">Photos</th><th class="r">RTS</th><th class="c">Status</th></tr></thead>`;
 }
 
 function renderFooter(generatedAt: string): string {
@@ -246,7 +246,7 @@ function renderAlertBox(alertDrivers: DailyReportDriver[], blurFn: (n: string) =
   const items = alertDrivers
     .map(
       (d) =>
-        `<li class="alert-item"><span class="alert-name">${escapeHtml(blurFn(d.name))}</span><span class="alert-metrics">DWC ${formatPercent(d.dwcPercent)} | DNR ${d.dnrCount} | Photos ${d.photoDefects}</span></li>`,
+        `<li class="alert-item"><span class="alert-name">${escapeHtml(blurFn(d.name))}</span><span class="alert-metrics">DWC ${formatPercent(d.dwcPercent)} | Contact ${d.dnrCount} | Photos ${d.photoDefects}</span></li>`,
     )
     .join("");
   return `<div class="${boxClass}">
@@ -326,7 +326,7 @@ export function generateDailyReportHtml(data: DailyReportData, options: DailyRep
         <div class="kpi">
           <div class="kpi-label">Incidents</div>
           <div class="kpi-value">${data.kpis.incidents}</div>
-          <div class="kpi-delta muted">DNR + Photos + Contact</div>
+          <div class="kpi-delta muted">Toutes erreurs DWC + RTS</div>
         </div>
       </div>
 
@@ -335,10 +335,6 @@ export function generateDailyReportHtml(data: DailyReportData, options: DailyRep
       ${renderWeekProgressBar(data.weekProgress.dayNumber, data.weekProgress.weekDwcSoFar)}
 
       ${renderAlertBox(alertDrivers, (n) => n)}
-
-      ${renderTop3Box(topDrivers, (n) => n)}
-
-      ${renderAbsentBox(absentDrivers, (n) => n)}
 
       <div class="section">
         <div class="section-head">

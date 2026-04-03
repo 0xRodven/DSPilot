@@ -473,8 +473,8 @@ export const getDailyReportData = query({
           name: driver.name,
           dwcPercent,
           totalDeliveries: dwcTotal,
-          dnrCount: stat.dwcMisses,
-          photoDefects: stat.iadcNonCompliant,
+          dnrCount: stat.dwcBreakdown?.contactMiss ?? 0,
+          photoDefects: stat.dwcBreakdown?.photoDefect ?? 0,
           rtsCount: stat.failedAttempts,
           isAlert: dwcPercent < 85,
         };
