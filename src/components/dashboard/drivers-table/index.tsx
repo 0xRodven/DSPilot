@@ -47,6 +47,12 @@ export function DriversTable() {
 
   const driversData = period === "day" ? driversDaily : period === "range" ? driversRange : driversWeekly;
 
+  // Get DNR counts
+  const dnrCounts = useQuery(
+    api.dnr.getDriverDnrCount,
+    station && period === "week" ? { stationId: station._id, year, week: weekNum } : "skip",
+  );
+
   // Transform data for the table
   const drivers: DashboardDriver[] = useMemo(() => {
     if (!driversData) return [];
@@ -59,8 +65,9 @@ export function DriversTable() {
       totalDeliveries: d.totalDeliveries,
       daysActive: d.daysActive,
       tier: d.tier,
+      dnrCount: dnrCounts?.[d.id] ?? 0,
     }));
-  }, [driversData]);
+  }, [driversData, dnrCounts]);
 
   // Create columns with callbacks
   const columns = useMemo(
@@ -68,6 +75,7 @@ export function DriversTable() {
       createColumns({
         onViewDriver: (driverId) => router.push(buildHref(`/dashboard/drivers/${driverId}`)),
         onPlanCoaching: (driverId) => router.push(`${buildHref(`/dashboard/coaching`)}&driverId=${driverId}`),
+        onDnrClick: (driverId) => router.push(`${buildHref("/dashboard/dnr")}&driver=${driverId}`),
       }),
     [router, buildHref],
   );

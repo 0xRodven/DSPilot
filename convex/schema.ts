@@ -564,4 +564,36 @@ export default defineSchema({
     .index("by_station_week", ["stationId", "year", "week"])
     .index("by_driver", ["driverId"])
     .index("by_status", ["status"]),
+
+  // DNR Investigations — delivery concession tracking
+  dnrInvestigations: defineTable({
+    organizationId: v.string(),
+    stationId: v.id("stations"),
+    trackingId: v.string(),
+    driverId: v.optional(v.id("drivers")),
+    transporterId: v.string(),
+    driverName: v.string(),
+    year: v.number(),
+    week: v.number(),
+    deliveryDatetime: v.string(),
+    concessionDatetime: v.string(),
+    scanType: v.string(),
+    address: v.object({
+      street: v.string(),
+      building: v.optional(v.string()),
+      floor: v.optional(v.string()),
+      postalCode: v.string(),
+      city: v.string(),
+    }),
+    gpsPlanned: v.optional(v.object({ lat: v.number(), lng: v.number() })),
+    gpsActual: v.optional(v.object({ lat: v.number(), lng: v.number() })),
+    gpsDistanceMeters: v.optional(v.number()),
+    customerNotes: v.optional(v.string()),
+    status: v.union(v.literal("ongoing"), v.literal("resolved"), v.literal("confirmed_dnr")),
+  })
+    .index("by_org", ["organizationId"])
+    .index("by_station_week", ["stationId", "year", "week"])
+    .index("by_tracking", ["trackingId"])
+    .index("by_driver", ["driverId", "year", "week"])
+    .index("by_station_driver", ["stationId", "driverId"]),
 });

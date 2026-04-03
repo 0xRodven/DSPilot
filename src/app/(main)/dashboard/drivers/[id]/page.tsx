@@ -10,6 +10,7 @@ import { useQuery } from "convex/react";
 import { AlertTriangle, ChevronLeft } from "lucide-react";
 
 import { NewActionModal } from "@/components/coaching/new-action-modal";
+import { DnrMiniTable } from "@/components/dnr/dnr-mini-table";
 import { CoachingHistory } from "@/components/drivers/coaching-history";
 import { DailyPerformance } from "@/components/drivers/daily-performance";
 import { DailyPerformanceChartWithCoaching } from "@/components/drivers/daily-performance-chart-with-coaching";
@@ -302,6 +303,11 @@ export default function DriverDetailPage({ params }: DriverDetailPageProps) {
 
         {/* Daily Performance */}
         <DailyPerformance driver={driver} week={weekNum} />
+
+        {/* DNR Investigations */}
+        <div className="mt-6">
+          <DnrMiniTable driverId={id as Id<"drivers">} />
+        </div>
       </div>
 
       {/* Coaching Modal */}

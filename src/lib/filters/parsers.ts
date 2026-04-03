@@ -97,6 +97,7 @@ export const filterParsers = {
   tier: parseAsString.withDefault("all"),
   errorType: parseAsString.withDefault("all"),
   search: parseAsString.withDefault(""),
+  driver: parseAsString.withDefault(""),
 };
 
 // Type pour les valeurs brutes de l'URL
@@ -109,6 +110,7 @@ export type RawFilterValues = {
   tier: string;
   errorType: string;
   search: string;
+  driver: string;
 };
 
 // Type pour les valeurs typées (après parsing)

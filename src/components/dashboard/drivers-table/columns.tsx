@@ -3,6 +3,7 @@
 import type { ColumnDef } from "@tanstack/react-table";
 import { ArrowUpDown, Calendar, Eye, MoreHorizontal, User } from "lucide-react";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -22,14 +23,20 @@ export interface DashboardDriver {
   totalDeliveries: number;
   daysActive: number;
   tier: "fantastic" | "great" | "fair" | "poor";
+  dnrCount?: number;
 }
 
 interface ColumnsProps {
   onViewDriver: (driverId: string) => void;
   onPlanCoaching: (driverId: string) => void;
+  onDnrClick?: (driverId: string) => void;
 }
 
-export const createColumns = ({ onViewDriver, onPlanCoaching }: ColumnsProps): ColumnDef<DashboardDriver>[] => [
+export const createColumns = ({
+  onViewDriver,
+  onPlanCoaching,
+  onDnrClick,
+}: ColumnsProps): ColumnDef<DashboardDriver>[] => [
   {
     accessorKey: "name",
     header: ({ column }) => (
@@ -53,8 +60,10 @@ export const createColumns = ({ onViewDriver, onPlanCoaching }: ColumnsProps): C
   },
   {
     accessorKey: "amazonId",
-    header: "Amazon ID",
-    cell: ({ row }) => <span className="font-mono text-muted-foreground text-xs">{row.getValue("amazonId")}</span>,
+    header: () => <div className="text-right">Amazon ID</div>,
+    cell: ({ row }) => (
+      <div className="text-right font-mono text-muted-foreground text-xs">{row.getValue("amazonId")}</div>
+    ),
   },
   {
     accessorKey: "dwcPercent",
@@ -98,6 +107,30 @@ export const createColumns = ({ onViewDriver, onPlanCoaching }: ColumnsProps): C
     ),
   },
   {
+    accessorKey: "dnrCount",
+    header: () => <div className="text-right">DNR</div>,
+    cell: ({ row }) => {
+      const count = row.original.dnrCount ?? 0;
+      if (count === 0) {
+        return <div className="text-right text-muted-foreground">—</div>;
+      }
+      return (
+        <div className="text-right">
+          <Badge
+            variant="outline"
+            className="cursor-pointer bg-red-500/20 text-red-400 hover:bg-red-500/30"
+            onClick={(e) => {
+              e.stopPropagation();
+              onDnrClick?.(row.original.id);
+            }}
+          >
+            {count}
+          </Badge>
+        </div>
+      );
+    },
+  },
+  {
     accessorKey: "totalDeliveries",
     header: ({ column }) => (
       <div className="text-right">
@@ -118,7 +151,7 @@ export const createColumns = ({ onViewDriver, onPlanCoaching }: ColumnsProps): C
   {
     accessorKey: "daysActive",
     header: ({ column }) => (
-      <div className="text-center">
+      <div className="text-right">
         <Button
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
@@ -129,9 +162,7 @@ export const createColumns = ({ onViewDriver, onPlanCoaching }: ColumnsProps): C
         </Button>
       </div>
     ),
-    cell: ({ row }) => (
-      <div className="text-center text-card-foreground tabular-nums">{row.getValue("daysActive")}</div>
-    ),
+    cell: ({ row }) => <div className="text-right text-card-foreground tabular-nums">{row.getValue("daysActive")}</div>,
   },
   {
     accessorKey: "dwcPercent",

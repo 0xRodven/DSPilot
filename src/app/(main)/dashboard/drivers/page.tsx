@@ -49,7 +49,19 @@ export default function DriversPage() {
     api.stats.getDashboardDriversDaily,
     station && effectiveMode === "day" ? { stationId: station._id, date } : "skip",
   );
-  const drivers = effectiveMode === "week" ? driversWeekly : driversDaily;
+  const driversRaw = effectiveMode === "week" ? driversWeekly : driversDaily;
+
+  // Get DNR counts
+  const dnrCounts = useQuery(
+    api.dnr.getDriverDnrCount,
+    station && effectiveMode === "week" ? { stationId: station._id, year, week: weekNum } : "skip",
+  );
+
+  // Merge DNR counts into drivers
+  const drivers = driversRaw?.map((d) => ({
+    ...d,
+    dnrCount: dnrCounts?.[d.id] ?? 0,
+  }));
 
   // Calculate comparison label based on period mode
   const getComparisonLabel = () => {

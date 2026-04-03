@@ -14,6 +14,7 @@ import {
   User,
 } from "lucide-react";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -33,17 +34,20 @@ export interface DriversListDriver {
   daysActive: number;
   tier: "fantastic" | "great" | "fair" | "poor";
   trend: number | null;
+  dnrCount?: number;
 }
 
 interface ColumnsProps {
   onViewDriver: (driverId: string) => void;
   onPlanCoaching?: (driverId: string) => void;
+  onDnrClick?: (driverId: string) => void;
   periodMode: "week" | "day";
 }
 
 export const createColumns = ({
   onViewDriver,
   onPlanCoaching,
+  onDnrClick,
   periodMode,
 }: ColumnsProps): ColumnDef<DriversListDriver>[] => {
   const columns: ColumnDef<DriversListDriver>[] = [
@@ -156,6 +160,30 @@ export const createColumns = ({
         <div className="text-right font-medium text-card-foreground tabular-nums">{row.getValue("iadcPercent")}%</div>
       ),
     },
+    {
+      accessorKey: "dnrCount",
+      header: () => <div className="text-right">DNR</div>,
+      cell: ({ row }) => {
+        const count = row.original.dnrCount ?? 0;
+        if (count === 0) {
+          return <div className="text-right text-muted-foreground">—</div>;
+        }
+        return (
+          <div className="text-right">
+            <Badge
+              variant="outline"
+              className="cursor-pointer bg-red-500/20 text-red-400 hover:bg-red-500/30"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDnrClick?.(row.original.id);
+              }}
+            >
+              {count}
+            </Badge>
+          </div>
+        );
+      },
+    },
   ];
 
   // Add daysActive column only for week mode
@@ -163,7 +191,7 @@ export const createColumns = ({
     columns.push({
       accessorKey: "daysActive",
       header: ({ column }) => (
-        <div className="text-center">
+        <div className="text-right">
           <Button
             variant="ghost"
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
@@ -175,7 +203,7 @@ export const createColumns = ({
         </div>
       ),
       cell: ({ row }) => (
-        <div className="text-center text-card-foreground tabular-nums">{row.getValue("daysActive")}/7</div>
+        <div className="text-right text-card-foreground tabular-nums">{row.getValue("daysActive")}/7</div>
       ),
     });
   }

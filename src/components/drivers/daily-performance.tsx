@@ -109,16 +109,16 @@ export function DailyPerformance({ driver, week }: DailyPerformanceProps) {
                           {day.date && <div className="text-muted-foreground text-xs">{day.date}</div>}
                         </div>
                       </TableCell>
-                      <TableCell className="text-right font-medium text-card-foreground">
+                      <TableCell className="text-right font-medium text-card-foreground tabular-nums">
                         {day.dwcPercent !== null ? `${day.dwcPercent}%` : "-"}
                       </TableCell>
-                      <TableCell className="text-right text-card-foreground">
+                      <TableCell className="text-right text-card-foreground tabular-nums">
                         {day.iadcPercent !== null ? `${day.iadcPercent}%` : "-"}
                       </TableCell>
-                      <TableCell className="text-right text-card-foreground">
+                      <TableCell className="text-right text-card-foreground tabular-nums">
                         {day.deliveries !== null ? day.deliveries : "-"}
                       </TableCell>
-                      <TableCell className="text-right text-card-foreground">
+                      <TableCell className="text-right text-card-foreground tabular-nums">
                         {day.errors !== null ? day.errors : "-"}
                       </TableCell>
                       <TableCell>

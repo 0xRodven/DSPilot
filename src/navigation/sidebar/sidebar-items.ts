@@ -6,6 +6,7 @@ import {
   FileText,
   LayoutDashboard,
   type LucideIcon,
+  PackageX,
   Settings,
   Upload,
   Users,
@@ -66,6 +67,11 @@ export function getSidebarItems(orgName?: string): NavGroup[] {
           title: "Erreurs",
           url: "/dashboard/errors",
           icon: AlertTriangle,
+        },
+        {
+          title: "DNR",
+          url: "/dashboard/dnr",
+          icon: PackageX,
         },
         {
           title: "Import",

@@ -34,6 +34,7 @@ interface Driver {
   daysActive: number;
   tier: "fantastic" | "great" | "fair" | "poor";
   trend: number | null;
+  dnrCount?: number;
 }
 
 interface DriversListTableProps {
@@ -65,6 +66,7 @@ export function DriversListTable({
       daysActive: d.daysActive,
       tier: d.tier,
       trend: d.trend,
+      dnrCount: d.dnrCount,
     }));
   }, [drivers]);
 
@@ -74,6 +76,7 @@ export function DriversListTable({
       createColumns({
         onViewDriver: (driverId) => router.push(buildHref(`/dashboard/drivers/${driverId}`)),
         onPlanCoaching: (driverId) => router.push(buildHref(`/dashboard/coaching?driverId=${driverId}`)),
+        onDnrClick: (driverId) => router.push(`${buildHref(`/dashboard/dnr`)}&driver=${driverId}`),
         periodMode,
       }),
     [router, buildHref, periodMode],

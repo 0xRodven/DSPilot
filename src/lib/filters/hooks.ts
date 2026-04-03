@@ -49,6 +49,7 @@ export function useFilters() {
   const tier = rawFilters.tier as TierFilter;
   const errorType = rawFilters.errorType;
   const search = rawFilters.search;
+  const driver = rawFilters.driver;
 
   // Temps normalisé pour l'API
   const normalizedTime = useMemo<NormalizedTimeFilter>(() => {
@@ -148,6 +149,7 @@ export function useFilters() {
     tier,
     errorType,
     search,
+    driver,
 
     // === Setters ===
     setFilters,

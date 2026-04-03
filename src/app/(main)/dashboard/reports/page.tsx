@@ -145,13 +145,13 @@ export default function ReportsPage() {
           <div className="rounded-lg border">
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[100px]">Type</TableHead>
-                  <TableHead>Titre</TableHead>
-                  <TableHead className="w-[140px]">Période</TableHead>
-                  <TableHead className="w-[160px]">Créé le</TableHead>
-                  <TableHead className="w-[80px] text-center">Confiance</TableHead>
-                  <TableHead className="w-[120px] text-right">Actions</TableHead>
+                <TableRow className="hover:bg-transparent">
+                  <TableHead className="w-[100px] text-muted-foreground">Type</TableHead>
+                  <TableHead className="text-muted-foreground">Titre</TableHead>
+                  <TableHead className="w-[140px] text-right text-muted-foreground">Période</TableHead>
+                  <TableHead className="w-[160px] text-right text-muted-foreground">Créé le</TableHead>
+                  <TableHead className="w-[80px] text-center text-muted-foreground">Confiance</TableHead>
+                  <TableHead className="w-[120px] text-right text-muted-foreground">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -172,13 +172,13 @@ export default function ReportsPage() {
                         </Badge>
                       </TableCell>
                       <TableCell className="font-medium">{report.title}</TableCell>
-                      <TableCell className="text-muted-foreground text-sm">
+                      <TableCell className="text-right text-muted-foreground text-sm tabular-nums">
                         {report.periodLabel}
                         {report.year && report.week && (
                           <span className="ml-1 text-muted-foreground/60">S{report.week}</span>
                         )}
                       </TableCell>
-                      <TableCell className="text-muted-foreground text-sm">
+                      <TableCell className="text-right text-muted-foreground text-sm tabular-nums">
                         {format(new Date(report.createdAt), "d MMM yyyy, HH:mm", { locale: fr })}
                       </TableCell>
                       <TableCell className="text-center">

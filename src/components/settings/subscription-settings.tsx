@@ -138,20 +138,20 @@ export function SubscriptionSettings() {
         <CardContent>
           <Table>
             <TableHeader>
-              <TableRow>
-                <TableHead>Date</TableHead>
-                <TableHead>Description</TableHead>
-                <TableHead>Montant</TableHead>
-                <TableHead>Statut</TableHead>
-                <TableHead className="text-right">PDF</TableHead>
+              <TableRow className="hover:bg-transparent">
+                <TableHead className="text-right text-muted-foreground">Date</TableHead>
+                <TableHead className="text-muted-foreground">Description</TableHead>
+                <TableHead className="text-right text-muted-foreground">Montant</TableHead>
+                <TableHead className="text-muted-foreground">Statut</TableHead>
+                <TableHead className="text-right text-muted-foreground">PDF</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {invoices.map((invoice, index) => (
                 <TableRow key={index}>
-                  <TableCell className="text-muted-foreground">{invoice.date}</TableCell>
+                  <TableCell className="text-right text-muted-foreground tabular-nums">{invoice.date}</TableCell>
                   <TableCell>{invoice.description}</TableCell>
-                  <TableCell className="font-medium">{invoice.amount}</TableCell>
+                  <TableCell className="text-right font-medium tabular-nums">{invoice.amount}</TableCell>
                   <TableCell>
                     <Badge
                       variant="outline"
