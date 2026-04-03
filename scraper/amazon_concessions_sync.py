@@ -338,29 +338,23 @@ async def click_page(page, page_num):
     return False
 
 
-async def fetch_detail_for_tracking(page, tracking_id, base_url):
-    """Click a tracking ID, parse the detail section, go back."""
+async def fetch_detail_for_tracking(page, tracking_id):
+    """Click a tracking ID — detail appears inline on the same page."""
     try:
         link = await page.find(tracking_id, timeout=5)
         if not link:
             return None
 
         await link.click()
-        await asyncio.sleep(3)
+        await asyncio.sleep(2)
 
         html = await get_page_html(page)
         detail = parse_detail_section(html)
 
-        # Go back to table
-        await navigate_with_fallback(page, base_url, wait_seconds=4)
-
+        # No navigation needed — detail appears inline below the table
         return detail
     except Exception as e:
         log(f"      Detail error for {tracking_id}: {e}")
-        try:
-            await navigate_with_fallback(page, base_url, wait_seconds=4)
-        except Exception:
-            pass
         return None
 
 
@@ -399,40 +393,36 @@ async def capture_concessions(args):
         if looks_like_login_page(html):
             raise RuntimeError("concessions_page_redirected_to_login")
 
-        # Phase 1: Collect ALL rows from ALL pages (no clicks needed)
+        # Collect rows page by page, with inline detail extraction
         all_rows = []
         html = await get_page_html(page)
         max_page = get_max_page(html)
         log(f"  Week {week_iso}: {max_page} page(s) detected")
 
-        # Parse page 1
-        rows = parse_concessions_table(html)
-        log(f"    Page 1: {len(rows)} concession(s)")
-        all_rows.extend(rows)
+        for pg in range(1, max_page + 1):
+            if pg > 1:
+                clicked = await click_page(page, pg)
+                if not clicked:
+                    log(f"    Could not navigate to page {pg}, stopping")
+                    break
+                html = await get_page_html(page)
 
-        # Parse pages 2..N
-        for pg in range(2, max_page + 1):
-            clicked = await click_page(page, pg)
-            if not clicked:
-                log(f"    Could not navigate to page {pg}, stopping")
-                break
-            html = await get_page_html(page)
             rows = parse_concessions_table(html)
             log(f"    Page {pg}: {len(rows)} concession(s)")
+
+            # Extract detail for each row on this page (inline click)
+            if not args.table_only:
+                for i, row in enumerate(rows):
+                    tid = row["trackingId"]
+                    global_idx = len(all_rows) + i + 1
+                    log(f"      [{global_idx}] Detail for {tid}")
+                    detail = await fetch_detail_for_tracking(page, tid)
+                    if detail:
+                        enrich_with_detail(row, detail)
+
             all_rows.extend(rows)
 
         log(f"  Week {week_iso}: {len(all_rows)} total concession(s)")
-
-        # Phase 2: Fetch detail for each tracking (address, GPS, scan type)
-        if not args.table_only:
-            for i, row in enumerate(all_rows):
-                tid = row["trackingId"]
-                log(f"    [{i+1}/{len(all_rows)}] Detail for {tid}")
-
-                # Navigate back to the table URL each time (avoids stale DOM)
-                detail = await fetch_detail_for_tracking(page, tid, url)
-                if detail:
-                    enrich_with_detail(row, detail)
 
         # Phase 3: Build investigation objects
         investigations = [
