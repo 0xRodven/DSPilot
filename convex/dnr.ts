@@ -30,6 +30,7 @@ export const ingestConcessions = mutation({
         gpsActual: v.optional(v.object({ lat: v.number(), lng: v.number() })),
         gpsDistanceMeters: v.optional(v.number()),
         customerNotes: v.optional(v.string()),
+        deliveryType: v.optional(v.string()),
         status: v.union(v.literal("ongoing"), v.literal("resolved"), v.literal("confirmed_dnr")),
       }),
     ),
@@ -73,6 +74,7 @@ export const ingestConcessions = mutation({
         gpsActual: inv.gpsActual,
         gpsDistanceMeters: inv.gpsDistanceMeters,
         customerNotes: inv.customerNotes,
+        deliveryType: inv.deliveryType,
         status: inv.status,
       };
 

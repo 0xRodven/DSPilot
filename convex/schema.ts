@@ -589,6 +589,7 @@ export default defineSchema({
     gpsActual: v.optional(v.object({ lat: v.number(), lng: v.number() })),
     gpsDistanceMeters: v.optional(v.number()),
     customerNotes: v.optional(v.string()),
+    deliveryType: v.optional(v.string()), // Cortex detail: boîte aux lettres, main propre, etc.
     status: v.union(v.literal("ongoing"), v.literal("resolved"), v.literal("confirmed_dnr")),
   })
     .index("by_org", ["organizationId"])
