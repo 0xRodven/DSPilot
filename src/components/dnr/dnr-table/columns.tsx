@@ -70,9 +70,11 @@ const statusLabels = {
 const scanLabels: Record<string, string> = {
   DELIVERED_TO_HOUSEHOLD_MEMBER: "Remis tiers",
   DELIVERED_TO_MAIL_SLOT: "Boite aux lettres",
-  DELIVERED_TO_CUSTOMER: "Remis client",
+  DELIVERED_TO_CUSTOMER: "Main propre",
   DELIVERED_TO_NEIGHBOUR: "Voisin",
   DELIVERED_TO_SAFE_PLACE: "Lieu sûr",
+  DELIVERED_TO_RECEPTIONIST: "Réception/Gardien",
+  DELIVERED_TO_CONCIERGE: "Concierge",
 };
 
 export const columns: ColumnDef<DnrRow>[] = [
@@ -88,12 +90,7 @@ export const columns: ColumnDef<DnrRow>[] = [
         <ArrowUpDown className="ml-2 h-4 w-4" />
       </Button>
     ),
-    cell: ({ row }) => (
-      <div>
-        <div className="font-medium text-card-foreground">{row.original.driverName}</div>
-        <div className="text-right font-mono text-muted-foreground text-xs">{row.original.transporterId}</div>
-      </div>
-    ),
+    cell: ({ row }) => <span className="font-medium text-card-foreground">{row.original.driverName}</span>,
   },
   {
     accessorKey: "trackingId",
@@ -141,9 +138,10 @@ export const columns: ColumnDef<DnrRow>[] = [
   },
   {
     accessorKey: "scanType",
-    header: "Scan",
+    header: "Mode de livraison",
     cell: ({ row }) => {
-      const label = scanLabels[row.original.scanType] ?? row.original.scanType.replace("DELIVERED_TO_", "");
+      const label =
+        scanLabels[row.original.scanType] ?? row.original.scanType.replace("DELIVERED_TO_", "").replace(/_/g, " ");
       return (
         <Badge variant="outline" className="whitespace-nowrap text-xs">
           {label}

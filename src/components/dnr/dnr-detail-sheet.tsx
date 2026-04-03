@@ -105,7 +105,7 @@ export function DnrDetailSheet({ investigation, open, onOpenChange }: DnrDetailS
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Scan</span>
+                <span className="text-muted-foreground">Lieu de dépôt</span>
                 <span>{investigation.scanType.replace("DELIVERED_TO_", "").replace(/_/g, " ")}</span>
               </div>
             </div>

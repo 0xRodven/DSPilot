@@ -2,14 +2,17 @@
 """
 Scrape Amazon Logistics delivery concessions page for DNR data.
 
-Full pipeline:
-1. Navigate to dsp_delivery_concessions
-2. Paginate through ALL pages of the table
-3. For each tracking ID, click to open the detail popup
-4. From the popup, click "Afficher plus de détails sur Cortex" for delivery type
-5. Save structured JSON for Convex ingestion
+Discovery: The concessions table already has ALL key data in the rows:
+  Tracking ID, Station, DSP, Delivery Date, Concession Date, Transporter ID, Driver Name
 
-Handles 50-100+ entries per week across multiple pages.
+Clicking a tracking adds: Lieu de dépôt, Address, GPS, Distance, Customer Notes.
+Cortex link adds: Delivery type classification.
+
+Strategy:
+1. Parse the main table for all rows (bulk data without clicking)
+2. For each row, click to get detail (address, GPS, scan type)
+3. Optionally click Cortex for delivery type
+4. Handle pagination across multiple pages
 """
 
 import argparse
@@ -69,238 +72,218 @@ async def get_page_html(page, timeout_seconds=20):
 
 
 # ---------------------------------------------------------------------------
-# Parsing
+# Parsing — Main table (bulk, no click needed)
 # ---------------------------------------------------------------------------
 
-def parse_tracking_table(html):
-    """Parse the main concessions table to get tracking IDs from current page."""
-    soup = BeautifulSoup(html, "html.parser")
-    rows = []
+def parse_concessions_table(html):
+    """Parse the main concessions table.
 
+    Headers: Numéro de suivi | Zone de service | DSP | Date de livraison |
+             Date de concession | Livreur | Nom du livreur
+
+    Each row = one concession with most data already available.
+    """
+    soup = BeautifulSoup(html, "html.parser")
     table = soup.find("table")
     if not table:
-        return rows
+        return []
 
-    for tr in table.find_all("tr")[1:]:
+    # Get header row to map columns
+    header_row = table.find("tr")
+    if not header_row:
+        return []
+    headers = [th.get_text(strip=True).lower() for th in header_row.find_all(["th", "td"])]
+
+    # Map column indices
+    col_map = {}
+    for i, h in enumerate(headers):
+        if "suivi" in h or "tracking" in h:
+            col_map["tracking"] = i
+        elif "zone" in h or "station" in h:
+            col_map["station"] = i
+        elif "dsp" in h:
+            col_map["dsp"] = i
+        elif "livraison" in h and "date" in h:
+            col_map["delivery_date"] = i
+        elif "concession" in h and "date" in h:
+            col_map["concession_date"] = i
+        elif "livreur" in h and "nom" not in h:
+            col_map["transporter_id"] = i
+        elif "nom" in h:
+            col_map["driver_name"] = i
+
+    rows = []
+    for tr in table.find_all("tr")[1:]:  # skip header
         cells = tr.find_all(["td", "th"])
-        if len(cells) < 2:
+        if len(cells) < 4:
             continue
 
-        tracking_id = None
-        for cell in cells:
-            link = cell.find("a")
-            text = (link or cell).get_text(strip=True)
-            if re.match(r"^[A-Z]{2}\d{7,}", text):
-                tracking_id = text
-                break
+        vals = [c.get_text(strip=True) for c in cells]
 
-        if tracking_id:
-            rows.append({"trackingId": tracking_id})
+        # Skip if this looks like a detail section (key-value pair, 2 cells)
+        if len(cells) == 2:
+            continue
+
+        tracking = vals[col_map.get("tracking", 0)] if "tracking" in col_map else ""
+        if not tracking or not re.match(r"^[A-Z]{2}\d{5,}", tracking):
+            continue
+
+        row = {
+            "trackingId": tracking,
+            "station": vals[col_map.get("station", 1)] if "station" in col_map else "",
+            "dsp": vals[col_map.get("dsp", 2)] if "dsp" in col_map else "",
+            "deliveryDatetime": vals[col_map.get("delivery_date", 3)] if "delivery_date" in col_map else "",
+            "concessionDatetime": vals[col_map.get("concession_date", 4)] if "concession_date" in col_map else "",
+            "transporterId": vals[col_map.get("transporter_id", 5)] if "transporter_id" in col_map else "",
+            "driverName": vals[col_map.get("driver_name", 6)] if "driver_name" in col_map else "",
+        }
+        rows.append(row)
 
     return rows
 
 
-def has_next_page(html):
-    """Check if there's a 'Next' pagination button that is not disabled."""
-    soup = BeautifulSoup(html, "html.parser")
-    # Look for pagination buttons: "Suivant", "Next", ">" or aria-label="next"
-    for btn in soup.find_all("button"):
-        text = btn.get_text(strip=True).lower()
-        aria = (btn.get("aria-label") or "").lower()
-        if any(kw in text or kw in aria for kw in ["suivant", "next", "›", ">"]):
-            disabled = btn.get("disabled") is not None or "disabled" in btn.get("class", [])
-            if not disabled:
-                return True
-    # Also check for anchor-based pagination
-    for a in soup.find_all("a"):
-        text = a.get_text(strip=True).lower()
-        if "suivant" in text or "next" in text:
-            return True
-    return False
+def parse_detail_section(html):
+    """Parse the detail section that appears after clicking a tracking ID.
 
-
-def parse_detail_popup(html):
-    """Parse the detail popup for a single tracking ID.
-
-    Extracts key-value pairs from the delivery contrast card:
-        Zone de service/DSP: DIF1 / PSUA
-        Livreur: Mamadou CISSE
-        ID du transporteur: A23G2BWS2BTO69
-        Date de livraison: 2026-03-17 15:40:15
-        Date de concession: 2026-04-01 10:41:30
-        Lieu de dépôt: DELIVERED_TO_MAIL_SLOT
-        Adresse: 3 rue des abbesses, paris, 75018
-        Notes du client: bal 8
-        Distance: 11.02 mètres
-        GPS planifié / réel
+    The detail is rendered as 2-column table rows (key-value pairs) below the main table.
     """
     soup = BeautifulSoup(html, "html.parser")
     detail = {}
 
-    # Strategy 1: dt/dd pairs (most common on Amazon)
-    for dt in soup.find_all("dt"):
-        dd = dt.find_next_sibling("dd")
-        if dd:
-            key = dt.get_text(strip=True).lower()
-            val = dd.get_text(" ", strip=True)
-            detail[key] = val
-
-    # Strategy 2: adjacent div/span label+value pairs
-    all_text_nodes = soup.find_all(string=True)
-    for i, node in enumerate(all_text_nodes):
-        text = node.strip()
-        if not text:
-            continue
-        # Detect known label patterns
-        for label in [
-            "zone de service", "livreur", "id du transporteur",
-            "date de livraison", "date de concession", "lieu de dépôt",
-            "adresse", "notes du client", "distance entre",
-            "emplacement planifié", "emplacement réel",
-            "group stop",
-        ]:
-            if label in text.lower() and label not in detail:
-                # Value is typically the next meaningful text node
-                for j in range(i + 1, min(i + 5, len(all_text_nodes))):
-                    val = all_text_nodes[j].strip()
-                    if val and val != text:
-                        detail[label] = val
-                        break
+    for table in soup.find_all("table"):
+        for tr in table.find_all("tr"):
+            cells = tr.find_all(["td", "th"])
+            # Detail rows have exactly 2 cells: label + value
+            if len(cells) == 2:
+                key = cells[0].get_text(strip=True).lower()
+                val = cells[1].get_text(" ", strip=True)
+                if key and val:
+                    detail[key] = val
 
     return detail
 
 
-def parse_cortex_detail(html):
-    """Parse Cortex page for delivery type classification.
+def get_max_page(html):
+    """Find the highest page number from pagination buttons.
 
-    Cortex shows: delivery method (boîte aux lettres, main propre, voisin, etc.)
-    and additional shipment metadata.
+    Amazon uses: aria-label="Go to page N" for each page button.
     """
     soup = BeautifulSoup(html, "html.parser")
-    cortex = {}
-
-    # Cortex uses various layouts — try multiple strategies
-    # Strategy 1: dt/dd
-    for dt in soup.find_all("dt"):
-        dd = dt.find_next_sibling("dd")
-        if dd:
-            key = dt.get_text(strip=True).lower()
-            val = dd.get_text(" ", strip=True)
-            cortex[key] = val
-
-    # Strategy 2: key-value text patterns
-    for el in soup.find_all(["div", "span", "td", "p"]):
-        text = el.get_text(strip=True)
-        # Look for delivery method indicators
-        for kw in ["type de livraison", "delivery type", "méthode", "method",
-                    "boîte aux lettres", "main propre", "voisin", "lieu sûr",
-                    "réception", "reception"]:
-            if kw in text.lower():
-                cortex[kw] = text
-
-    return cortex
+    max_page = 1
+    for btn in soup.find_all("button"):
+        aria = btn.get("aria-label", "")
+        match = re.search(r"(?:Go to |page\s*)(\d+)", aria, re.I)
+        if match:
+            max_page = max(max_page, int(match.group(1)))
+    return max_page
 
 
-def extract_investigation(detail, tracking_id, year, week, cortex_data=None):
-    """Extract structured investigation data from parsed detail + optional Cortex."""
+def enrich_with_detail(base_row, detail):
+    """Merge detail popup data into the base row from the main table."""
 
     def get(keys, default=""):
         for k in keys:
             for dk, dv in detail.items():
-                if k in dk.lower():
+                if k in dk:
                     return dv
         return default
 
-    driver_name = get(["livreur", "driver"])
-    transporter_id = get(["transporteur", "transporter id"])
-    delivery_dt = get(["date de livraison", "delivery date"])
-    concession_dt = get(["date de concession", "concession date"])
-    scan_type = get(["lieu de dépôt", "lieu de depot", "delivery scan", "scan"])
+    # Scan type
+    scan_type = get(["lieu de dépôt", "lieu de depot"])
+    if scan_type:
+        base_row["scanType"] = scan_type
 
-    # Address parsing
-    street = get(["adresse", "address"])
-    building = get(["bâtiment", "building", "bat"]) or None
-    floor_val = get(["étage", "floor"]) or None
-    postal_code = ""
-    city = ""
+    # Address
+    addr_raw = get(["détails de la livraison", "adresse"])
+    if addr_raw:
+        # Parse multi-part address: "Adresse 18 R du Faubourg Poissonnière 51B54, Escalier cour,"
+        # Remove leading "Adresse" label
+        addr_clean = re.sub(r"^Adresse\s*", "", addr_raw).strip()
+        parts = [p.strip() for p in addr_clean.split(",") if p.strip()]
 
-    # Extract postal code + city from address text
-    # Address can be multi-line: "3 rue des abbesses\nparis\n75018"
-    addr_parts = street.split("\n") if "\n" in street else [street]
-    for part in addr_parts:
-        pc_match = re.search(r"\b(\d{5})\b", part)
-        if pc_match:
-            postal_code = pc_match.group(1)
-            city = re.sub(r"\b\d{5}\b", "", part).strip()
+        street = parts[0] if parts else ""
+        building = parts[1] if len(parts) > 1 else None
 
-    # If city not found, check next parts
-    if not city:
-        for part in addr_parts[1:]:
-            clean = part.strip()
-            if clean and not re.match(r"^\d{5}$", clean) and clean.lower() != "group stop":
-                city = clean
-                break
+        # Extract postal code + city
+        postal_code = ""
+        city = ""
+        for part in parts:
+            pc_match = re.search(r"\b(\d{5})\b", part)
+            if pc_match:
+                postal_code = pc_match.group(1)
+                city = re.sub(r"\b\d{5}\b", "", part).strip()
 
-    # If street is multi-line, take first line as street
-    if "\n" in street:
-        street = addr_parts[0].strip()
+        # Also check standalone fields
+        if not postal_code:
+            for p in parts:
+                if re.match(r"^\d{5}$", p.strip()):
+                    postal_code = p.strip()
+                elif not city and p.strip().isalpha():
+                    city = p.strip()
+
+        base_row["address"] = {
+            "street": street,
+            "building": building,
+            "floor": None,
+            "postalCode": postal_code,
+            "city": city,
+        }
 
     # GPS
+    planned_text = get(["emplacement planifié"])
+    actual_text = get(["emplacement réel"])
+
     def parse_gps(text):
         coords = re.findall(r"(-?\d+\.\d+)°?", text)
         if len(coords) >= 2:
             return {"lat": float(coords[0]), "lng": float(coords[1])}
         return None
 
-    gps_planned = parse_gps(get(["emplacement planifié", "planned location"]))
-    gps_actual = parse_gps(get(["emplacement réel", "actual location"]))
+    if planned_text:
+        gps = parse_gps(planned_text)
+        if gps:
+            base_row["gpsPlanned"] = gps
+    if actual_text:
+        gps = parse_gps(actual_text)
+        if gps:
+            base_row["gpsActual"] = gps
 
     # Distance
-    distance = None
-    dist_text = get(["distance", "mètres", "meters"])
+    dist_text = get(["distance entre"])
     dist_match = re.search(r"([\d.]+)\s*m", dist_text)
     if dist_match:
-        distance = float(dist_match.group(1))
+        base_row["gpsDistanceMeters"] = float(dist_match.group(1))
 
-    customer_notes = get(["notes du client", "customer notes"]) or None
+    # Customer notes
+    notes = get(["notes du client", "customer notes"])
+    if notes and notes.lower() not in ["", "group stop"]:
+        base_row["customerNotes"] = notes
 
-    # Cortex delivery type
-    delivery_type = None
-    if cortex_data:
-        delivery_type = (
-            cortex_data.get("type de livraison")
-            or cortex_data.get("delivery type")
-            or cortex_data.get("méthode")
-            or None
-        )
+    return base_row
 
-    result = {
-        "trackingId": tracking_id,
-        "transporterId": transporter_id,
-        "driverName": driver_name,
+
+def build_investigation(row, year, week):
+    """Convert a parsed row into a Convex-ready investigation object."""
+    return {
+        "trackingId": row["trackingId"],
+        "transporterId": row.get("transporterId", ""),
+        "driverName": row.get("driverName", ""),
         "year": year,
         "week": week,
-        "deliveryDatetime": delivery_dt,
-        "concessionDatetime": concession_dt,
-        "scanType": scan_type or "UNKNOWN",
-        "address": {
-            "street": street,
-            "building": building,
-            "floor": floor_val,
-            "postalCode": postal_code,
-            "city": city,
-        },
-        "gpsPlanned": gps_planned,
-        "gpsActual": gps_actual,
-        "gpsDistanceMeters": distance,
-        "customerNotes": customer_notes,
+        "deliveryDatetime": row.get("deliveryDatetime", ""),
+        "concessionDatetime": row.get("concessionDatetime", ""),
+        "scanType": row.get("scanType", "UNKNOWN"),
+        "address": row.get("address", {
+            "street": "", "building": None, "floor": None,
+            "postalCode": "", "city": "",
+        }),
+        "gpsPlanned": row.get("gpsPlanned"),
+        "gpsActual": row.get("gpsActual"),
+        "gpsDistanceMeters": row.get("gpsDistanceMeters"),
+        "customerNotes": row.get("customerNotes"),
+        "deliveryType": row.get("deliveryType"),
         "status": "ongoing",
     }
-
-    if delivery_type:
-        result["deliveryType"] = delivery_type
-
-    return result
 
 
 # ---------------------------------------------------------------------------
@@ -325,29 +308,14 @@ def run_ingest(output_dir, station_code, organization_id):
 
 
 # ---------------------------------------------------------------------------
-# Main scraping flow
+# Browser interactions
 # ---------------------------------------------------------------------------
 
-async def click_next_page(page):
-    """Click the pagination 'Next' button. Returns True if clicked."""
-    # Try multiple selectors for the Next button
-    for selector in [
-        'button[aria-label="next"]',
-        'button[aria-label="Next"]',
-        'button[aria-label="Suivant"]',
-    ]:
-        try:
-            btn = await page.select(selector, timeout=3)
-            if btn:
-                await btn.click()
-                await asyncio.sleep(4)
-                return True
-        except Exception:
-            continue
-
-    # Fallback: find by text content
+async def click_page(page, page_num):
+    """Click a specific page number button. Returns True if clicked."""
+    selector = f'button[aria-label="Go to page {page_num}"]'
     try:
-        btn = await page.find("Suivant", timeout=3)
+        btn = await page.select(selector, timeout=5)
         if btn:
             await btn.click()
             await asyncio.sleep(4)
@@ -355,95 +323,50 @@ async def click_next_page(page):
     except Exception:
         pass
 
-    # Try the "›" or ">" button
+    # Fallback: find button by text content
     try:
-        btn = await page.find("›", timeout=2)
+        btn = await page.find(str(page_num), timeout=3)
         if btn:
-            await btn.click()
-            await asyncio.sleep(4)
-            return True
+            tag = await btn.get_js_attributes("tagName")
+            if tag and tag.lower() == "button":
+                await btn.click()
+                await asyncio.sleep(4)
+                return True
     except Exception:
         pass
 
     return False
 
 
-async def collect_all_tracking_ids(page):
-    """Paginate through all table pages and collect every tracking ID."""
-    all_ids = []
-    page_num = 1
-
-    while True:
-        html = await get_page_html(page)
-        ids = parse_tracking_table(html)
-        log(f"    Page {page_num}: {len(ids)} tracking(s)")
-        all_ids.extend(ids)
-
-        if not has_next_page(html):
-            break
-
-        clicked = await click_next_page(page)
-        if not clicked:
-            break
-
-        page_num += 1
-        # Safety: max 20 pages
-        if page_num > 20:
-            log("    Max pages reached (20), stopping pagination")
-            break
-
-    return all_ids
-
-
-async def fetch_detail_and_cortex(page, tracking_id, skip_cortex=False):
-    """Click tracking ID → extract detail → optionally click Cortex → return data."""
-    detail = {}
-    cortex_data = None
-
+async def fetch_detail_for_tracking(page, tracking_id, base_url):
+    """Click a tracking ID, parse the detail section, go back."""
     try:
         link = await page.find(tracking_id, timeout=5)
         if not link:
-            log(f"      Link not found for {tracking_id}")
-            return None, None
+            return None
 
         await link.click()
         await asyncio.sleep(3)
 
-        detail_html = await get_page_html(page)
-        detail = parse_detail_popup(detail_html)
+        html = await get_page_html(page)
+        detail = parse_detail_section(html)
 
-        # Try Cortex detail
-        if not skip_cortex:
-            try:
-                cortex_link = await page.find("Cortex", timeout=3)
-                if cortex_link:
-                    await cortex_link.click()
-                    await asyncio.sleep(4)
+        # Go back to table
+        await navigate_with_fallback(page, base_url, wait_seconds=4)
 
-                    cortex_html = await get_page_html(page)
-                    cortex_data = parse_cortex_detail(cortex_html)
-
-                    # Go back from Cortex to detail
-                    await page.evaluate("window.history.back()")
-                    await asyncio.sleep(2)
-            except Exception as e:
-                log(f"      Cortex fetch failed for {tracking_id}: {e}")
-
-        # Go back to the table
-        await page.evaluate("window.history.back()")
-        await asyncio.sleep(3)
-
+        return detail
     except Exception as e:
-        log(f"      Error for {tracking_id}: {e}")
-        # Try to recover navigation
+        log(f"      Detail error for {tracking_id}: {e}")
         try:
-            await page.evaluate("window.history.back()")
-            await asyncio.sleep(2)
+            await navigate_with_fallback(page, base_url, wait_seconds=4)
         except Exception:
             pass
+        return None
 
-    return detail, cortex_data
 
+# ---------------------------------------------------------------------------
+# Main scraping flow
+# ---------------------------------------------------------------------------
 
 async def capture_concessions(args):
     from amazon_deep_scraper import close_browser, load_cookies_and_login, looks_like_login_page, setup_browser
@@ -476,32 +399,46 @@ async def capture_concessions(args):
         if looks_like_login_page(html):
             raise RuntimeError("concessions_page_redirected_to_login")
 
-        # Step 1: Collect ALL tracking IDs across all pages
-        log(f"  Week {week_iso}: collecting tracking IDs...")
-        all_tracking = await collect_all_tracking_ids(page)
-        log(f"  Week {week_iso}: {len(all_tracking)} total tracking(s)")
+        # Phase 1: Collect ALL rows from ALL pages (no clicks needed)
+        all_rows = []
+        html = await get_page_html(page)
+        max_page = get_max_page(html)
+        log(f"  Week {week_iso}: {max_page} page(s) detected")
 
-        # Step 2: Navigate back to first page to start detail extraction
-        await navigate_with_fallback(page, url, wait_seconds=6)
+        # Parse page 1
+        rows = parse_concessions_table(html)
+        log(f"    Page 1: {len(rows)} concession(s)")
+        all_rows.extend(rows)
 
-        # Step 3: For each tracking, fetch detail + Cortex
-        investigations = []
-        seen = set()
+        # Parse pages 2..N
+        for pg in range(2, max_page + 1):
+            clicked = await click_page(page, pg)
+            if not clicked:
+                log(f"    Could not navigate to page {pg}, stopping")
+                break
+            html = await get_page_html(page)
+            rows = parse_concessions_table(html)
+            log(f"    Page {pg}: {len(rows)} concession(s)")
+            all_rows.extend(rows)
 
-        for i, row in enumerate(all_tracking):
-            tid = row["trackingId"]
-            if tid in seen:
-                continue
-            seen.add(tid)
+        log(f"  Week {week_iso}: {len(all_rows)} total concession(s)")
 
-            log(f"    [{i+1}/{len(all_tracking)}] {tid}")
-            detail, cortex = await fetch_detail_and_cortex(
-                page, tid, skip_cortex=args.skip_cortex
-            )
+        # Phase 2: Fetch detail for each tracking (address, GPS, scan type)
+        if not args.table_only:
+            for i, row in enumerate(all_rows):
+                tid = row["trackingId"]
+                log(f"    [{i+1}/{len(all_rows)}] Detail for {tid}")
 
-            if detail:
-                inv = extract_investigation(detail, tid, target.year, target.week, cortex)
-                investigations.append(inv)
+                # Navigate back to the table URL each time (avoids stale DOM)
+                detail = await fetch_detail_for_tracking(page, tid, url)
+                if detail:
+                    enrich_with_detail(row, detail)
+
+        # Phase 3: Build investigation objects
+        investigations = [
+            build_investigation(row, target.year, target.week)
+            for row in all_rows
+        ]
 
         # Save results
         week_dir = args.output_dir / week_slug
@@ -514,8 +451,8 @@ async def capture_concessions(args):
         captures.append({
             "week": week_iso,
             "week_dir": str(week_dir),
-            "total_tracking": len(all_tracking),
-            "extracted": len(investigations),
+            "total": len(all_rows),
+            "with_detail": sum(1 for r in all_rows if "scanType" in r),
         })
 
     await close_browser(browser)
@@ -528,14 +465,15 @@ async def capture_concessions(args):
 
 def build_parser():
     parser = argparse.ArgumentParser(
-        description="Scrape Amazon delivery concessions (DNR) with pagination + Cortex detail."
+        description="Scrape Amazon delivery concessions (DNR) with pagination + detail."
     )
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR)
     parser.add_argument("--weeks", type=int, default=1, help="Number of weeks to scrape")
     parser.add_argument("--target-week", type=int, default=None)
     parser.add_argument("--target-year", type=int, default=None)
     parser.add_argument("--company-id", type=str, default=None)
-    parser.add_argument("--skip-cortex", action="store_true", help="Skip Cortex detail (faster)")
+    parser.add_argument("--table-only", action="store_true",
+                        help="Only parse the main table (fast, no detail clicks)")
     parser.add_argument("--invoke-ingest", action="store_true")
     parser.add_argument("--station-code", type=str, help="DSPilot station code")
     parser.add_argument("--organization-id", type=str, default=None)
@@ -555,7 +493,7 @@ def main():
     save_json(summary, captures)
     log(f"Summary: {summary}")
     for c in captures:
-        log(f"  {c['week']}: {c['extracted']}/{c['total_tracking']} extracted")
+        log(f"  {c['week']}: {c['total']} concessions ({c['with_detail']} with detail)")
 
 
 if __name__ == "__main__":

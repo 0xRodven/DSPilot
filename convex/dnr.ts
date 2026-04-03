@@ -188,38 +188,23 @@ export const getKpis = query({
     const confirmedDnr = current.filter((i) => i.status === "confirmed_dnr").length;
     const preventionRate = current.length > 0 ? ((current.length - confirmedDnr) / current.length) * 100 : 0;
 
-    // Top offender over last 4 weeks
-    const allRecent: Array<{ driverName: string }> = [];
-    let w = args.week;
-    let y = args.year;
-    for (let i = 0; i < 4; i++) {
-      const wkData = await ctx.db
-        .query("dnrInvestigations")
-        .withIndex("by_station_week", (q) => q.eq("stationId", args.stationId).eq("year", y).eq("week", w))
-        .collect();
-      allRecent.push(...wkData.map((d) => ({ driverName: d.driverName })));
-      w--;
-      if (w === 0) {
-        w = 52;
-        y--;
-      }
-    }
-
+    // Top récidivistes — current week only
     const driverCounts: Record<string, { name: string; count: number }> = {};
-    for (const r of allRecent) {
-      if (!driverCounts[r.driverName]) {
-        driverCounts[r.driverName] = { name: r.driverName, count: 0 };
+    for (const inv of current) {
+      if (!driverCounts[inv.driverName]) {
+        driverCounts[inv.driverName] = { name: inv.driverName, count: 0 };
       }
-      driverCounts[r.driverName].count++;
+      driverCounts[inv.driverName].count++;
     }
-
-    const topOffender = Object.values(driverCounts).sort((a, b) => b.count - a.count)[0] ?? null;
+    const topOffenders = Object.values(driverCounts)
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5);
 
     return {
       investigationsCount: current.length,
       investigationsDelta: current.length - previous.length,
       preventionRate: Math.round(preventionRate),
-      topOffender,
+      topOffenders,
     };
   },
 });
