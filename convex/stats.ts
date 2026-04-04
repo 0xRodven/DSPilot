@@ -476,8 +476,16 @@ export const getDashboardKPIs = query({
       prevWeek,
       // New fields for KPI cards
       totalDeliveries: dwcTotal,
-      // "Delivery Misses - DNR Risk" from the DWC/IADC export, not confirmed DNR
-      deliveryMissesRisk: currentStats.dwcMisses,
+      // Real DNR count from concessions data
+      deliveryMissesRisk: await (async () => {
+        const dnr = await ctx.db
+          .query("dnrInvestigations")
+          .withIndex("by_station_week", (q) =>
+            q.eq("stationId", args.stationId).eq("year", args.year).eq("week", args.week),
+          )
+          .collect();
+        return dnr.length;
+      })(),
     };
   },
 });
@@ -948,14 +956,19 @@ export const getPerformanceEvolution = query({
     // Take only the last N weeks and reverse for chronological order
     const recentStats = allStats.slice(0, weeksCount).reverse();
 
-    return recentStats.map((stat) => {
-      // Calculate DWC %
+    return await Promise.all(recentStats.map(async (stat) => {
       const dwcTotal = stat.dwcCompliant + stat.dwcMisses + stat.failedAttempts;
       const dwcPercent = dwcTotal > 0 ? Math.round((stat.dwcCompliant / dwcTotal) * 100 * 10) / 10 : 0;
-
-      // Calculate IADC %
       const iadcTotal = stat.iadcCompliant + stat.iadcNonCompliant;
       const iadcPercent = iadcTotal > 0 ? Math.round((stat.iadcCompliant / iadcTotal) * 100 * 10) / 10 : 0;
+
+      // Real DNR count from concessions data
+      const dnr = await ctx.db
+        .query("dnrInvestigations")
+        .withIndex("by_station_week", (q) =>
+          q.eq("stationId", args.stationId).eq("year", stat.year).eq("week", stat.week),
+        )
+        .collect();
 
       return {
         week: `S${stat.week}`,
@@ -964,12 +977,10 @@ export const getPerformanceEvolution = query({
         dwc: dwcPercent,
         iadc: iadcPercent,
         activeDrivers: stat.activeDrivers,
-        // New fields for Performance Evolution chart
         totalDeliveries: dwcTotal,
-        // "Delivery Misses - DNR Risk" from the DWC/IADC export, not confirmed DNR
-        deliveryMissesRisk: stat.dwcMisses,
+        deliveryMissesRisk: dnr.length,
       };
-    });
+    }));
   },
 });
 
