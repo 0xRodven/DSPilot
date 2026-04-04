@@ -215,9 +215,28 @@ export const columns: ColumnDef<DnrRow>[] = [
     header: "Ville",
     cell: ({ row }) => {
       const pc = row.original.address.postalCode?.slice(0, 5) ?? "";
-      const city = row.original.address.city?.split(",")[0]?.trim() ?? "";
+      // Clean city: remove noise (Group stop, Notes du client, addresses, codes)
+      const rawCity = row.original.address.city ?? "";
+      const cleaned =
+        rawCity
+          .replace(/\bGroup\s+stop\b.*/i, "")
+          .replace(/\bNotes\s+du\s+client\b.*/i, "")
+          .replace(/\bEmplacement\b.*/i, "")
+          .replace(/\bAccess\b.*/i, "")
+          .replace(/\b\d{5}\b/g, "")
+          .replace(/\d+\s*(rue|avenue|boulevard|r\b|av\b|bd\b)\b.*/i, "")
+          .trim()
+          .split(/\s{2,}/)[0]
+          ?.trim() ?? "";
+      const city =
+        cleaned ||
+        rawCity
+          .split(/\s{2,}/)[0]
+          ?.trim()
+          .slice(0, 20) ||
+        "";
       return (
-        <span className="max-w-[120px] truncate text-muted-foreground text-sm" title={`${pc} ${city}`}>
+        <span className="text-muted-foreground text-sm" title={`${pc} ${city}`}>
           {pc} {city}
         </span>
       );

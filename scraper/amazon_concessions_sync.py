@@ -219,7 +219,6 @@ def enrich_with_detail(base_row, detail):
     # Address
     addr_raw = get(["détails de la livraison", "adresse"])
     if addr_raw:
-        # Parse multi-part address: "Adresse 18 R du Faubourg Poissonnière 51B54, Escalier cour,"
         # Remove leading "Adresse" label
         addr_clean = re.sub(r"^Adresse\s*", "", addr_raw).strip()
         parts = [p.strip() for p in addr_clean.split(",") if p.strip()]
@@ -227,22 +226,28 @@ def enrich_with_detail(base_row, detail):
         street = parts[0] if parts else ""
         building = parts[1] if len(parts) > 1 else None
 
-        # Extract postal code + city
+        # Extract postal code + city from the full raw text
+        # Amazon format: "... 75010 Paris  Group stop Notes du client ..."
+        # City is the word(s) right after the 5-digit postal code, before noise
         postal_code = ""
         city = ""
-        for part in parts:
-            pc_match = re.search(r"\b(\d{5})\b", part)
+
+        # Search the entire raw string for "XXXXX CityName"
+        full_text = addr_clean
+        # City name: capitalized word(s) after postal code, stop before noise
+        # Handles: Paris, Saint-Denis, Ivry-sur-Seine, Boulogne-Billancourt
+        pc_city_match = re.search(
+            r"\b(\d{5})\s+([A-ZÀ-Ü][a-zà-ü]+(?:[- ][a-zà-üA-ZÀ-Ü][a-zà-ü]+)*?)(?:\s+(?:Group|Notes|Emplacement|Palier|Access|Laisser|Fermée|Sauf)\b|\s*$)",
+            full_text,
+        )
+        if pc_city_match:
+            postal_code = pc_city_match.group(1)
+            city = pc_city_match.group(2).strip()
+        else:
+            # Fallback: just extract the postal code
+            pc_match = re.search(r"\b(\d{5})\b", full_text)
             if pc_match:
                 postal_code = pc_match.group(1)
-                city = re.sub(r"\b\d{5}\b", "", part).strip()
-
-        # Also check standalone fields
-        if not postal_code:
-            for p in parts:
-                if re.match(r"^\d{5}$", p.strip()):
-                    postal_code = p.strip()
-                elif not city and p.strip().isalpha():
-                    city = p.strip()
 
         base_row["address"] = {
             "street": street,
