@@ -19,7 +19,7 @@ WEEK=$((10#$WEEK))
 echo "[driver-reports] Year: $YEAR, Week: $WEEK"
 
 OUTPUT_DIR=".artifacts/reports/drivers/s${WEEK}-${YEAR}"
-AI_DIR="$OUTPUT_DIR/ai"
+export AI_DIR="$OUTPUT_DIR/ai"
 mkdir -p "$AI_DIR"
 
 # Step 1: Extract all driver data as JSON context
