@@ -1,7 +1,7 @@
 "use client";
 
 import { DriversTable } from "@/components/dashboard/drivers-table";
-import { ExportButton } from "@/components/dashboard/export-button";
+
 import { KPICards } from "@/components/dashboard/kpi-cards";
 import { PerformanceChart } from "@/components/dashboard/performance-chart";
 import { TierDistribution } from "@/components/dashboard/tier-distribution";
@@ -23,7 +23,7 @@ export default function DashboardPage() {
             <h1 className="font-bold text-foreground text-xl md:text-2xl">Dashboard</h1>
             <p className="text-muted-foreground text-xs capitalize md:text-sm">{subtitle}</p>
           </div>
-          <ExportButton />
+          {/* ExportButton removed — reports are auto-generated */}
         </div>
 
         {/* KPI Cards */}
