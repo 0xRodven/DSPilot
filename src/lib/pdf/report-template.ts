@@ -67,6 +67,16 @@ export interface ReportData {
   driverRecommendations?: DriverRecommendation[];
   /** DWC history for the last 8 weeks (for trend chart). Optional. */
   weeklyHistory?: WeeklyHistoryEntry[];
+  /** DNR & Investigations data for the week */
+  dnr?: {
+    totalConcessions: number;
+    formalInvestigations: number;
+    confirmedDnr: number;
+    resolutionRate: number;
+    deltaVsPrevWeek: number;
+    topOffenders: Array<{ name: string; count: number }>;
+    investigationDetails: Array<{ trackingId: string; driverName: string; status: string }>;
+  };
 }
 
 export interface DriverRecommendation {
@@ -485,6 +495,50 @@ export function generateReportHtml(data: ReportData, options: ReportOptions = {}
           <div class="dist-bar">${distBarHtml}</div>
         </div>
       </div>
+
+      ${
+        data.dnr
+          ? `<div class="section">
+        <div class="section-head">
+          <div class="section-eyebrow">DNR & Investigations</div>
+          <div class="section-title">Concessions colis non reçu — S${data.week}</div>
+        </div>
+        <div class="kpis" style="margin-bottom:12px">
+          <div class="kpi">
+            <div class="kpi-label">Concessions</div>
+            <div class="kpi-value" style="color:#ef4444">${data.dnr.totalConcessions}</div>
+            <div class="kpi-delta ${data.dnr.deltaVsPrevWeek > 0 ? "negative" : data.dnr.deltaVsPrevWeek < 0 ? "positive" : "muted"}">${data.dnr.deltaVsPrevWeek > 0 ? "+" : ""}${data.dnr.deltaVsPrevWeek} vs sem. préc.</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-label">Investigations</div>
+            <div class="kpi-value" style="color:${data.dnr.formalInvestigations > 0 ? "#8b5cf6" : "#22c55e"}">${data.dnr.formalInvestigations}</div>
+            <div class="kpi-delta muted">Enquêtes formelles</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-label">Taux de résolution</div>
+            <div class="kpi-value" style="color:${data.dnr.resolutionRate >= 75 ? "#22c55e" : data.dnr.resolutionRate >= 50 ? "#f59e0b" : "#ef4444"}">${data.dnr.resolutionRate}%</div>
+            <div class="kpi-delta muted">${data.dnr.confirmedDnr} DNR confirmés</div>
+          </div>
+        </div>
+        ${
+          data.dnr.topOffenders.length > 0
+            ? `<div style="margin-bottom:12px">
+          <div style="font-size:11px;color:#6b7280;margin-bottom:6px;font-weight:600">Récidivistes</div>
+          ${data.dnr.topOffenders.map((d) => `<span style="display:inline-block;background:#fef2f2;color:#dc2626;font-size:11px;padding:3px 10px;border-radius:4px;margin:2px 4px 2px 0;font-weight:500">${escapeHtml(d.name)} (${d.count})</span>`).join("")}
+        </div>`
+            : ""
+        }
+        ${
+          data.dnr.investigationDetails.length > 0
+            ? `<div style="margin-bottom:8px">
+          <div style="font-size:11px;color:#6b7280;margin-bottom:6px;font-weight:600">Détail investigations</div>
+          ${data.dnr.investigationDetails.map((d) => `<div style="font-size:11px;padding:4px 0;border-bottom:1px solid #f3f4f6"><span style="font-family:monospace;color:#6b7280">${escapeHtml(d.trackingId)}</span> — ${escapeHtml(d.driverName || "Inconnu")} — <span style="color:${d.status === "under_investigation" ? "#8b5cf6" : "#3b82f6"}">${d.status === "under_investigation" ? "En cours" : "Classée"}</span></div>`).join("")}
+        </div>`
+            : ""
+        }
+      </div>`
+          : ""
+      }
 
       <div class="section">
         <div class="section-head"><div class="section-eyebrow">Exhibit ${data.weeklyHistory && data.weeklyHistory.length > 1 ? "3" : "2"}</div><div class="section-title">Top ${topDrivers.length} performers</div></div>

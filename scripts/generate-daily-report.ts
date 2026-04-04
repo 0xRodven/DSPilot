@@ -127,7 +127,9 @@ async function main() {
             try {
               ai = JSON.parse(raw.slice(0, i + 1));
               break;
-            } catch { /* try next */ }
+            } catch {
+              /* try next */
+            }
           }
         }
       }
@@ -148,6 +150,7 @@ async function main() {
     dayLabel: formatDayLabel(data.date),
     generatedAt: new Date().toLocaleString("fr-FR", { timeZone: "Europe/Paris" }),
     kpis: data.kpis,
+    dnr: data.dnr ?? undefined,
     weekProgress: data.weekProgress,
     drivers: data.drivers as DailyReportDriver[],
     absentDrivers: data.absentDrivers,

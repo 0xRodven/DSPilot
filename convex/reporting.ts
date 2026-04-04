@@ -154,6 +154,52 @@ export const getReportData = query({
       })
       .reverse(); // ascending order (oldest first for chart)
 
+    // --- DNR & Investigations data ---
+    const dnrCurrent = await ctx.db
+      .query("dnrInvestigations")
+      .withIndex("by_station_week", (q) => q.eq("stationId", station._id).eq("year", args.year).eq("week", args.week))
+      .collect();
+    const dnrPrev = await ctx.db
+      .query("dnrInvestigations")
+      .withIndex("by_station_week", (q) => q.eq("stationId", station._id).eq("year", prevYear).eq("week", prevWeek))
+      .collect();
+
+    const totalConcessions = dnrCurrent.filter((d) => d.entryType !== "investigation").length;
+    const formalInvestigations = dnrCurrent.filter(
+      (d) => d.entryType === "investigation" || d.status === "under_investigation",
+    ).length;
+    const confirmedDnr = dnrCurrent.filter((d) => d.status === "confirmed_dnr").length;
+    const resolutionRate =
+      dnrCurrent.length > 0 ? Math.round(((dnrCurrent.length - confirmedDnr) / dnrCurrent.length) * 100) : 100;
+
+    // Top DNR offenders
+    const dnrByDriver: Record<string, { name: string; count: number }> = {};
+    for (const d of dnrCurrent) {
+      const name = d.driverName || "Inconnu";
+      if (!dnrByDriver[name]) dnrByDriver[name] = { name, count: 0 };
+      dnrByDriver[name].count++;
+    }
+    const topDnrOffenders = Object.values(dnrByDriver)
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5);
+
+    // Per-driver DNR count for the drivers array
+    const driverDnrMap: Record<string, number> = {};
+    for (const d of dnrCurrent) {
+      const key = d.driverId?.toString() ?? d.driverName;
+      driverDnrMap[key] = (driverDnrMap[key] || 0) + 1;
+    }
+
+    // Investigation details
+    const investigationDetails = dnrCurrent
+      .filter((d) => d.entryType === "investigation" || d.status === "under_investigation")
+      .map((d) => ({
+        trackingId: d.trackingId,
+        driverName: d.driverName,
+        status: d.status,
+        investigationReason: d.investigationReason ?? "",
+      }));
+
     return {
       stationId: station._id,
       stationName: station.name,
@@ -170,7 +216,20 @@ export const getReportData = query({
         totalDelivered: dwcTotal,
       },
       dwcDistribution,
-      drivers: sorted.map((d, i) => ({ ...d, rank: i + 1 })),
+      dnr: {
+        totalConcessions,
+        formalInvestigations,
+        confirmedDnr,
+        resolutionRate,
+        deltaVsPrevWeek: dnrCurrent.length - dnrPrev.length,
+        topOffenders: topDnrOffenders,
+        investigationDetails,
+      },
+      drivers: sorted.map((d, i) => ({
+        ...d,
+        rank: i + 1,
+        dnrCount: driverDnrMap[d.name] ?? 0,
+      })),
       prevWeek,
       weeklyHistory,
     };
@@ -512,6 +571,41 @@ export const getDailyReportData = query({
     const dateObj = new Date(args.date);
     const dayOfWeek = dateObj.getDay() === 0 ? 7 : dateObj.getDay();
 
+    // --- DNR concessions for this specific day ---
+    // Get week number for the date to query dnrInvestigations
+    const janFirst = new Date(Date.UTC(dateObj.getFullYear(), 0, 1));
+    const dayNum = janFirst.getUTCDay() || 7;
+    const weekNum = Math.ceil(((dateObj.getTime() - janFirst.getTime()) / 86400000 + dayNum) / 7);
+
+    const allDnrWeek = await ctx.db
+      .query("dnrInvestigations")
+      .withIndex("by_station_week", (q) =>
+        q.eq("stationId", station._id).eq("year", dateObj.getFullYear()).eq("week", weekNum),
+      )
+      .collect();
+
+    // Filter to this specific day by concessionDatetime
+    const dayDnr = allDnrWeek.filter((d) => {
+      const dt = d.concessionDatetime?.split(" ")[0] ?? d.concessionDatetime?.split("T")[0] ?? "";
+      return dt === args.date;
+    });
+
+    const dayConcessions = dayDnr.filter((d) => d.entryType !== "investigation").length;
+    const dayInvestigations = dayDnr.filter(
+      (d) => d.entryType === "investigation" || d.status === "under_investigation",
+    ).length;
+
+    // Top DNR drivers for this day
+    const dayDnrByDriver: Record<string, { name: string; count: number }> = {};
+    for (const d of dayDnr) {
+      const name = d.driverName || "Inconnu";
+      if (!dayDnrByDriver[name]) dayDnrByDriver[name] = { name, count: 0 };
+      dayDnrByDriver[name].count++;
+    }
+    const topDnrDay = Object.values(dayDnrByDriver)
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5);
+
     return {
       stationId: station._id,
       stationName: station.name ?? station.code,
@@ -525,9 +619,14 @@ export const getDailyReportData = query({
         dwcChange: prevAvgDwc !== undefined ? Math.round((avgDwc - prevAvgDwc) * 10) / 10 : undefined,
         incidents: totalIncidents,
       },
+      dnr: {
+        newConcessions: dayConcessions,
+        investigationsActive: dayInvestigations,
+        topDrivers: topDnrDay,
+      },
       weekProgress: {
         dayNumber: dayOfWeek,
-        weekDwcSoFar: avgDwc, // simplified — would need to aggregate all days of the week
+        weekDwcSoFar: avgDwc,
       },
       drivers: validDrivers,
       absentDrivers,

@@ -49,9 +49,11 @@ async function main() {
       iadc: d.iadcPercent,
       deliveries: d.totalDeliveries || d.daysWorked,
       trend: d.dwcTrend,
+      dnrCount: d.dnrCount || 0,
       rank: d.rank
     })),
     totalDrivers: data.drivers.length,
+    dnr: data.dnr || null,
     weeklyHistory: data.weeklyHistory
   };
   fs.writeFileSync('.artifacts/reports/data-context.json', JSON.stringify(context, null, 2));
@@ -85,6 +87,8 @@ INSTRUCTIONS:
 - Identifie les livreurs sous 90% DWC par nom avec leur score exact
 - Compare avec la semaine precedente (trend) si disponible
 - Analyse la distribution DWC (combien >=95%, 90-95%, 85-90%, <85%)
+- Analyse les DNR: nombre de concessions, evolution, recidivistes, investigations
+- Si un livreur a des DNR ET un DWC bas, c est une alerte prioritaire
 - Propose des actions CONCRETES par livreur (pas generiques)
 - N'utilise JAMAIS les termes Fantastic/Great/Fair/Poor, que des pourcentages
 

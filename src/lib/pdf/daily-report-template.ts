@@ -45,6 +45,11 @@ export interface DailyReportData {
     dayNumber: number; // 1-7
     weekDwcSoFar: number;
   };
+  dnr?: {
+    newConcessions: number;
+    investigationsActive: number;
+    topDrivers: Array<{ name: string; count: number }>;
+  };
   drivers: DailyReportDriver[];
   absentDrivers: string[]; // noms des absents
   aiSummary?: string; // HTML, comparaison vs veille
@@ -331,6 +336,38 @@ export function generateDailyReportHtml(data: DailyReportData, options: DailyRep
       </div>
 
       ${data.aiSummary ? `<div class="ai-box"><div class="ai-label">Synthese du jour</div><div class="ai-text">${data.aiSummary}</div></div>` : ""}
+
+      ${
+        data.dnr && (data.dnr.newConcessions > 0 || data.dnr.investigationsActive > 0)
+          ? `
+      <div class="section">
+        <div class="section-head">
+          <div class="section-eyebrow">DNR</div>
+          <div class="section-title">Concessions & Investigations du jour</div>
+        </div>
+        <div class="kpis" style="margin-bottom:12px">
+          <div class="kpi">
+            <div class="kpi-label">Concessions</div>
+            <div class="kpi-value" style="color:#ef4444">${data.dnr.newConcessions}</div>
+            <div class="kpi-delta muted">Colis non reçu</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-label">Investigations</div>
+            <div class="kpi-value" style="color:${data.dnr.investigationsActive > 0 ? "#8b5cf6" : "#22c55e"}">${data.dnr.investigationsActive}</div>
+            <div class="kpi-delta muted">Enquêtes formelles</div>
+          </div>
+        </div>
+        ${
+          data.dnr.topDrivers.length > 0
+            ? `<div style="margin-bottom:12px">
+          <div style="font-size:11px;color:#6b7280;margin-bottom:6px">Livreurs concernés</div>
+          ${data.dnr.topDrivers.map((d) => `<span style="display:inline-block;background:#fef2f2;color:#dc2626;font-size:11px;padding:2px 8px;border-radius:4px;margin:2px 4px 2px 0">${escapeHtml(d.name)} (${d.count})</span>`).join("")}
+        </div>`
+            : ""
+        }
+      </div>`
+          : ""
+      }
 
       ${renderWeekProgressBar(data.weekProgress.dayNumber, data.weekProgress.weekDwcSoFar)}
 

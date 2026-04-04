@@ -210,6 +210,7 @@ async function main() {
     aiRecommendations: aiContent.aiRecommendations || undefined,
     driverRecommendations: aiContent.driverRecommendations.length > 0 ? aiContent.driverRecommendations : undefined,
     weeklyHistory,
+    dnr: reportData.dnr ?? undefined,
   };
 
   // Generate both versions
