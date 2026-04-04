@@ -121,7 +121,7 @@ export function DnrDataTable({ columns, data, onRowClick, selectedDay }: DnrData
       </div>
 
       <div className="overflow-x-auto rounded-lg border">
-        <Table className="min-w-[900px]">
+        <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id} className="hover:bg-transparent">

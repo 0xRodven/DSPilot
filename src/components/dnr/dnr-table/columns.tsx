@@ -132,7 +132,11 @@ export const columns: ColumnDef<DnrRow>[] = [
   {
     accessorKey: "trackingId",
     header: "Tracking",
-    cell: ({ row }) => <span className="font-mono text-xs">{row.original.trackingId}</span>,
+    cell: ({ row }) => (
+      <span className="max-w-[100px] truncate font-mono text-xs" title={row.original.trackingId}>
+        {row.original.trackingId}
+      </span>
+    ),
   },
   {
     accessorKey: "concessionDatetime",
@@ -175,12 +179,12 @@ export const columns: ColumnDef<DnrRow>[] = [
   },
   {
     accessorKey: "scanType",
-    header: "Mode de livraison",
+    header: "Mode",
     cell: ({ row }) => {
       const label =
         scanLabels[row.original.scanType] ?? row.original.scanType.replace("DELIVERED_TO_", "").replace(/_/g, " ");
       return (
-        <Badge variant="outline" className="whitespace-nowrap text-xs">
+        <Badge variant="outline" className="max-w-[100px] truncate text-xs" title={label}>
           {label}
         </Badge>
       );
@@ -209,11 +213,15 @@ export const columns: ColumnDef<DnrRow>[] = [
   {
     id: "city",
     header: "Ville",
-    cell: ({ row }) => (
-      <span className="text-muted-foreground text-sm">
-        {row.original.address.postalCode} {row.original.address.city}
-      </span>
-    ),
+    cell: ({ row }) => {
+      const pc = row.original.address.postalCode?.slice(0, 5) ?? "";
+      const city = row.original.address.city?.split(",")[0]?.trim() ?? "";
+      return (
+        <span className="max-w-[120px] truncate text-muted-foreground text-sm" title={`${pc} ${city}`}>
+          {pc} {city}
+        </span>
+      );
+    },
   },
   {
     accessorKey: "status",

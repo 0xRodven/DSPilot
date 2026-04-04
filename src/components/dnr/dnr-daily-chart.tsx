@@ -19,11 +19,11 @@ interface DnrDailyChartProps {
 const chartConfig = {
   concessions: {
     label: "DNR",
-    color: "hsl(var(--chart-1))",
+    color: "hsl(217 91% 60%)", // blue-500
   },
   investigations: {
     label: "Investigations",
-    color: "hsl(280 70% 55%)",
+    color: "hsl(263 70% 58%)", // violet-500
   },
 };
 
@@ -90,11 +90,11 @@ export function DnrDailyChart({ data, selectedDay, onDayClick }: DnrDailyChartPr
         </div>
         <div className="flex items-center gap-4 text-xs">
           <div className="flex items-center gap-1.5">
-            <div className="h-3 w-3 rounded-sm" style={{ backgroundColor: "hsl(var(--chart-1))" }} />
+            <div className="h-3 w-3 rounded-sm bg-blue-500" />
             <span className="text-muted-foreground">DNR</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <div className="h-3 w-3 rounded-sm" style={{ backgroundColor: "hsl(280 70% 55%)" }} />
+            <div className="h-3 w-3 rounded-sm bg-violet-500" />
             <span className="text-muted-foreground">Investigations</span>
           </div>
         </div>
