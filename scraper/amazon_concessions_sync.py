@@ -163,6 +163,29 @@ def parse_detail_section(html):
     return detail
 
 
+def parse_detail_section_last(html):
+    """Parse ONLY the last detail section (Amazon appends detail rows on each click).
+
+    Each click adds ~10 key-value rows. We take the last 10 two-cell rows
+    which correspond to the most recently clicked tracking.
+    """
+    soup = BeautifulSoup(html, "html.parser")
+    all_kv = []
+
+    for table in soup.find_all("table"):
+        for tr in table.find_all("tr"):
+            cells = tr.find_all(["td", "th"])
+            if len(cells) == 2:
+                key = cells[0].get_text(strip=True).lower()
+                val = cells[1].get_text(" ", strip=True)
+                if key and val:
+                    all_kv.append((key, val))
+
+    # Take only the last 10 rows (= current detail)
+    last_kv = all_kv[-10:] if len(all_kv) > 10 else all_kv
+    return dict(last_kv)
+
+
 def get_max_page(html):
     """Find the highest page number from pagination buttons.
 
@@ -339,19 +362,22 @@ async def click_page(page, page_num):
 
 
 async def fetch_detail_for_tracking(page, tracking_id):
-    """Click a tracking ID — detail appears inline on the same page."""
+    """Click a tracking ID — detail appears inline on the same page.
+
+    Important: Each click APPENDS detail rows to the DOM (they accumulate).
+    We take the LAST 10 two-cell rows as the current detail.
+    """
     try:
         link = await page.find(tracking_id, timeout=5)
         if not link:
             return None
 
         await link.click()
-        await asyncio.sleep(2)
+        await asyncio.sleep(4)  # Amazon needs time to render detail
 
         html = await get_page_html(page)
-        detail = parse_detail_section(html)
+        detail = parse_detail_section_last(html)
 
-        # No navigation needed — detail appears inline below the table
         return detail
     except Exception as e:
         log(f"      Detail error for {tracking_id}: {e}")
@@ -400,13 +426,18 @@ async def capture_concessions(args):
         log(f"  Week {week_iso}: {max_page} page(s) detected")
 
         for pg in range(1, max_page + 1):
-            if pg > 1:
+            # Navigate to the clean page (no accumulated detail rows)
+            if pg == 1:
+                pass  # Already on page 1 from initial navigation
+            else:
+                # Re-navigate to URL first (detail clicks pollute the DOM)
+                await navigate_with_fallback(page, url, wait_seconds=5)
                 clicked = await click_page(page, pg)
                 if not clicked:
                     log(f"    Could not navigate to page {pg}, stopping")
                     break
-                html = await get_page_html(page)
 
+            html = await get_page_html(page)
             rows = parse_concessions_table(html)
             log(f"    Page {pg}: {len(rows)} concession(s)")
 
