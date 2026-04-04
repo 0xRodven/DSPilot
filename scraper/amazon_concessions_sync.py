@@ -493,7 +493,8 @@ async def capture_concessions(args):
         max_page = get_max_page(html)
         log(f"  Week {week_iso}: {max_page} page(s) detected")
 
-        for pg in range(1, max_page + 1):
+        pg = 1
+        while pg <= max_page:
             if pg > 1:
                 # Sequential: try direct page button first, then Next button
                 clicked = await click_page(page, pg) or await click_next_page(page)
@@ -523,6 +524,7 @@ async def capture_concessions(args):
                         enrich_with_detail(row, detail)
 
             all_rows.extend(rows)
+            pg += 1
 
         log(f"  Week {week_iso}: {len(all_rows)} total concession(s)")
 
