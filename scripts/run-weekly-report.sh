@@ -44,8 +44,8 @@ REPORT_LOG=$(npx tsx scripts/generate-report.ts \
 
 claude --model claude-opus-4-6 \
   --print \
-  --bare \
   --allowedTools "" \
+  --tools "" \
   -p "Tu es un analyste DSP Amazon. Voici la sortie du script de rapport hebdo pour DIF1, S$WEEK/$YEAR:
 
 $REPORT_LOG
