@@ -159,7 +159,7 @@ export function PerformanceChart() {
                 onCheckedChange={(checked) => setShowDnr(checked === true)}
                 className="border-red-400 data-[state=checked]:bg-red-500"
               />
-              <span className="font-medium text-red-400 text-sm">Risque DNR</span>
+              <span className="font-medium text-red-400 text-sm">DNR</span>
             </label>
           </div>
 
@@ -201,7 +201,7 @@ export function PerformanceChart() {
                 tickFormatter={(value) => `${value}%`}
               />
 
-              {/* Right Y-axis for volumes (only shown when Colis or Risque DNR is active) */}
+              {/* Right Y-axis for volumes (only shown when Colis or DNR is active) */}
               {(showColis || showDnr) && (
                 <YAxis
                   yAxisId="right"
@@ -221,7 +221,7 @@ export function PerformanceChart() {
                   color: "#fff",
                 }}
                 formatter={(value: number, name: string) => {
-                  if (name === "Colis" || name === "Risque DNR") {
+                  if (name === "Colis" || name === "DNR") {
                     return [value.toLocaleString("fr-FR"), name];
                   }
                   return [`${value}%`, name];
@@ -248,7 +248,7 @@ export function PerformanceChart() {
                 <Bar yAxisId="right" dataKey="totalDeliveries" fill="#34d399" fillOpacity={0.3} name="Colis" />
               )}
               {showDnr && (
-                <Bar yAxisId="right" dataKey="deliveryMissesRisk" fill="#f87171" fillOpacity={0.3} name="Risque DNR" />
+                <Bar yAxisId="right" dataKey="deliveryMissesRisk" fill="#f87171" fillOpacity={0.3} name="DNR" />
               )}
 
               {/* Data lines */}

@@ -75,7 +75,7 @@ export const metricCatalogue = {
   deliveryMissesRisk: {
     key: "deliveryMissesRisk",
     label: "Delivery Misses - DNR Risk",
-    shortLabel: "Risque DNR",
+    shortLabel: "DNR",
     description: "Weekly DWC miss volume flagged as DNR risk in the Amazon DWC-IADC export.",
     granularity: "weekly",
     unit: "count",

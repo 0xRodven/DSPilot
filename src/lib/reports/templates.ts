@@ -106,7 +106,7 @@ export function renderReportAscii(report: ReportDocument) {
     .slice(0, 5)
     .map(
       (driver, index) =>
-        `${index + 1}. ${driver.name} | DWC ${driver.dwcPercent.toFixed(1)}% | Risque DNR ${driver.deliveryMissesRisk} | Photos ${driver.photoDefects}`,
+        `${index + 1}. ${driver.name} | DWC ${driver.dwcPercent.toFixed(1)}% | DNR ${driver.deliveryMissesRisk} | Photos ${driver.photoDefects}`,
     )
     .join("\n");
 
@@ -434,7 +434,7 @@ export function renderReportHtml(report: ReportDocument) {
               <th>Driver</th>
               <th>DWC</th>
               <th>IADC</th>
-              <th>Risque DNR</th>
+              <th>DNR</th>
               <th>Photos</th>
               <th>Tier / tendance</th>
             </tr>
@@ -453,7 +453,7 @@ export function renderReportHtml(report: ReportDocument) {
               <th>Driver</th>
               <th>DWC</th>
               <th>IADC</th>
-              <th>Risque DNR</th>
+              <th>DNR</th>
               <th>Photos</th>
               <th>Tier / tendance</th>
             </tr>
