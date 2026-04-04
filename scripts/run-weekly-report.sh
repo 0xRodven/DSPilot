@@ -59,20 +59,21 @@ IMPORTANT: Reponds avec EXACTEMENT du JSON valide, une seule ligne, pas de backt
   2>/dev/null | python3 -c "
 import sys, json, re
 text = sys.stdin.read()
-# Find the JSON object
-m = re.search(r'\{[^{}]*\"aiSummary\".*\}', text, re.DOTALL)
-if m:
-    candidate = m.group(0)
-    # Try parsing progressively larger chunks
-    for end in range(len(candidate), 0, -1):
-        try:
-            parsed = json.loads(candidate[:end])
-            if 'aiSummary' in parsed:
-                print(json.dumps(parsed, ensure_ascii=False))
-                sys.exit(0)
-        except:
-            continue
-# Fallback
+# Find JSON objects containing aiSummary — take the first valid one
+for m in re.finditer(r'\{', text):
+    start = m.start()
+    depth = 0
+    for i in range(start, len(text)):
+        if text[i] == '{': depth += 1
+        elif text[i] == '}': depth -= 1
+        if depth == 0:
+            try:
+                parsed = json.loads(text[start:i+1])
+                if 'aiSummary' in parsed and parsed['aiSummary']:
+                    print(json.dumps(parsed, ensure_ascii=False))
+                    sys.exit(0)
+            except: pass
+            break
 print(json.dumps({'aiSummary':'','aiRecommendations':'','driverRecommendations':[]}, ensure_ascii=False))
 " > .artifacts/reports/ai-weekly.json 2>/dev/null || echo '{"aiSummary":"","aiRecommendations":"","driverRecommendations":[]}' > .artifacts/reports/ai-weekly.json
 
