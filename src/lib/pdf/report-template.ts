@@ -70,9 +70,11 @@ export interface ReportData {
 }
 
 export interface DriverRecommendation {
-  name: string;
+  name?: string;
+  driverName?: string;
   recommendation: string;
-  why: string;
+  why?: string;
+  priority?: string;
 }
 
 export interface ReportOptions {
@@ -334,9 +336,9 @@ function renderDriverRecommendations(recos: DriverRecommendation[], blurFn: (n: 
   const items = recos
     .map(
       (r) => `<li class="reco-item">
-    <div class="reco-name">${escapeHtml(blurFn(r.name))}</div>
-    <div class="reco-text">${r.recommendation}</div>
-    <div class="reco-why">Pourquoi : ${r.why}</div>
+    <div class="reco-name">${escapeHtml(blurFn(r.name || r.driverName || ""))}</div>
+    <div class="reco-text">${r.recommendation || ""}</div>
+    ${r.why || r.priority ? `<div class="reco-why">${escapeHtml(r.why || r.priority || "")}</div>` : ""}
   </li>`,
     )
     .join("");
@@ -412,7 +414,8 @@ export function generateReportHtml(data: ReportData, options: ReportOptions = {}
   const _distTotal = dist.above95 + dist.pct90to95 + dist.pct85to90 + dist.pct80to85 + dist.below80 || 1;
   const versionLabel = blurNames ? " | Version Livreurs" : "";
 
-  const driverRecos = data.driverRecommendations?.map((r) => ({ ...r, name: blur(r.name) })) ?? [];
+  const driverRecos =
+    data.driverRecommendations?.map((r) => ({ ...r, name: blur(r.name || r.driverName || "") })) ?? [];
   const hasAllDrivers = allDrivers && allDrivers.length > 0;
   const dataPages = hasAllDrivers ? Math.ceil(allDrivers.length / 30) : 0;
   const totalPages = 1 + dataPages + 1; // page 1 + data pages + lexique
