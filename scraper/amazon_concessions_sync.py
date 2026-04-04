@@ -31,7 +31,7 @@ BASE_URL = os.getenv("AMAZON_LOGISTICS_BASE_URL", "https://logistics.amazon.fr")
 DEFAULT_OUTPUT_DIR = Path(__file__).parent / "data" / "concessions"
 CONCESSIONS_URL_TEMPLATE = (
     "{base}/performance?pageId=dsp_delivery_concessions"
-    "&station=ALL&companyId={company_id}"
+    "&station={station}&companyId={company_id}"
     "&tabId=delivery-concessions-weekly-tab"
     "&timeFrame=Weekly&to={week_iso}"
 )
@@ -410,8 +410,9 @@ async def capture_concessions(args):
         week_iso = f"{target.year}-W{target.week:02d}"
         week_slug = f"week-{target.week:02d}-{target.year}"
 
+        station_filter = args.station_filter or "DIF1"
         url = CONCESSIONS_URL_TEMPLATE.format(
-            base=BASE_URL, company_id=company_id, week_iso=week_iso
+            base=BASE_URL, station=station_filter, company_id=company_id, week_iso=week_iso
         )
         await navigate_with_fallback(page, url, wait_seconds=6)
 
@@ -493,6 +494,7 @@ def build_parser():
     parser.add_argument("--target-week", type=int, default=None)
     parser.add_argument("--target-year", type=int, default=None)
     parser.add_argument("--company-id", type=str, default=None)
+    parser.add_argument("--station-filter", type=str, default="DIF1", help="Amazon station filter (default DIF1)")
     parser.add_argument("--table-only", action="store_true",
                         help="Only parse the main table (fast, no detail clicks)")
     parser.add_argument("--invoke-ingest", action="store_true")

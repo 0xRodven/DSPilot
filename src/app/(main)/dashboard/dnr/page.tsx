@@ -48,7 +48,7 @@ export default function DnrPage() {
           <div>
             <h1 className="flex items-center gap-2 font-bold text-2xl">
               <PackageX className="h-6 w-6" />
-              Investigations DNR
+              DNR
             </h1>
             <p className="text-muted-foreground text-sm">Chargement...</p>
           </div>
@@ -88,10 +88,10 @@ export default function DnrPage() {
         <div>
           <h1 className="flex items-center gap-2 font-bold text-2xl text-foreground">
             <PackageX className="h-6 w-6" />
-            Investigations DNR
+            DNR
           </h1>
           <p className="text-muted-foreground text-sm">
-            Suivi des réclamations &quot;Did Not Receive&quot; — Semaine {weekNum}
+            Réclamations colis non reçu — Semaine {weekNum}
           </p>
         </div>
 
@@ -102,7 +102,7 @@ export default function DnrPage() {
         {rows.length === 0 ? (
           <div className="flex flex-col items-center py-12 text-muted-foreground">
             <PackageX className="mb-2 h-8 w-8" />
-            <p>Aucune investigation DNR cette semaine</p>
+            <p>Aucun DNR cette semaine</p>
           </div>
         ) : (
           <DnrDataTable columns={columns} data={rows} onRowClick={setSelectedInvestigation} />

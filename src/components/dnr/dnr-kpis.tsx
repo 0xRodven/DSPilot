@@ -5,7 +5,7 @@ import { useState } from "react";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { useQuery } from "convex/react";
-import { PackageX, Search, TrendingDown, TrendingUp, Users } from "lucide-react";
+import { PackageX, ShieldCheck, TrendingDown, TrendingUp, Users } from "lucide-react";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -18,8 +18,8 @@ interface DnrKpisProps {
 
 export function DnrKpis({ stationId, year, week }: DnrKpisProps) {
   const kpis = useQuery(api.dnr.getKpis, { stationId, year, week });
-  const investigations = useQuery(api.dnr.getInvestigations, { stationId, year, week });
-  const [showInvestigations, setShowInvestigations] = useState(false);
+  const dnrList = useQuery(api.dnr.getInvestigations, { stationId, year, week });
+  const [showDnrList, setShowDnrList] = useState(false);
 
   if (kpis === undefined) {
     return (
@@ -42,52 +42,37 @@ export function DnrKpis({ stationId, year, week }: DnrKpisProps) {
 
   return (
     <div className="grid grid-cols-3 gap-4">
-      {/* DNR Count */}
-      <Card>
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between">
-            <p className="text-muted-foreground text-sm">DNR</p>
-            <PackageX className="h-4 w-4 text-muted-foreground" />
-          </div>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="font-bold text-2xl">{kpis.investigationsCount}</span>
-            {kpis.investigationsDelta !== 0 && (
-              <span className={`flex items-center text-xs ${deltaColor}`}>
-                <DeltaIcon className="mr-0.5 h-3 w-3" />
-                {Math.abs(kpis.investigationsDelta)}
-              </span>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Investigations — with hover modal */}
+      {/* DNR Count — with hover list */}
       <fieldset
         className="relative m-0 border-0 p-0"
-        onMouseEnter={() => setShowInvestigations(true)}
-        onMouseLeave={() => setShowInvestigations(false)}
+        onMouseEnter={() => setShowDnrList(true)}
+        onMouseLeave={() => setShowDnrList(false)}
       >
         <Card className="cursor-pointer transition-colors hover:border-primary/30">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
-              <p className="text-muted-foreground text-sm">Investigations</p>
-              <Search className="h-4 w-4 text-muted-foreground" />
+              <p className="text-muted-foreground text-sm">DNR</p>
+              <PackageX className="h-4 w-4 text-muted-foreground" />
             </div>
             <div className="mt-2 flex items-baseline gap-2">
               <span className="font-bold text-2xl">{kpis.investigationsCount}</span>
-              <span className="text-muted-foreground text-xs">cette semaine</span>
+              {kpis.investigationsDelta !== 0 && (
+                <span className={`flex items-center text-xs ${deltaColor}`}>
+                  <DeltaIcon className="mr-0.5 h-3 w-3" />
+                  {Math.abs(kpis.investigationsDelta)}
+                </span>
+              )}
             </div>
           </CardContent>
         </Card>
 
-        {/* Glassmorphism hover modal */}
-        {showInvestigations && investigations && investigations.length > 0 && (
+        {showDnrList && dnrList && dnrList.length > 0 && (
           <div className="absolute top-full right-0 left-0 z-50 mt-2 max-h-[320px] overflow-y-auto rounded-xl border border-white/20 bg-background/80 p-4 shadow-2xl backdrop-blur-xl">
             <p className="mb-3 font-medium text-sm">
-              {investigations.length} investigation(s) — S{week}
+              {dnrList.length} DNR — S{week}
             </p>
             <div className="space-y-2">
-              {investigations.map((inv) => (
+              {dnrList.map((inv) => (
                 <div
                   key={inv._id}
                   className="flex items-center justify-between rounded-lg bg-muted/50 px-3 py-2 text-sm"
@@ -106,7 +91,24 @@ export function DnrKpis({ stationId, year, week }: DnrKpisProps) {
         )}
       </fieldset>
 
-      {/* Top récidivistes — semaine courante */}
+      {/* Prevention Rate */}
+      <Card>
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between">
+            <p className="text-muted-foreground text-sm">Prevention Rate</p>
+            <ShieldCheck className="h-4 w-4 text-muted-foreground" />
+          </div>
+          <div className="mt-2">
+            <span
+              className={`font-bold text-2xl ${kpis.preventionRate >= 75 ? "text-emerald-400" : kpis.preventionRate >= 50 ? "text-amber-400" : "text-red-400"}`}
+            >
+              {kpis.preventionRate}%
+            </span>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Top récidivistes */}
       <Card>
         <CardContent className="p-4">
           <div className="flex items-center justify-between">
