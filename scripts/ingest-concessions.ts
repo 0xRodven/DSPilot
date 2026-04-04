@@ -47,13 +47,31 @@ async function main() {
     process.exit(1);
   }
 
-  const raw = JSON.parse(fs.readFileSync(jsonPath, "utf-8"));
-  console.log(`Read ${raw.length} investigation(s) from ${jsonPath}`);
+  const rawData = JSON.parse(fs.readFileSync(jsonPath, "utf-8"));
+  console.log(`Read ${rawData.length} investigation(s) from ${jsonPath}`);
 
-  if (raw.length === 0) {
+  if (rawData.length === 0) {
     console.log("Nothing to ingest.");
     return;
   }
+
+  // Clean null values — Convex expects undefined (omit) for optional fields, not null
+  function stripNulls<T>(obj: T): T {
+    if (obj === null || obj === undefined) return undefined as T;
+    if (Array.isArray(obj)) return obj.map(stripNulls) as T;
+    if (typeof obj === "object") {
+      const cleaned: Record<string, unknown> = {};
+      for (const [key, val] of Object.entries(obj as Record<string, unknown>)) {
+        if (val !== null && val !== undefined) {
+          cleaned[key] = stripNulls(val);
+        }
+      }
+      return cleaned as T;
+    }
+    return obj;
+  }
+
+  const raw = rawData.map(stripNulls);
 
   const convexUrl = process.env.CONVEX_URL ?? process.env.NEXT_PUBLIC_CONVEX_URL;
   if (!convexUrl) {
@@ -67,13 +85,22 @@ async function main() {
     (client as unknown as { setAdminAuth(t: string): void }).setAdminAuth(deployKey);
   }
 
-  const result = await client.mutation(api.dnr.ingestConcessions, {
-    organizationId,
-    stationCode,
-    investigations: raw,
-  });
+  // Ingest in batches of 15 to avoid mutation size limits
+  const BATCH_SIZE = 15;
+  let totalUpserted = 0;
 
-  console.log(`Upserted ${result.upserted} investigation(s) for station ${stationCode}`);
+  for (let i = 0; i < raw.length; i += BATCH_SIZE) {
+    const batch = raw.slice(i, i + BATCH_SIZE);
+    const result = await client.mutation(api.dnr.ingestConcessions, {
+      organizationId,
+      stationCode,
+      investigations: batch,
+    });
+    totalUpserted += result.upserted;
+    console.log(`  Batch ${Math.floor(i / BATCH_SIZE) + 1}: ${result.upserted} upserted`);
+  }
+
+  console.log(`Total: ${totalUpserted} investigation(s) upserted for ${stationCode}`);
 }
 
 main().catch((err) => {
