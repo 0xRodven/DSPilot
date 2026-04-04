@@ -268,6 +268,13 @@ export const storeReport = mutation({
   },
 });
 
+export const deleteReport = mutation({
+  args: { reportId: v.id("reportDeliveries") },
+  handler: async (ctx, args) => {
+    await ctx.db.delete(args.reportId);
+  },
+});
+
 /**
  * Get individual driver report data for a station/week.
  * Returns all drivers with their stats, rank, and history for individual reports.

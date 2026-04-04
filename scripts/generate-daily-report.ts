@@ -115,8 +115,22 @@ async function main() {
   if (opts.aiFile) {
     console.log(`[daily] loading AI content from ${opts.aiFile}...`);
     try {
-      const raw = fs.readFileSync(opts.aiFile, "utf-8");
-      const ai = JSON.parse(raw);
+      const raw = fs.readFileSync(opts.aiFile, "utf-8").trim().replace(/\n/g, " ");
+      // Try parsing the raw JSON; if it fails (concatenated objects), find the first valid one
+      let ai: { aiSummary?: string } = { aiSummary: "" };
+      try {
+        ai = JSON.parse(raw);
+      } catch {
+        // Find closing brace positions and try each
+        for (let i = 0; i < raw.length; i++) {
+          if (raw[i] === "}" && raw.slice(0, i + 1).includes("aiSummary")) {
+            try {
+              ai = JSON.parse(raw.slice(0, i + 1));
+              break;
+            } catch { /* try next */ }
+          }
+        }
+      }
       aiSummary = ai.aiSummary ?? "";
       console.log("[daily] AI content loaded");
     } catch (err) {
