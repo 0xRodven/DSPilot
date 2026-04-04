@@ -1,0 +1,10 @@
+[Unit]
+Description=DSPilot — Weekly investigations scrape timer (Wednesday 21h Paris)
+
+[Timer]
+# Wednesday 21:00 Paris = 19:00 UTC (CEST) / 20:00 UTC (CET)
+OnCalendar=Wed *-*-* 19:00:00 UTC
+Persistent=true
+
+[Install]
+WantedBy=timers.target
