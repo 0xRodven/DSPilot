@@ -310,7 +310,10 @@ export const storeReport = mutation({
         q.eq("stationId", args.stationId).eq("year", args.year).eq("week", args.week),
       )
       .collect();
-    const match = existing.find((r) => r.reportType === args.reportType);
+    // For daily reports, match on periodLabel too (one report per day)
+    const match = existing.find(
+      (r) => r.reportType === args.reportType && (args.reportType === "weekly" || r.periodLabel === args.periodLabel),
+    );
 
     if (match) {
       await ctx.db.patch(match._id, {
