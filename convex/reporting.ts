@@ -448,15 +448,70 @@ export const getDriverReportData = query({
           return a.week - b.week;
         });
 
+        // Daily performance breakdown for the week
+        const weekDailyStats = allDaily.filter((d) => d.date >= weekStart && d.date <= weekEnd);
+        const dailyPerformance = weekDailyStats
+          .sort((a, b) => a.date.localeCompare(b.date))
+          .map((d) => {
+            const dayDwcTotal = d.dwcCompliant + d.dwcMisses + d.failedAttempts;
+            const dayDwc = dayDwcTotal > 0 ? Math.round((d.dwcCompliant / dayDwcTotal) * 1000) / 10 : 0;
+            const dayIadcTotal = d.iadcCompliant + d.iadcNonCompliant;
+            const dayIadc = dayIadcTotal > 0 ? Math.round((d.iadcCompliant / dayIadcTotal) * 1000) / 10 : 0;
+            return {
+              date: d.date,
+              dwcPercent: dayDwc,
+              iadcPercent: dayIadc,
+              deliveries: dayDwcTotal,
+              errors: d.dwcMisses + d.failedAttempts,
+            };
+          });
+
+        // Error breakdown
+        const errorBreakdown = {
+          contactMiss: stat.dwcBreakdown?.contactMiss ?? 0,
+          photoDefect: stat.dwcBreakdown?.photoDefect ?? 0,
+          rts: stat.failedAttempts,
+        };
+
+        // DNR for this driver (from dnrInvestigations)
+        const driverDnr = await ctx.db
+          .query("dnrInvestigations")
+          .withIndex("by_driver", (q) =>
+            q.eq("driverId", stat.driverId).eq("year", args.year).eq("week", args.week),
+          )
+          .collect();
+
+        const dnrEntries = driverDnr.map((d) => ({
+          trackingId: d.trackingId,
+          date: d.concessionDatetime?.split(" ")[0] ?? "",
+          scanType: d.scanType,
+          status: d.status,
+          entryType: d.entryType ?? "concession",
+        }));
+
+        // DNR per day (for daily performance table)
+        const dnrByDay: Record<string, number> = {};
+        for (const d of driverDnr) {
+          const date = d.concessionDatetime?.split(" ")[0] ?? "";
+          if (date) dnrByDay[date] = (dnrByDay[date] || 0) + 1;
+        }
+
         return {
           driverId: driver._id,
           driverName: driver.name,
+          amazonId: driver.amazonId,
           dwcPercent,
           iadcPercent,
           dwcChange,
           totalDeliveries: dwcTotal,
           daysWorked,
           history: sortedHistory,
+          dailyPerformance,
+          errorBreakdown,
+          dnrEntries,
+          dnrByDay,
+          dnrCount: driverDnr.length,
+          investigationCount: driverDnr.filter((d) => d.entryType === "investigation" || d.status === "under_investigation").length,
         };
       }),
     );

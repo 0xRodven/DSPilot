@@ -31,6 +31,7 @@ scraper/data/
 !scripts/run-daily-report.sh
 !scripts/run-weekly-report.sh
 !scripts/run-concessions-pipeline.sh
+!scripts/run-driver-reports.sh
 
 # debug
 npm-debug.log*
