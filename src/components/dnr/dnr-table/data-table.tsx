@@ -25,12 +25,29 @@ interface DnrDataTableProps {
   columns: ColumnDef<DnrRow>[];
   data: DnrRow[];
   onRowClick: (row: DnrRow) => void;
+  selectedDay?: string | null;
 }
 
-export function DnrDataTable({ columns, data, onRowClick }: DnrDataTableProps) {
+export function DnrDataTable({ columns, data, onRowClick, selectedDay }: DnrDataTableProps) {
   const [sorting, setSorting] = useState<SortingState>([{ id: "concessionDatetime", desc: true }]);
   const [globalFilter, setGlobalFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [typeFilter, setTypeFilter] = useState("all");
+
+  // Pre-filter by selected day from bar chart
+  const dayFilteredData = useMemo(() => {
+    if (!selectedDay) return data;
+    return data.filter((row) => {
+      const date = row.concessionDatetime?.split(" ")[0] ?? row.concessionDatetime?.split("T")[0];
+      return date === selectedDay;
+    });
+  }, [data, selectedDay]);
+
+  // Pre-filter by type
+  const typeFilteredData = useMemo(() => {
+    if (typeFilter === "all") return dayFilteredData;
+    return dayFilteredData.filter((row) => (row.entryType ?? "concession") === typeFilter);
+  }, [dayFilteredData, typeFilter]);
 
   const columnFilters = useMemo(
     () => (statusFilter !== "all" ? [{ id: "status", value: statusFilter }] : []),
@@ -47,7 +64,7 @@ export function DnrDataTable({ columns, data, onRowClick }: DnrDataTableProps) {
   }, []);
 
   const table = useReactTable({
-    data,
+    data: typeFilteredData,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
@@ -68,8 +85,8 @@ export function DnrDataTable({ columns, data, onRowClick }: DnrDataTableProps) {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-3">
-        <div className="relative flex-1">
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="relative min-w-[200px] flex-1">
           <Search className="absolute top-2.5 left-3 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Rechercher livreur, tracking..."
@@ -78,21 +95,33 @@ export function DnrDataTable({ columns, data, onRowClick }: DnrDataTableProps) {
             className="pl-9"
           />
         </div>
+        <Select value={typeFilter} onValueChange={(v) => startTransition(() => setTypeFilter(v))}>
+          <SelectTrigger className="w-[140px]">
+            <SelectValue placeholder="Type" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Tous types</SelectItem>
+            <SelectItem value="concession">DNR</SelectItem>
+            <SelectItem value="investigation">Investigations</SelectItem>
+          </SelectContent>
+        </Select>
         <Select value={statusFilter} onValueChange={(v) => startTransition(() => setStatusFilter(v))}>
           <SelectTrigger className="w-[160px]">
             <SelectValue placeholder="Statut" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Tous</SelectItem>
+            <SelectItem value="all">Tous statuts</SelectItem>
             <SelectItem value="ongoing">En cours</SelectItem>
             <SelectItem value="resolved">Résolu</SelectItem>
             <SelectItem value="confirmed_dnr">DNR confirmé</SelectItem>
+            <SelectItem value="under_investigation">Enquête</SelectItem>
+            <SelectItem value="investigation_closed">Classé</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
       <div className="overflow-x-auto rounded-lg border">
-        <Table className="min-w-[800px]">
+        <Table className="min-w-[900px]">
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id} className="hover:bg-transparent">
@@ -132,7 +161,7 @@ export function DnrDataTable({ columns, data, onRowClick }: DnrDataTableProps) {
 
       {table.getPageCount() > 1 && (
         <div className="flex items-center justify-between">
-          <p className="text-muted-foreground text-sm">{table.getFilteredRowModel().rows.length} investigation(s)</p>
+          <p className="text-muted-foreground text-sm">{table.getFilteredRowModel().rows.length} entrée(s)</p>
           <div className="flex items-center gap-2">
             <Button
               variant="outline"

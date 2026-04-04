@@ -5,6 +5,14 @@ import { checkStationAccess } from "./lib/permissions";
 
 // --- Ingestion ---
 
+const statusValidator = v.union(
+  v.literal("ongoing"),
+  v.literal("resolved"),
+  v.literal("confirmed_dnr"),
+  v.literal("under_investigation"),
+  v.literal("investigation_closed"),
+);
+
 export const ingestConcessions = mutation({
   args: {
     organizationId: v.string(),
@@ -31,7 +39,7 @@ export const ingestConcessions = mutation({
         gpsDistanceMeters: v.optional(v.number()),
         customerNotes: v.optional(v.string()),
         deliveryType: v.optional(v.string()),
-        status: v.union(v.literal("ongoing"), v.literal("resolved"), v.literal("confirmed_dnr")),
+        status: statusValidator,
       }),
     ),
   },
@@ -46,7 +54,6 @@ export const ingestConcessions = mutation({
 
     let upserted = 0;
     for (const inv of args.investigations) {
-      // Resolve driver via transporterId
       const driver = await ctx.db
         .query("drivers")
         .filter((q) => q.and(q.eq(q.field("stationId"), station._id), q.eq(q.field("amazonId"), inv.transporterId)))
@@ -75,6 +82,7 @@ export const ingestConcessions = mutation({
         gpsDistanceMeters: inv.gpsDistanceMeters,
         customerNotes: inv.customerNotes,
         deliveryType: inv.deliveryType,
+        entryType: "concession" as const,
         status: inv.status,
       };
 
@@ -87,6 +95,88 @@ export const ingestConcessions = mutation({
     }
 
     return { upserted, stationId: station._id };
+  },
+});
+
+// Ingest formal investigations — links to existing DNR by trackingId
+export const ingestInvestigations = mutation({
+  args: {
+    organizationId: v.string(),
+    stationCode: v.string(),
+    entries: v.array(
+      v.object({
+        trackingId: v.string(),
+        transporterId: v.string(),
+        driverName: v.string(),
+        year: v.number(),
+        week: v.number(),
+        deliveryDatetime: v.string(),
+        concessionDatetime: v.string(),
+        investigationReason: v.optional(v.string()),
+        investigationDate: v.optional(v.string()),
+        investigationVerdict: v.optional(v.string()),
+        status: statusValidator,
+      }),
+    ),
+  },
+  handler: async (ctx, args) => {
+    const station = await ctx.db
+      .query("stations")
+      .filter((q) => q.eq(q.field("code"), args.stationCode))
+      .first();
+    if (!station) throw new Error(`Station not found: ${args.stationCode}`);
+
+    let linked = 0;
+    let created = 0;
+
+    for (const entry of args.entries) {
+      const driver = await ctx.db
+        .query("drivers")
+        .filter((q) => q.and(q.eq(q.field("stationId"), station._id), q.eq(q.field("amazonId"), entry.transporterId)))
+        .first();
+
+      // Try to find existing DNR by trackingId
+      const existing = await ctx.db
+        .query("dnrInvestigations")
+        .withIndex("by_tracking", (q) => q.eq("trackingId", entry.trackingId))
+        .first();
+
+      if (existing) {
+        // Escalate existing DNR → investigation
+        await ctx.db.patch(existing._id, {
+          status: entry.status,
+          entryType: "investigation",
+          investigationReason: entry.investigationReason,
+          investigationDate: entry.investigationDate,
+          investigationVerdict: entry.investigationVerdict,
+        });
+        linked++;
+      } else {
+        // New investigation without prior DNR
+        await ctx.db.insert("dnrInvestigations", {
+          organizationId: args.organizationId,
+          stationId: station._id,
+          trackingId: entry.trackingId,
+          driverId: driver?._id,
+          transporterId: entry.transporterId,
+          driverName: entry.driverName,
+          year: entry.year,
+          week: entry.week,
+          deliveryDatetime: entry.deliveryDatetime,
+          concessionDatetime: entry.concessionDatetime,
+          scanType: "UNKNOWN",
+          address: { street: "", postalCode: "", city: "" },
+          entryType: "investigation",
+          investigationReason: entry.investigationReason,
+          investigationDate: entry.investigationDate,
+          investigationVerdict: entry.investigationVerdict,
+          status: entry.status,
+        });
+        created++;
+      }
+    }
+
+    return { linked, created, stationId: station._id };
   },
 });
 
@@ -128,7 +218,7 @@ export const getInvestigations = query({
     year: v.number(),
     week: v.number(),
     driverId: v.optional(v.id("drivers")),
-    status: v.optional(v.union(v.literal("ongoing"), v.literal("resolved"), v.literal("confirmed_dnr"))),
+    status: v.optional(statusValidator),
   },
   handler: async (ctx, args) => {
     const hasAccess = await checkStationAccess(ctx, args.stationId);
@@ -216,6 +306,10 @@ export const getKpis = query({
       .collect();
 
     const confirmedDnr = current.filter((i) => i.status === "confirmed_dnr").length;
+    const underInvestigation = current.filter(
+      (i) => i.status === "under_investigation" || i.entryType === "investigation",
+    ).length;
+    const concessions = current.filter((i) => i.entryType !== "investigation").length;
     const preventionRate = current.length > 0 ? ((current.length - confirmedDnr) / current.length) * 100 : 0;
 
     // Top récidivistes — current week only
@@ -233,6 +327,8 @@ export const getKpis = query({
     return {
       investigationsCount: current.length,
       investigationsDelta: current.length - previous.length,
+      formalInvestigationsCount: underInvestigation,
+      concessionsCount: concessions,
       preventionRate: Math.round(preventionRate),
       topOffenders,
     };

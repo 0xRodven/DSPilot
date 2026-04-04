@@ -17,17 +17,21 @@ interface DnrMiniTableProps {
   driverId: Id<"drivers">;
 }
 
-const statusColors = {
+const statusColors: Record<string, string> = {
   ongoing: "bg-amber-500/20 text-amber-400",
   resolved: "bg-emerald-500/20 text-emerald-400",
   confirmed_dnr: "bg-red-500/20 text-red-400",
-} as const;
+  under_investigation: "bg-violet-500/20 text-violet-400",
+  investigation_closed: "bg-blue-500/20 text-blue-400",
+};
 
-const statusLabels = {
+const statusLabels: Record<string, string> = {
   ongoing: "En cours",
   resolved: "Résolu",
   confirmed_dnr: "DNR",
-} as const;
+  under_investigation: "Enquête",
+  investigation_closed: "Classé",
+};
 
 export function DnrMiniTable({ driverId }: DnrMiniTableProps) {
   const investigations = useQuery(api.dnr.getDriverRecentDnr, { driverId });

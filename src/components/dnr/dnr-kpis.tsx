@@ -6,6 +6,7 @@ import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { useQuery } from "convex/react";
 import {
+  AlertTriangle,
   ChevronDown,
   ChevronRight,
   HelpCircle,
@@ -13,7 +14,6 @@ import {
   ShieldCheck,
   TrendingDown,
   TrendingUp,
-  Users,
 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -177,44 +177,37 @@ export function DnrKpis({ stationId, year, week }: DnrKpisProps) {
           </CardFooter>
         </Card>
 
-        {/* Top récidivistes */}
+        {/* Formal Investigations */}
         <Card className="@container/card">
           <CardHeader>
             <CardDescription className="flex items-center gap-1">
-              <span>Top récidivistes</span>
+              <span>Investigations</span>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <HelpCircle className="h-3 w-3 cursor-help text-muted-foreground/60" />
                 </TooltipTrigger>
                 <TooltipContent side="top" className="max-w-xs">
-                  <p className="text-xs">Livreurs avec le plus de DNR cette semaine</p>
+                  <p className="text-xs">Enquêtes formelles Amazon — plus grave qu'un simple DNR</p>
                 </TooltipContent>
               </Tooltip>
             </CardDescription>
-            <CardTitle className="text-lg">
-              {kpis.topOffenders && kpis.topOffenders.length > 0
-                ? kpis.topOffenders[0].name.split(" ").slice(-1)[0]
-                : "—"}
+            <CardTitle
+              className={`@[250px]/card:text-3xl text-2xl tabular-nums ${(kpis.formalInvestigationsCount ?? 0) > 0 ? "text-violet-400" : "text-emerald-400"}`}
+            >
+              {kpis.formalInvestigationsCount ?? 0}
             </CardTitle>
             <CardAction>
-              <Users className="h-5 w-5 text-muted-foreground" />
+              <AlertTriangle
+                className={`h-5 w-5 ${(kpis.formalInvestigationsCount ?? 0) > 0 ? "text-violet-400" : "text-muted-foreground"}`}
+              />
             </CardAction>
           </CardHeader>
           <CardFooter className="flex-col items-start gap-1.5 text-sm">
-            {kpis.topOffenders && kpis.topOffenders.length > 0 ? (
-              <div className="flex flex-wrap gap-2">
-                {kpis.topOffenders.slice(0, 3).map((d) => (
-                  <span
-                    key={d.name}
-                    className="inline-flex items-center rounded-md bg-red-500/10 px-2 py-0.5 font-medium text-red-400 text-xs tabular-nums"
-                  >
-                    {d.name.split(" ").slice(-1)[0]} ({d.count})
-                  </span>
-                ))}
-              </div>
-            ) : (
-              <div className="text-muted-foreground">Aucun</div>
-            )}
+            <div className="text-muted-foreground">
+              {(kpis.formalInvestigationsCount ?? 0) === 0
+                ? "Aucune cette semaine"
+                : `${kpis.concessionsCount ?? 0} DNR + ${kpis.formalInvestigationsCount ?? 0} enquêtes`}
+            </div>
           </CardFooter>
         </Card>
       </div>

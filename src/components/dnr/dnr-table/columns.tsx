@@ -9,6 +9,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
+export type DnrStatus = "ongoing" | "resolved" | "confirmed_dnr" | "under_investigation" | "investigation_closed";
+export type EntryType = "concession" | "investigation";
+
 export interface DnrRow {
   _id: string;
   trackingId: string;
@@ -29,7 +32,11 @@ export interface DnrRow {
   gpsActual?: { lat: number; lng: number };
   gpsDistanceMeters?: number;
   customerNotes?: string;
-  status: "ongoing" | "resolved" | "confirmed_dnr";
+  entryType?: EntryType;
+  investigationReason?: string;
+  investigationDate?: string;
+  investigationVerdict?: string;
+  status: DnrStatus;
 }
 
 function formatDelay(delivery: string, concession: string): string {
@@ -55,17 +62,31 @@ function distanceColor(meters?: number): string {
   return "text-emerald-400";
 }
 
-const statusStyles = {
+const statusStyles: Record<DnrStatus, string> = {
   ongoing: "bg-amber-500/20 text-amber-400",
   resolved: "bg-emerald-500/20 text-emerald-400",
   confirmed_dnr: "bg-red-500/20 text-red-400",
-} as const;
+  under_investigation: "bg-violet-500/20 text-violet-400",
+  investigation_closed: "bg-blue-500/20 text-blue-400",
+};
 
-const statusLabels = {
+const statusLabels: Record<DnrStatus, string> = {
   ongoing: "En cours",
   resolved: "Résolu",
-  confirmed_dnr: "DNR",
-} as const;
+  confirmed_dnr: "DNR confirmé",
+  under_investigation: "Enquête",
+  investigation_closed: "Classé",
+};
+
+const entryTypeStyles: Record<string, string> = {
+  concession: "bg-blue-500/20 text-blue-400",
+  investigation: "bg-violet-500/20 text-violet-400",
+};
+
+const entryTypeLabels: Record<string, string> = {
+  concession: "DNR",
+  investigation: "INV",
+};
 
 const scanLabels: Record<string, string> = {
   DELIVERED_TO_HOUSEHOLD_MEMBER: "Remis tiers",
@@ -78,6 +99,22 @@ const scanLabels: Record<string, string> = {
 };
 
 export const columns: ColumnDef<DnrRow>[] = [
+  {
+    id: "entryType",
+    header: "Type",
+    cell: ({ row }) => {
+      const type = row.original.entryType ?? "concession";
+      return (
+        <Badge variant="outline" className={cn("text-xs font-semibold", entryTypeStyles[type])}>
+          {entryTypeLabels[type]}
+        </Badge>
+      );
+    },
+    filterFn: (row, _id, value) => {
+      if (value === "all") return true;
+      return (row.original.entryType ?? "concession") === value;
+    },
+  },
   {
     accessorKey: "driverName",
     header: ({ column }) => (
@@ -181,11 +218,14 @@ export const columns: ColumnDef<DnrRow>[] = [
   {
     accessorKey: "status",
     header: "Statut",
-    cell: ({ row }) => (
-      <Badge variant="outline" className={cn("text-xs", statusStyles[row.original.status])}>
-        {statusLabels[row.original.status]}
-      </Badge>
-    ),
+    cell: ({ row }) => {
+      const status = row.original.status;
+      return (
+        <Badge variant="outline" className={cn("text-xs", statusStyles[status])}>
+          {statusLabels[status]}
+        </Badge>
+      );
+    },
     filterFn: (row, _id, value) => {
       if (value === "all") return true;
       return row.original.status === value;

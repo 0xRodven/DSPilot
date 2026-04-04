@@ -22,17 +22,21 @@ interface DnrDetailSheetProps {
   onOpenChange: (open: boolean) => void;
 }
 
-const statusStyles = {
+const statusStyles: Record<string, string> = {
   ongoing: "bg-amber-500/20 text-amber-400",
   resolved: "bg-emerald-500/20 text-emerald-400",
   confirmed_dnr: "bg-red-500/20 text-red-400",
-} as const;
+  under_investigation: "bg-violet-500/20 text-violet-400",
+  investigation_closed: "bg-blue-500/20 text-blue-400",
+};
 
-const statusLabels = {
+const statusLabels: Record<string, string> = {
   ongoing: "En cours",
   resolved: "Résolu",
   confirmed_dnr: "DNR confirmé",
-} as const;
+  under_investigation: "Enquête en cours",
+  investigation_closed: "Enquête classée",
+};
 
 export function DnrDetailSheet({ investigation, open, onOpenChange }: DnrDetailSheetProps) {
   if (!investigation) return null;

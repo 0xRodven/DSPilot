@@ -590,7 +590,19 @@ export default defineSchema({
     gpsDistanceMeters: v.optional(v.number()),
     customerNotes: v.optional(v.string()),
     deliveryType: v.optional(v.string()), // Cortex detail: boîte aux lettres, main propre, etc.
-    status: v.union(v.literal("ongoing"), v.literal("resolved"), v.literal("confirmed_dnr")),
+    // Entry type: concession (DNR) vs investigation (formal Amazon inquiry)
+    entryType: v.optional(v.union(v.literal("concession"), v.literal("investigation"))),
+    // Investigation-specific fields
+    investigationReason: v.optional(v.string()), // why Amazon opened the investigation
+    investigationDate: v.optional(v.string()), // when the investigation was opened
+    investigationVerdict: v.optional(v.string()), // Amazon's verdict
+    status: v.union(
+      v.literal("ongoing"),
+      v.literal("resolved"),
+      v.literal("confirmed_dnr"),
+      v.literal("under_investigation"),
+      v.literal("investigation_closed"),
+    ),
   })
     .index("by_org", ["organizationId"])
     .index("by_station_week", ["stationId", "year", "week"])
