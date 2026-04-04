@@ -56,10 +56,12 @@ Genere un JSON avec 3 champs:
 
 IMPORTANT: Reponds avec EXACTEMENT du JSON valide, une seule ligne, pas de backticks:
 {\"aiSummary\":\"...\",\"aiRecommendations\":\"...\",\"driverRecommendations\":[...]}" \
-  2>/dev/null | python3 -c "
+  2>/dev/null > .artifacts/reports/ai-raw.txt || true
+
+# Parse Claude output → clean JSON
+python3 -c "
 import sys, json, re
-text = sys.stdin.read()
-# Find JSON objects containing aiSummary — take the first valid one
+text = open('.artifacts/reports/ai-raw.txt').read()
 for m in re.finditer(r'\{', text):
     start = m.start()
     depth = 0
@@ -70,12 +72,12 @@ for m in re.finditer(r'\{', text):
             try:
                 parsed = json.loads(text[start:i+1])
                 if 'aiSummary' in parsed and parsed['aiSummary']:
-                    print(json.dumps(parsed, ensure_ascii=False))
+                    open('.artifacts/reports/ai-weekly.json','w').write(json.dumps(parsed, ensure_ascii=False))
                     sys.exit(0)
             except: pass
             break
-print(json.dumps({'aiSummary':'','aiRecommendations':'','driverRecommendations':[]}, ensure_ascii=False))
-" > .artifacts/reports/ai-weekly.json 2>/dev/null || echo '{"aiSummary":"","aiRecommendations":"","driverRecommendations":[]}' > .artifacts/reports/ai-weekly.json
+open('.artifacts/reports/ai-weekly.json','w').write(json.dumps({'aiSummary':'','aiRecommendations':'','driverRecommendations':[]}, ensure_ascii=False))
+" 2>/dev/null
 
 # Verify AI file
 if [ ! -s .artifacts/reports/ai-weekly.json ]; then
