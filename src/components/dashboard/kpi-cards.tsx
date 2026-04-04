@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { api } from "@convex/_generated/api";
 import { useQuery } from "convex/react";
 import { AlertTriangle, HelpCircle, Package, PackageX, TrendingDown, TrendingUp, Users } from "lucide-react";
+import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardAction, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -45,6 +46,12 @@ export function KPICards() {
   );
 
   const kpis = period === "day" ? kpisDaily : period === "range" ? kpisRange : kpisWeekly;
+
+  // Real DNR count from concessions data
+  const dnrKpis = useQuery(
+    api.dnr.getKpis,
+    station && period === "week" ? { stationId: station._id, year, week: weekNum } : "skip",
+  );
 
   // Loading state
   if (!station || kpis === undefined) {
@@ -196,34 +203,44 @@ export function KPICards() {
           </CardFooter>
         </Card>
 
-        {/* DNR Risk Card */}
-        <Card className="@container/card">
+        {/* DNR Card — real concessions data */}
+        <Card
+          className="@container/card cursor-pointer transition-colors hover:border-primary/20"
+          onClick={() => router.push("/dashboard/dnr")}
+        >
           <CardHeader>
             <CardDescription className="flex items-center gap-1">
-              <span>Risque DNR</span>
+              <span>DNR</span>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <HelpCircle className="h-3 w-3 cursor-help text-muted-foreground/60" />
                 </TooltipTrigger>
                 <TooltipContent side="top" className="max-w-xs">
                   <p className="text-xs">
-                    Volume &quot;Delivery Misses - DNR Risk&quot; issu du report hebdomadaire DWC/IADC. Ce n&apos;est
-                    pas le DNR confirme des rapports Associate Daily ou DNR Investigations.
+                    Réclamations &quot;colis non reçu&quot; — nombre de concessions clients sur la période.
                   </p>
                 </TooltipContent>
               </Tooltip>
             </CardDescription>
             <CardTitle className="@[250px]/card:text-3xl text-2xl tabular-nums">
-              {"deliveryMissesRisk" in kpis ? kpis.deliveryMissesRisk.toLocaleString("fr-FR") : "—"}
+              {dnrKpis ? dnrKpis.investigationsCount : "—"}
             </CardTitle>
             <CardAction>
-              <PackageX className="h-5 w-5 text-amber-400" />
+              {dnrKpis && dnrKpis.investigationsDelta !== 0 ? (
+                <Badge variant="outline" className={dnrKpis.investigationsDelta > 0 ? "text-red-500" : "text-emerald-500"}>
+                  {dnrKpis.investigationsDelta > 0 ? <TrendingUp className="mr-1" /> : <TrendingDown className="mr-1" />}
+                  {dnrKpis.investigationsDelta > 0 ? "+" : ""}{dnrKpis.investigationsDelta}
+                </Badge>
+              ) : (
+                <PackageX className="h-5 w-5 text-muted-foreground" />
+              )}
             </CardAction>
           </CardHeader>
           <CardFooter className="flex-col items-start gap-1.5 text-sm">
             <div className="flex gap-2 font-medium text-muted-foreground">
               {period === "day" ? "ce jour" : period === "range" ? "sur la période" : "cette semaine"}
             </div>
+            <div className="text-muted-foreground text-primary hover:underline">Voir les DNR →</div>
           </CardFooter>
         </Card>
 
