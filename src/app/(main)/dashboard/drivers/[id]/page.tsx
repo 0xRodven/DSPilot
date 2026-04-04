@@ -10,7 +10,6 @@ import { useQuery } from "convex/react";
 import { AlertTriangle, ChevronLeft } from "lucide-react";
 
 import { NewActionModal } from "@/components/coaching/new-action-modal";
-import { DnrMiniTable } from "@/components/dnr/dnr-mini-table";
 import { CoachingHistory } from "@/components/drivers/coaching-history";
 import { DailyPerformance } from "@/components/drivers/daily-performance";
 import { DailyPerformanceChartWithCoaching } from "@/components/drivers/daily-performance-chart-with-coaching";
@@ -195,6 +194,9 @@ export default function DriverDetailPage({ params }: DriverDetailPageProps) {
     driverId: id as Id<"drivers">,
   });
 
+  // Get DNR investigations for this driver's current week
+  const driverDnr = useQuery(api.dnr.getDriverRecentDnr, { driverId: id as Id<"drivers"> });
+
   // Comparison label based on latest week
   const comparisonLabel = "vs sem. préc.";
 
@@ -213,9 +215,21 @@ export default function DriverDetailPage({ params }: DriverDetailPageProps) {
     return <NoDataState driverName={driverDetail.name} />;
   }
 
-  // Combine driver detail with coaching history
+  // Merge DNR counts into daily performance data
+  const dailyPerformanceWithDnr = driverDetail.dailyPerformance.map((day) => {
+    if (!driverDnr || !day.date) return day;
+    // Count DNR matching this day's date
+    const dnrCount = driverDnr.filter((inv) => {
+      const invDate = inv.concessionDatetime?.split(" ")[0]; // "YYYY-MM-DD" or "DD/MM/YYYY"
+      return invDate && (invDate === day.date || invDate.endsWith(day.date));
+    }).length;
+    return { ...day, dnrCount };
+  });
+
+  // Combine driver detail with coaching history + DNR-enriched daily performance
   const driver: DriverDetail = {
     ...driverDetail,
+    dailyPerformance: dailyPerformanceWithDnr,
     coachingHistory: coachingHistory || [],
   };
 
@@ -301,13 +315,8 @@ export default function DriverDetailPage({ params }: DriverDetailPageProps) {
           <CoachingHistory driver={driver} onPlanCoaching={() => setCoachingModalOpen(true)} />
         </div>
 
-        {/* Daily Performance */}
+        {/* Daily Performance (includes DNR column) */}
         <DailyPerformance driver={driver} week={weekNum} />
-
-        {/* DNR Investigations */}
-        <div className="mt-6">
-          <DnrMiniTable driverId={id as Id<"drivers">} />
-        </div>
       </div>
 
       {/* Coaching Modal */}

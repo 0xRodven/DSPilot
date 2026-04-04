@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { startTransition, useCallback, useMemo, useState } from "react";
 
 import {
   type ColumnDef,
@@ -32,6 +32,20 @@ export function DnrDataTable({ columns, data, onRowClick }: DnrDataTableProps) {
   const [globalFilter, setGlobalFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
+  const columnFilters = useMemo(
+    () => (statusFilter !== "all" ? [{ id: "status", value: statusFilter }] : []),
+    [statusFilter],
+  );
+
+  const globalFilterFn = useCallback((row: { original: DnrRow }, _columnId: string, filterValue: string) => {
+    const search = filterValue.toLowerCase();
+    return (
+      row.original.driverName.toLowerCase().includes(search) ||
+      row.original.trackingId.toLowerCase().includes(search) ||
+      row.original.transporterId.toLowerCase().includes(search)
+    );
+  }, []);
+
   const table = useReactTable({
     data,
     columns,
@@ -39,21 +53,14 @@ export function DnrDataTable({ columns, data, onRowClick }: DnrDataTableProps) {
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
-    onSortingChange: setSorting,
+    onSortingChange: (updater) => startTransition(() => setSorting(updater)),
     state: {
       sorting,
       globalFilter,
-      columnFilters: statusFilter !== "all" ? [{ id: "status", value: statusFilter }] : [],
+      columnFilters,
     },
     onGlobalFilterChange: setGlobalFilter,
-    globalFilterFn: (row, _columnId, filterValue) => {
-      const search = filterValue.toLowerCase();
-      return (
-        row.original.driverName.toLowerCase().includes(search) ||
-        row.original.trackingId.toLowerCase().includes(search) ||
-        row.original.transporterId.toLowerCase().includes(search)
-      );
-    },
+    globalFilterFn,
     initialState: {
       pagination: { pageSize: 20 },
     },
@@ -71,7 +78,7 @@ export function DnrDataTable({ columns, data, onRowClick }: DnrDataTableProps) {
             className="pl-9"
           />
         </div>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
+        <Select value={statusFilter} onValueChange={(v) => startTransition(() => setStatusFilter(v))}>
           <SelectTrigger className="w-[160px]">
             <SelectValue placeholder="Statut" />
           </SelectTrigger>
@@ -84,8 +91,8 @@ export function DnrDataTable({ columns, data, onRowClick }: DnrDataTableProps) {
         </Select>
       </div>
 
-      <div className="rounded-lg border">
-        <Table>
+      <div className="overflow-x-auto rounded-lg border">
+        <Table className="min-w-[800px]">
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id} className="hover:bg-transparent">

@@ -346,15 +346,80 @@ async def click_page(page, page_num):
     except Exception:
         pass
 
-    # Fallback: find button by text content
+    # Fallback: JS-based search — find pagination button by text or aria-label
+    js = f"""
+    (() => {{
+        const buttons = document.querySelectorAll('button');
+        for (const btn of buttons) {{
+            const label = (btn.getAttribute('aria-label') || '').toLowerCase();
+            const text = btn.textContent.trim();
+            if (label.includes('page {page_num}') ||
+                (text === '{page_num}' && btn.closest('[class*="pagination"], [class*="pager"], nav, [role="navigation"]'))) {{
+                btn.click();
+                return true;
+            }}
+        }}
+        return false;
+    }})()
+    """
     try:
-        btn = await page.find(str(page_num), timeout=3)
-        if btn:
-            tag = await btn.get_js_attributes("tagName")
-            if tag and tag.lower() == "button":
+        result = await page.evaluate(js, return_by_value=True)
+        if result:
+            await asyncio.sleep(4)
+            return True
+    except Exception:
+        pass
+
+    return False
+
+
+async def click_next_page(page):
+    """Click the 'Next page' pagination button. Returns True if clicked."""
+    # Try aria-label selectors
+    next_labels = [
+        'button[aria-label="Go to next page"]',
+        'button[aria-label="Next page"]',
+        'button[aria-label="Page suivante"]',
+        'button[aria-label="Aller à la page suivante"]',
+    ]
+    for sel in next_labels:
+        try:
+            btn = await page.select(sel, timeout=3)
+            if btn:
                 await btn.click()
                 await asyncio.sleep(4)
                 return True
+        except Exception:
+            pass
+
+    # JS fallback: find next-page button by aria-label pattern or arrow text
+    js = """
+    (() => {
+        const buttons = document.querySelectorAll('button');
+        for (const btn of buttons) {
+            const label = (btn.getAttribute('aria-label') || '').toLowerCase();
+            if (label.includes('next page') || label.includes('page suivante')) {
+                btn.click();
+                return true;
+            }
+        }
+        // Look for "›" or ">" arrow button in pagination context
+        for (const btn of buttons) {
+            const text = btn.textContent.trim();
+            if ((text === '›' || text === '>' || text === '»') &&
+                btn.closest('[class*="pagination"], [class*="pager"], nav, [role="navigation"]')) {
+                btn.click();
+                return true;
+            }
+        }
+        return false;
+    })()
+    """
+    try:
+        result = await page.evaluate(js, return_by_value=True)
+        if result:
+            await asyncio.sleep(4)
+            return True
     except Exception:
         pass
 
@@ -421,25 +486,30 @@ async def capture_concessions(args):
             raise RuntimeError("concessions_page_redirected_to_login")
 
         # Collect rows page by page, with inline detail extraction
+        # Strategy: sequential pagination (Next button) — avoids re-navigation
+        # which breaks page 4+ because Amazon only shows nearby page buttons.
         all_rows = []
         html = await get_page_html(page)
         max_page = get_max_page(html)
         log(f"  Week {week_iso}: {max_page} page(s) detected")
 
         for pg in range(1, max_page + 1):
-            # Navigate to the clean page (no accumulated detail rows)
-            if pg == 1:
-                pass  # Already on page 1 from initial navigation
-            else:
-                # Re-navigate to URL first (detail clicks pollute the DOM)
-                await navigate_with_fallback(page, url, wait_seconds=5)
-                clicked = await click_page(page, pg)
+            if pg > 1:
+                # Sequential: try direct page button first, then Next button
+                clicked = await click_page(page, pg) or await click_next_page(page)
                 if not clicked:
-                    log(f"    Could not navigate to page {pg}, stopping")
+                    log(f"    Could not navigate to page {pg}, stopping pagination")
                     break
 
             html = await get_page_html(page)
             rows = parse_concessions_table(html)
+
+            # Re-detect max_page — more pages may become visible from this position
+            new_max = get_max_page(html)
+            if new_max > max_page:
+                log(f"    Updated max pages: {max_page} → {new_max}")
+                max_page = new_max
+
             log(f"    Page {pg}: {len(rows)} concession(s)")
 
             # Extract detail for each row on this page (inline click)

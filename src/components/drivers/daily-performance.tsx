@@ -2,8 +2,11 @@
 
 import { useState } from "react";
 
+import Link from "next/link";
+
 import { ChevronDown, ChevronUp } from "lucide-react";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -92,17 +95,18 @@ export function DailyPerformance({ driver, week }: DailyPerformanceProps) {
               <Table>
                 <TableHeader>
                   <TableRow className="border-border hover:bg-transparent">
-                    <TableHead className="text-muted-foreground">Jour</TableHead>
-                    <TableHead className="text-right text-muted-foreground">DWC %</TableHead>
-                    <TableHead className="text-right text-muted-foreground">IADC %</TableHead>
-                    <TableHead className="text-right text-muted-foreground">Livraisons</TableHead>
-                    <TableHead className="text-right text-muted-foreground">Erreurs</TableHead>
-                    <TableHead className="text-muted-foreground">Statut</TableHead>
+                    <TableHead className="font-medium text-muted-foreground text-sm">Jour</TableHead>
+                    <TableHead className="text-right font-medium text-muted-foreground text-sm">DWC %</TableHead>
+                    <TableHead className="text-right font-medium text-muted-foreground text-sm">IADC %</TableHead>
+                    <TableHead className="text-right font-medium text-muted-foreground text-sm">Livraisons</TableHead>
+                    <TableHead className="text-right font-medium text-muted-foreground text-sm">Erreurs</TableHead>
+                    <TableHead className="text-right font-medium text-muted-foreground text-sm">DNR</TableHead>
+                    <TableHead className="font-medium text-muted-foreground text-sm">Statut</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {fullWeekPerformance.map((day) => (
-                    <TableRow key={day.day} className="border-border">
+                    <TableRow key={day.day} className="border-border transition-colors hover:bg-muted/30">
                       <TableCell>
                         <div>
                           <div className="font-medium text-card-foreground">{day.day}</div>
@@ -120,6 +124,20 @@ export function DailyPerformance({ driver, week }: DailyPerformanceProps) {
                       </TableCell>
                       <TableCell className="text-right text-card-foreground tabular-nums">
                         {day.errors !== null ? day.errors : "-"}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {day.dnrCount && day.dnrCount > 0 ? (
+                          <Link href={`/dashboard/dnr?driver=${driver.id}`} onClick={(e) => e.stopPropagation()}>
+                            <Badge
+                              variant="outline"
+                              className="cursor-pointer bg-red-500/20 text-red-400 hover:bg-red-500/30"
+                            >
+                              {day.dnrCount}
+                            </Badge>
+                          </Link>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
                       </TableCell>
                       <TableCell>
                         <span

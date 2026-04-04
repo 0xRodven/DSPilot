@@ -43,6 +43,7 @@ export interface DailyPerformance {
   iadcPercent: number | null;
   deliveries: number | null;
   errors: number | null;
+  dnrCount?: number;
   status: "excellent" | "tres-bon" | "bon" | "moyen" | "non-travaille";
 }
 

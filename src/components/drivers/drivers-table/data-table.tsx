@@ -66,9 +66,32 @@ export function DataTable({
   const filteredData = React.useMemo(() => {
     let result = [...data];
 
-    // Tier filter
+    // DWC range filter
     if (selectedTier !== "all") {
-      result = result.filter((d) => d.tier === selectedTier);
+      result = result.filter((d) => {
+        const dwc = d.dwcPercent;
+        switch (selectedTier) {
+          case "above95":
+            return dwc >= 95;
+          case "pct90to95":
+            return dwc >= 90 && dwc < 95;
+          case "pct85to90":
+            return dwc >= 85 && dwc < 90;
+          case "below85":
+            return dwc < 85;
+          // Legacy tier keys (backward compat)
+          case "fantastic":
+            return dwc >= 95;
+          case "great":
+            return dwc >= 90 && dwc < 95;
+          case "fair":
+            return dwc >= 85 && dwc < 90;
+          case "poor":
+            return dwc < 85;
+          default:
+            return true;
+        }
+      });
     }
 
     // Status filter (only for week mode)
@@ -148,7 +171,7 @@ export function DataTable({
         </div>
       </div>
 
-      {/* Tier Tabs */}
+      {/* DWC Range Tabs */}
       <Tabs value={selectedTier} onValueChange={onTierChange}>
         <TabsList className="h-auto flex-wrap gap-2 bg-transparent p-0">
           <TabsTrigger
@@ -158,28 +181,28 @@ export function DataTable({
             Tous ({stats.total})
           </TabsTrigger>
           <TabsTrigger
-            value="fantastic"
+            value="above95"
             className="rounded-full border border-border bg-transparent px-4 py-1.5 data-[state=active]:border-emerald-500/50 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400"
           >
-            Fantastic ({stats.fantastic.count})
+            ≥95% ({stats.fantastic.count})
           </TabsTrigger>
           <TabsTrigger
-            value="great"
+            value="pct90to95"
             className="rounded-full border border-border bg-transparent px-4 py-1.5 data-[state=active]:border-blue-500/50 data-[state=active]:bg-blue-500/20 data-[state=active]:text-blue-400"
           >
-            Great ({stats.great.count})
+            90-95% ({stats.great.count})
           </TabsTrigger>
           <TabsTrigger
-            value="fair"
+            value="pct85to90"
             className="rounded-full border border-border bg-transparent px-4 py-1.5 data-[state=active]:border-amber-500/50 data-[state=active]:bg-amber-500/20 data-[state=active]:text-amber-400"
           >
-            Fair ({stats.fair.count})
+            85-90% ({stats.fair.count})
           </TabsTrigger>
           <TabsTrigger
-            value="poor"
+            value="below85"
             className="rounded-full border border-border bg-transparent px-4 py-1.5 data-[state=active]:border-red-500/50 data-[state=active]:bg-red-500/20 data-[state=active]:text-red-400"
           >
-            Poor ({stats.poor.count})
+            &lt;85% ({stats.poor.count})
           </TabsTrigger>
         </TabsList>
       </Tabs>

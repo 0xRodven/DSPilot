@@ -104,7 +104,7 @@ export const columns: ColumnDef<DnrRow>[] = [
         <Button
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          className="h-8 px-2"
+          className="-mr-2 h-8 px-2"
         >
           Date concession
           <ArrowUpDown className="ml-2 h-4 w-4" />
@@ -156,7 +156,7 @@ export const columns: ColumnDef<DnrRow>[] = [
         <Button
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          className="h-8 px-2"
+          className="-mr-2 h-8 px-2"
         >
           Distance
           <ArrowUpDown className="ml-2 h-4 w-4" />

@@ -1,0 +1,24 @@
+[Unit]
+Description=DSPilot — Daily concessions scrape + ingestion
+After=network-online.target dspilot-report-daily.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/root/DSPilot
+EnvironmentFile=/root/.secrets/dspilot.env
+Environment=NEXT_PUBLIC_CONVEX_URL=https://sincere-rhinoceros-718.convex.cloud
+
+ExecStart=/bin/bash -c '\
+  cd /root/DSPilot && \
+  python3 scraper/amazon_concessions_sync.py \
+    --company-id "$AMAZON_COMPANY_ID" \
+    --station-filter DIF1 \
+    --weeks 1 \
+    --invoke-ingest \
+    --station-code FR-PSUA-DIF1 \
+    --organization-id org_37Yb7MlFJHFs5h7K28zFYoZ4fUY'
+
+TimeoutStartSec=600
+StandardOutput=journal
+StandardError=journal

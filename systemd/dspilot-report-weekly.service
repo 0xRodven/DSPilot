@@ -1,0 +1,17 @@
+[Unit]
+Description=DSPilot — Weekly report generation (wrapper + Claude AI)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/root/DSPilot
+EnvironmentFile=/root/.secrets/dspilot.env
+Environment=NEXT_PUBLIC_CONVEX_URL=https://sincere-rhinoceros-718.convex.cloud
+Environment=PATH=/root/.local/bin:/usr/local/bin:/usr/bin:/bin
+
+ExecStart=/bin/bash /root/DSPilot/scripts/run-weekly-report.sh
+
+TimeoutStartSec=900
+StandardOutput=journal
+StandardError=journal

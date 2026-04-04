@@ -1,0 +1,10 @@
+[Unit]
+Description=DSPilot — Weekly report timer (Sunday 22h Paris)
+
+[Timer]
+# Sunday 22:00 Paris = 20:00 UTC (CEST) / 21:00 UTC (CET)
+OnCalendar=Sun *-*-* 20:00:00 UTC
+Persistent=true
+
+[Install]
+WantedBy=timers.target

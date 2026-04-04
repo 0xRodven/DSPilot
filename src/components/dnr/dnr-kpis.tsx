@@ -1,11 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { useQuery } from "convex/react";
-import { HelpCircle, PackageX, ShieldCheck, TrendingDown, TrendingUp, Users } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronRight,
+  HelpCircle,
+  PackageX,
+  ShieldCheck,
+  TrendingDown,
+  TrendingUp,
+  Users,
+} from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardAction, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,6 +31,22 @@ export function DnrKpis({ stationId, year, week }: DnrKpisProps) {
   const kpis = useQuery(api.dnr.getKpis, { stationId, year, week });
   const dnrList = useQuery(api.dnr.getInvestigations, { stationId, year, week });
   const [showDnrList, setShowDnrList] = useState(false);
+  const [expandedDriver, setExpandedDriver] = useState<string | null>(null);
+
+  // Group investigations by driver name
+  const groupedDnr = useMemo(() => {
+    if (!dnrList) return [];
+    const map = new Map<string, { name: string; items: typeof dnrList }>();
+    for (const inv of dnrList) {
+      const existing = map.get(inv.driverName);
+      if (existing) {
+        existing.items.push(inv);
+      } else {
+        map.set(inv.driverName, { name: inv.driverName, items: [inv] });
+      }
+    }
+    return Array.from(map.values()).sort((a, b) => b.items.length - a.items.length);
+  }, [dnrList]);
 
   if (kpis === undefined) {
     return (
@@ -57,42 +82,66 @@ export function DnrKpis({ stationId, year, week }: DnrKpisProps) {
                   </TooltipContent>
                 </Tooltip>
               </CardDescription>
-              <CardTitle className="@[250px]/card:text-3xl text-2xl tabular-nums">
-                {kpis.investigationsCount}
-              </CardTitle>
+              <CardTitle className="@[250px]/card:text-3xl text-2xl tabular-nums">{kpis.investigationsCount}</CardTitle>
               <CardAction>
-                {kpis.investigationsDelta !== 0 ? (
-                  <Badge variant="outline" className={deltaColor}>
-                    {kpis.investigationsDelta > 0 ? <TrendingUp className="mr-1" /> : <TrendingDown className="mr-1" />}
-                    {kpis.investigationsDelta > 0 ? "+" : ""}
-                    {kpis.investigationsDelta}
-                  </Badge>
-                ) : (
-                  <PackageX className="h-5 w-5 text-muted-foreground" />
-                )}
+                <PackageX className="h-5 w-5 text-muted-foreground" />
               </CardAction>
             </CardHeader>
             <CardFooter className="flex-col items-start gap-1.5 text-sm">
-              <div className="text-muted-foreground">vs semaine préc.</div>
+              <div className="flex items-center gap-1.5 text-muted-foreground">
+                {kpis.investigationsDelta !== 0 && (
+                  <span className={`inline-flex items-center font-medium ${deltaColor}`}>
+                    {kpis.investigationsDelta > 0 ? (
+                      <TrendingUp className="mr-0.5 h-3 w-3" />
+                    ) : (
+                      <TrendingDown className="mr-0.5 h-3 w-3" />
+                    )}
+                    {kpis.investigationsDelta > 0 ? "+" : ""}
+                    {kpis.investigationsDelta}
+                  </span>
+                )}
+                <span>vs semaine préc.</span>
+              </div>
             </CardFooter>
           </Card>
 
           {showDnrList && dnrList && dnrList.length > 0 && (
-            <div className="absolute top-full right-0 left-0 z-50 mt-2 max-h-[320px] overflow-y-auto rounded-xl border border-white/20 bg-background/80 p-4 shadow-2xl backdrop-blur-xl">
-              <p className="mb-3 font-medium text-sm">{dnrList.length} DNR — S{week}</p>
-              <div className="space-y-2">
-                {dnrList.map((inv) => (
-                  <div
-                    key={inv._id}
-                    className="flex items-center justify-between rounded-lg bg-muted/50 px-3 py-2 text-sm"
-                  >
-                    <div>
-                      <span className="font-medium">{inv.driverName}</span>
-                      <span className="ml-2 font-mono text-muted-foreground text-xs">{inv.trackingId}</span>
-                    </div>
-                    <span className="text-muted-foreground text-xs">
-                      {inv.concessionDatetime.split(" ")[0]?.slice(5)}
-                    </span>
+            <div className="absolute top-full right-0 left-0 z-50 mt-2 max-h-[400px] overflow-y-auto rounded-xl border border-white/20 bg-background/80 p-4 shadow-2xl backdrop-blur-xl">
+              <p className="mb-3 font-medium text-sm">
+                {dnrList.length} DNR — S{week}
+              </p>
+              <div className="space-y-1">
+                {groupedDnr.map((group) => (
+                  <div key={group.name}>
+                    <button
+                      type="button"
+                      className="flex w-full items-center justify-between rounded-lg bg-muted/50 px-3 py-2 text-left text-sm transition-colors hover:bg-muted/80"
+                      onClick={() => setExpandedDriver(expandedDriver === group.name ? null : group.name)}
+                    >
+                      <div className="flex items-center gap-2">
+                        {expandedDriver === group.name ? (
+                          <ChevronDown className="h-3 w-3 text-muted-foreground" />
+                        ) : (
+                          <ChevronRight className="h-3 w-3 text-muted-foreground" />
+                        )}
+                        <span className="font-medium">{group.name}</span>
+                      </div>
+                      <span className="rounded-md bg-red-500/10 px-1.5 py-0.5 font-medium text-red-400 text-xs tabular-nums">
+                        ×{group.items.length}
+                      </span>
+                    </button>
+                    {expandedDriver === group.name && (
+                      <div className="ml-7 space-y-1 py-1">
+                        {group.items.map((inv) => (
+                          <div key={inv._id} className="flex items-center justify-between rounded-md px-2 py-1 text-xs">
+                            <span className="font-mono text-muted-foreground">{inv.trackingId}</span>
+                            <span className="text-muted-foreground">
+                              {inv.concessionDatetime.split(" ")[0]?.slice(5)}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -104,13 +153,13 @@ export function DnrKpis({ stationId, year, week }: DnrKpisProps) {
         <Card className="@container/card">
           <CardHeader>
             <CardDescription className="flex items-center gap-1">
-              <span>Prevention Rate</span>
+              <span>Taux de résolution</span>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <HelpCircle className="h-3 w-3 cursor-help text-muted-foreground/60" />
                 </TooltipTrigger>
                 <TooltipContent side="top" className="max-w-xs">
-                  <p className="text-xs">% de DNR résolus sans confirmation — plus c'est haut, mieux c'est</p>
+                  <p className="text-xs">% de DNR résolus (non confirmés comme perdus) — 100% = tous résolus</p>
                 </TooltipContent>
               </Tooltip>
             </CardDescription>
@@ -155,7 +204,10 @@ export function DnrKpis({ stationId, year, week }: DnrKpisProps) {
             {kpis.topOffenders && kpis.topOffenders.length > 0 ? (
               <div className="flex flex-wrap gap-2">
                 {kpis.topOffenders.slice(0, 3).map((d) => (
-                  <span key={d.name} className="inline-flex items-center rounded-md bg-red-500/10 px-2 py-0.5 font-medium text-red-400 text-xs tabular-nums">
+                  <span
+                    key={d.name}
+                    className="inline-flex items-center rounded-md bg-red-500/10 px-2 py-0.5 font-medium text-red-400 text-xs tabular-nums"
+                  >
                     {d.name.split(" ").slice(-1)[0]} ({d.count})
                   </span>
                 ))}

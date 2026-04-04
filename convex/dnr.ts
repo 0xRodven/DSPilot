@@ -90,6 +90,36 @@ export const ingestConcessions = mutation({
   },
 });
 
+// --- Maintenance ---
+
+export const deleteByWeekRange = mutation({
+  args: {
+    stationId: v.id("stations"),
+    yearFrom: v.number(),
+    weekFrom: v.number(),
+    yearTo: v.number(),
+    weekTo: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const all = await ctx.db
+      .query("dnrInvestigations")
+      .filter((q) => q.eq(q.field("stationId"), args.stationId))
+      .collect();
+
+    let deleted = 0;
+    for (const inv of all) {
+      const key = inv.year * 100 + inv.week;
+      const from = args.yearFrom * 100 + args.weekFrom;
+      const to = args.yearTo * 100 + args.weekTo;
+      if (key >= from && key <= to) {
+        await ctx.db.delete(inv._id);
+        deleted++;
+      }
+    }
+    return { deleted };
+  },
+});
+
 // --- Queries ---
 
 export const getInvestigations = query({
