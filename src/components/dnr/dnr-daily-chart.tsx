@@ -4,7 +4,7 @@ import { useMemo } from "react";
 
 import { format, parseISO } from "date-fns";
 import { fr } from "date-fns/locale";
-import { Bar, BarChart, Cell, XAxis, YAxis } from "recharts";
+import { Bar, BarChart, Cell, LabelList, XAxis, YAxis } from "recharts";
 
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 
@@ -65,6 +65,7 @@ export function DnrDailyChart({ data, selectedDay, onDayClick }: DnrDailyChartPr
           date: dateStr,
           dayLabel,
           ...counts,
+          total: counts.concessions + counts.investigations,
         };
       });
   }, [data]);
@@ -133,6 +134,12 @@ export function DnrDailyChart({ data, selectedDay, onDayClick }: DnrDailyChartPr
             {chartData.map((entry) => (
               <Cell key={`i-${entry.date}`} opacity={selectedDay && selectedDay !== entry.date ? 0.3 : 1} />
             ))}
+            <LabelList
+              dataKey="total"
+              position="top"
+              className="fill-muted-foreground text-xs font-medium"
+              offset={6}
+            />
           </Bar>
         </BarChart>
       </ChartContainer>
