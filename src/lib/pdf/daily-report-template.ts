@@ -135,7 +135,9 @@ body {
 /* AI Box — Synthesis */
 .ai-box { background: #f0f4ff; border-left: 3px solid #2563eb; padding: 14px 18px; margin-bottom: 16px; }
 .ai-label { font-size: 8px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: #2563eb; margin-bottom: 6px; }
-.ai-text { font-size: 11px; line-height: 1.7; color: #1e3a5f; }
+.ai-text { font-size: 11px; line-height: 1.7; color: #1e3a5f; text-align: justify; }
+.ai-text p { margin-bottom: 10px; }
+.ai-text p:last-child { margin-bottom: 0; }
 .ai-text strong { font-weight: 600; }
 
 /* Section */
@@ -326,7 +328,7 @@ export function generateDailyReportHtml(data: DailyReportData, options: DailyRep
         <div class="kpi">
           <div class="kpi-label">Score DWC</div>
           <div class="kpi-value" style="color:${getDwcColor(data.kpis.avgDwc)}">${formatPercent(data.kpis.avgDwc)}</div>
-          ${data.kpis.dwcChange !== undefined ? `<div class="kpi-delta ${data.kpis.dwcChange >= 0 ? "up" : "down"}">${formatChange(data.kpis.dwcChange)}pp vs veille</div>` : ""}
+          ${data.kpis.dwcChange !== undefined ? `<div class="kpi-delta ${data.kpis.dwcChange >= 0 ? "up" : "down"}">${formatChange(data.kpis.dwcChange)}% vs veille</div>` : ""}
         </div>
         <div class="kpi">
           <div class="kpi-label">Incidents</div>

@@ -117,7 +117,7 @@ function formatPercent(value: number): string {
 function formatChange(value?: number): string {
   if (value === undefined || value === null) return "";
   const sign = value >= 0 ? "+" : "";
-  return `${sign}${value.toFixed(1)}pp`;
+  return `${sign}${value.toFixed(1)}%`;
 }
 
 function formatNumber(value: number): string {
@@ -189,7 +189,9 @@ body {
 /* AI Box — Synthesis (larger, more prominent) */
 .ai-box { background: #f0f4ff; border-left: 3px solid #2563eb; padding: 20px 24px; margin-bottom: 24px; }
 .ai-label { font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: #2563eb; margin-bottom: 8px; }
-.ai-text { font-size: 12px; line-height: 1.8; color: #1e3a5f; }
+.ai-text { font-size: 12px; line-height: 1.8; color: #1e3a5f; text-align: justify; }
+.ai-text p { margin-bottom: 12px; }
+.ai-text p:last-child { margin-bottom: 0; }
 .ai-text strong { font-weight: 600; }
 
 /* Weekly history chart (8-week DWC trend) */
@@ -254,12 +256,12 @@ td.r { text-align: right; font-variant-numeric: tabular-nums; font-weight: 500; 
 function formatTrend(trend?: number): string {
   if (trend === undefined || trend === null) return '<span style="color:#a1a1a6;">—</span>';
   const isStable = Math.abs(trend) < 0.5;
-  if (isStable) return '<span style="color:#a1a1a6;">→ 0pp</span>';
+  if (isStable) return '<span style="color:#a1a1a6;">→ 0%</span>';
   const isUp = trend >= 0.5;
   const arrow = isUp ? "↑" : "↓";
   const color = isUp ? "#059669" : "#dc2626";
   const sign = trend > 0 ? "+" : "";
-  return `<span style="color:${color};">${arrow} ${sign}${trend.toFixed(1)}pp</span>`;
+  return `<span style="color:${color};">${arrow} ${sign}${trend.toFixed(1)}%</span>`;
 }
 
 function renderDriverRow(d: ReportDriver, includeTrend = true): string {
@@ -387,10 +389,7 @@ function renderLexiquePage(pageNum: number, totalPages: number, generatedAt: str
       "Coaching",
       "Accompagnement individuel d'un livreur pour améliorer ses performances. Peut inclure un entretien, un rappel des bonnes pratiques, ou un plan d'action.",
     ],
-    [
-      "pp",
-      "Points de pourcentage — Unité de mesure de la variation entre deux pourcentages (ex: passer de 90% à 92% = +2pp).",
-    ],
+    ["Trend %", "Variation en pourcentage par rapport à la semaine précédente (ex: passer de 90% à 92% = +2%)."],
   ];
   const rows = terms.map(([t, d]) => `<div class="lex-term">${t}</div><div class="lex-def">${d}</div>`).join("");
   return `<div class="page">
