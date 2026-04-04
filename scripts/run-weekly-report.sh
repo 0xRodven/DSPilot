@@ -59,25 +59,40 @@ IMPORTANT: Reponds avec EXACTEMENT du JSON valide, une seule ligne, pas de backt
   2>/dev/null > .artifacts/reports/ai-raw.txt || true
 
 # Parse Claude output → clean JSON
-python3 -c "
-import sys, json, re
-text = open('.artifacts/reports/ai-raw.txt').read()
-for m in re.finditer(r'\{', text):
-    start = m.start()
-    depth = 0
-    for i in range(start, len(text)):
-        if text[i] == '{': depth += 1
-        elif text[i] == '}': depth -= 1
-        if depth == 0:
-            try:
-                parsed = json.loads(text[start:i+1])
-                if 'aiSummary' in parsed and parsed['aiSummary']:
-                    open('.artifacts/reports/ai-weekly.json','w').write(json.dumps(parsed, ensure_ascii=False))
-                    sys.exit(0)
-            except: pass
-            break
-open('.artifacts/reports/ai-weekly.json','w').write(json.dumps({'aiSummary':'','aiRecommendations':'','driverRecommendations':[]}, ensure_ascii=False))
-" 2>/dev/null
+python3 << 'PYEOF'
+import json, re
+
+text = open(".artifacts/reports/ai-raw.txt").read()
+fallback = {"aiSummary": "", "aiRecommendations": "", "driverRecommendations": []}
+
+# Strategy: find the substring starting with {"aiSummary" and try parsing from there
+idx = text.find('"aiSummary"')
+if idx < 0:
+    open(".artifacts/reports/ai-weekly.json", "w").write(json.dumps(fallback, ensure_ascii=False))
+    raise SystemExit(0)
+
+# Walk back to find the opening brace
+brace_start = text.rfind("{", 0, idx)
+if brace_start < 0:
+    open(".artifacts/reports/ai-weekly.json", "w").write(json.dumps(fallback, ensure_ascii=False))
+    raise SystemExit(0)
+
+# Try parsing from brace_start, extending end progressively
+candidate = text[brace_start:]
+for end in range(len(candidate), idx - brace_start, -1):
+    chunk = candidate[:end]
+    if chunk.count("{") != chunk.count("}"):
+        continue
+    try:
+        parsed = json.loads(chunk)
+        if parsed.get("aiSummary"):
+            open(".artifacts/reports/ai-weekly.json", "w").write(json.dumps(parsed, ensure_ascii=False))
+            raise SystemExit(0)
+    except json.JSONDecodeError:
+        continue
+
+open(".artifacts/reports/ai-weekly.json", "w").write(json.dumps(fallback, ensure_ascii=False))
+PYEOF
 
 # Verify AI file
 if [ ! -s .artifacts/reports/ai-weekly.json ]; then
