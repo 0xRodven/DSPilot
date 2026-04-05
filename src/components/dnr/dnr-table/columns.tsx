@@ -40,16 +40,21 @@ export interface DnrRow {
 }
 
 function formatDelay(delivery: string, concession: string): string {
+  if (!delivery || !concession || delivery === concession) return "—";
   const d = new Date(delivery);
   const c = new Date(concession);
+  const diff = differenceInHours(c, d);
+  if (diff <= 0) return "—";
   const days = differenceInDays(c, d);
-  const hours = differenceInHours(c, d) % 24;
+  const hours = diff % 24;
   if (days > 0) return `${days}j ${hours}h`;
   return `${hours}h`;
 }
 
 function delayColor(delivery: string, concession: string): string {
+  if (!delivery || !concession || delivery === concession) return "text-muted-foreground";
   const hours = differenceInHours(new Date(concession), new Date(delivery));
+  if (hours <= 0) return "text-muted-foreground";
   if (hours > 72) return "text-red-400";
   if (hours > 24) return "text-amber-400";
   return "text-emerald-400";
