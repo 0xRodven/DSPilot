@@ -88,8 +88,11 @@ export interface DriverReportData {
       deliveryDatetime?: string;
       concessionDatetime?: string;
       address?: DnrAddress;
+      gpsPlanned?: { lat: number; lng: number } | null;
+      gpsActual?: { lat: number; lng: number } | null;
       gpsDistanceMeters?: number | null;
       deliveryType?: string | null;
+      customerNotes?: string | null;
     }>;
     dnrByDay: Record<string, number>;
     dnrCount: number;
@@ -250,9 +253,15 @@ tbody td.sub-val { font-size: 8px; color: #a1a1a6; }
 .dnr-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
 .dnr-tracking { font-family: "SF Mono", monospace; font-size: 9px; font-weight: 600; color: #1d1d1f; }
 .dnr-delay { font-size: 9px; color: #dc2626; font-weight: 500; }
-.dnr-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 20px; font-size: 9px; }
+.dnr-content { display: flex; gap: 14px; }
+.dnr-info { flex: 1; }
+.dnr-grid { display: grid; grid-template-columns: auto 1fr; gap: 3px 10px; font-size: 9px; }
 .dnr-field-label { color: #6e6e73; }
 .dnr-field-value { color: #1d1d1f; font-weight: 500; }
+.dnr-notes { background: #fef9f0; border: 1px solid #fde68a; border-radius: 4px; padding: 4px 8px; margin-top: 6px; font-size: 8px; color: #92400e; font-style: italic; }
+.dnr-map { width: 160px; height: 100px; border-radius: 4px; overflow: hidden; flex-shrink: 0; border: 1px solid #e8e8ed; }
+.dnr-map img { width: 100%; height: 100%; object-fit: cover; }
+.dnr-map-link { display: block; text-align: center; font-size: 7px; color: #2563eb; margin-top: 2px; }
 .inv-badge { display: inline-block; background: #8b5cf6; color: white; font-size: 7px; padding: 1px 5px; border-radius: 3px; font-weight: 600; margin-left: 4px; }
 
 /* IADC detail */
@@ -388,17 +397,36 @@ export function generateDriverReportHtml(data: DriverReportData): string {
               : "—";
             const dist = e.gpsDistanceMeters != null ? `${e.gpsDistanceMeters}m` : "—";
 
+            // Static map using OpenStreetMap tiles
+            const gps = e.gpsActual ?? e.gpsPlanned;
+            const mapHtml = gps
+              ? `<div class="dnr-map">
+                  <a href="https://www.google.com/maps?q=${gps.lat},${gps.lng}" target="_blank">
+                    <img src="https://staticmap.openstreetmap.de/staticmap.php?center=${gps.lat},${gps.lng}&zoom=16&size=320x200&markers=${gps.lat},${gps.lng},ol-marker" alt="Map" />
+                  </a>
+                  <a class="dnr-map-link" href="https://www.google.com/maps?q=${gps.lat},${gps.lng}" target="_blank">Ouvrir Maps</a>
+                </div>`
+              : "";
+
+            const notesHtml = e.customerNotes ? `<div class="dnr-notes">${escapeHtml(e.customerNotes)}</div>` : "";
+
             return `<div class="dnr-card">
               <div class="dnr-card-header">
                 <span class="dnr-tracking">${escapeHtml(e.trackingId)}${invBadge}</span>
                 <span class="dnr-delay">${delay}</span>
               </div>
-              <div class="dnr-grid">
-                <span class="dnr-field-label">Livraison</span><span class="dnr-field-value">${e.deliveryDatetime ? escapeHtml(e.deliveryDatetime) : "—"}</span>
-                <span class="dnr-field-label">Concession</span><span class="dnr-field-value">${e.concessionDatetime ? escapeHtml(e.concessionDatetime) : "—"}</span>
-                <span class="dnr-field-label">Mode</span><span class="dnr-field-value">${escapeHtml(scan)}</span>
-                <span class="dnr-field-label">Distance</span><span class="dnr-field-value">${dist}</span>
-                <span class="dnr-field-label">Adresse</span><span class="dnr-field-value">${addr}</span>
+              <div class="dnr-content">
+                <div class="dnr-info">
+                  <div class="dnr-grid">
+                    <span class="dnr-field-label">Livraison</span><span class="dnr-field-value">${e.deliveryDatetime ? escapeHtml(e.deliveryDatetime) : "—"}</span>
+                    <span class="dnr-field-label">Concession</span><span class="dnr-field-value">${e.concessionDatetime ? escapeHtml(e.concessionDatetime) : "—"}</span>
+                    <span class="dnr-field-label">Mode</span><span class="dnr-field-value">${escapeHtml(scan)}</span>
+                    <span class="dnr-field-label">Distance</span><span class="dnr-field-value">${dist}</span>
+                    <span class="dnr-field-label">Adresse</span><span class="dnr-field-value">${addr}</span>
+                  </div>
+                  ${notesHtml}
+                </div>
+                ${mapHtml}
               </div>
             </div>`;
           })

@@ -430,15 +430,18 @@ export const getDriverReportData = query({
           dwcChange = Math.round((dwcPercent - pPct) * 10) / 10;
         }
 
-        // Days worked from daily stats
+        // Days worked from daily stats (deduplicate by date)
         const allDaily = await ctx.db
           .query("driverDailyStats")
           .withIndex("by_driver_date", (q) => q.eq("driverId", stat.driverId))
           .collect();
-        const daysWorked = allDaily.filter((d) => {
-          if (d.date < weekStart || d.date > weekEnd) return false;
-          return d.dwcCompliant + d.dwcMisses + d.failedAttempts > 0;
-        }).length;
+        const uniqueDates = new Set<string>();
+        for (const d of allDaily) {
+          if (d.date >= weekStart && d.date <= weekEnd && d.dwcCompliant + d.dwcMisses + d.failedAttempts > 0) {
+            uniqueDates.add(d.date);
+          }
+        }
+        const daysWorked = uniqueDates.size;
 
         // Get 4-week history for this driver
         const history = driverHistoryMap.get(stat.driverId.toString()) ?? [];
@@ -448,8 +451,16 @@ export const getDriverReportData = query({
           return a.week - b.week;
         });
 
-        // Daily performance breakdown for the week
-        const weekDailyStats = allDaily.filter((d) => d.date >= weekStart && d.date <= weekEnd);
+        // Daily performance breakdown for the week (deduplicate by date — keep latest entry)
+        const weekDailyStatsRaw = allDaily.filter((d) => d.date >= weekStart && d.date <= weekEnd);
+        const byDate = new Map<string, (typeof weekDailyStatsRaw)[0]>();
+        for (const d of weekDailyStatsRaw) {
+          const existing = byDate.get(d.date);
+          if (!existing || d.createdAt > existing.createdAt) {
+            byDate.set(d.date, d);
+          }
+        }
+        const weekDailyStats = [...byDate.values()];
         const dailyPerformance = weekDailyStats
           .sort((a, b) => a.date.localeCompare(b.date))
           .map((d) => {
@@ -495,8 +506,11 @@ export const getDriverReportData = query({
           deliveryDatetime: d.deliveryDatetime,
           concessionDatetime: d.concessionDatetime,
           address: d.address,
+          gpsPlanned: d.gpsPlanned ?? null,
+          gpsActual: d.gpsActual ?? null,
           gpsDistanceMeters: d.gpsDistanceMeters ?? null,
           deliveryType: d.deliveryType ?? null,
+          customerNotes: d.customerNotes ?? null,
         }));
 
         // DNR per day (for daily performance table)
