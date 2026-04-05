@@ -14,6 +14,7 @@ const navLinks = [
   { name: "How it works", href: "#process" },
   { name: "Pricing", href: "#pricing" },
   { name: "FAQ", href: "#faq" },
+  { name: "Blog", href: "/en/blog" },
 ];
 
 export function Navbar() {
