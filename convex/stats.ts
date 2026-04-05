@@ -6,6 +6,24 @@ import { canAccessStation, checkStationAccess, requireWriteAccess } from "./lib/
 import { getTier } from "./lib/tier";
 import { getWeekDateRange, getWeeksInRange } from "./lib/timeQuery";
 
+// Sub-breakdown validators
+const contactMissDetailValidator = v.object({
+  mailSlot: v.number(),
+  receptionist: v.number(),
+  safeLocation: v.number(),
+  doorstep: v.number(),
+  shed: v.number(),
+  other: v.number(),
+});
+
+const photoDefectDetailValidator = v.object({
+  householdMember: v.number(),
+  safeLocation: v.number(),
+  receptionist: v.number(),
+  mailSlot: v.number(),
+  other: v.number(),
+});
+
 // Validators réutilisables
 const dwcBreakdownValidator = v.object({
   contactMiss: v.number(),
@@ -13,6 +31,8 @@ const dwcBreakdownValidator = v.object({
   noPhoto: v.number(),
   otpMiss: v.number(),
   other: v.number(),
+  contactMissDetail: v.optional(contactMissDetailValidator),
+  photoDefectDetail: v.optional(photoDefectDetailValidator),
 });
 
 const iadcBreakdownValidator = v.object({
@@ -956,31 +976,33 @@ export const getPerformanceEvolution = query({
     // Take only the last N weeks and reverse for chronological order
     const recentStats = allStats.slice(0, weeksCount).reverse();
 
-    return await Promise.all(recentStats.map(async (stat) => {
-      const dwcTotal = stat.dwcCompliant + stat.dwcMisses + stat.failedAttempts;
-      const dwcPercent = dwcTotal > 0 ? Math.round((stat.dwcCompliant / dwcTotal) * 100 * 10) / 10 : 0;
-      const iadcTotal = stat.iadcCompliant + stat.iadcNonCompliant;
-      const iadcPercent = iadcTotal > 0 ? Math.round((stat.iadcCompliant / iadcTotal) * 100 * 10) / 10 : 0;
+    return await Promise.all(
+      recentStats.map(async (stat) => {
+        const dwcTotal = stat.dwcCompliant + stat.dwcMisses + stat.failedAttempts;
+        const dwcPercent = dwcTotal > 0 ? Math.round((stat.dwcCompliant / dwcTotal) * 100 * 10) / 10 : 0;
+        const iadcTotal = stat.iadcCompliant + stat.iadcNonCompliant;
+        const iadcPercent = iadcTotal > 0 ? Math.round((stat.iadcCompliant / iadcTotal) * 100 * 10) / 10 : 0;
 
-      // Real DNR count from concessions data
-      const dnr = await ctx.db
-        .query("dnrInvestigations")
-        .withIndex("by_station_week", (q) =>
-          q.eq("stationId", args.stationId).eq("year", stat.year).eq("week", stat.week),
-        )
-        .collect();
+        // Real DNR count from concessions data
+        const dnr = await ctx.db
+          .query("dnrInvestigations")
+          .withIndex("by_station_week", (q) =>
+            q.eq("stationId", args.stationId).eq("year", stat.year).eq("week", stat.week),
+          )
+          .collect();
 
-      return {
-        week: `S${stat.week}`,
-        weekNumber: stat.week,
-        year: stat.year,
-        dwc: dwcPercent,
-        iadc: iadcPercent,
-        activeDrivers: stat.activeDrivers,
-        totalDeliveries: dwcTotal,
-        deliveryMissesRisk: dnr.length,
-      };
-    }));
+        return {
+          week: `S${stat.week}`,
+          weekNumber: stat.week,
+          year: stat.year,
+          dwc: dwcPercent,
+          iadc: iadcPercent,
+          activeDrivers: stat.activeDrivers,
+          totalDeliveries: dwcTotal,
+          deliveryMissesRisk: dnr.length,
+        };
+      }),
+    );
   },
 });
 

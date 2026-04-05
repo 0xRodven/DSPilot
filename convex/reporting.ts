@@ -463,6 +463,12 @@ export const getDriverReportData = query({
               iadcPercent: dayIadc,
               deliveries: dayDwcTotal,
               errors: d.dwcMisses + d.failedAttempts,
+              concessions: d.dnrCount ?? 0,
+              contactMiss: d.dwcBreakdown?.contactMiss ?? 0,
+              contactMissDetail: d.dwcBreakdown?.contactMissDetail ?? null,
+              photoDefect: d.dwcBreakdown?.photoDefect ?? 0,
+              photoDefectDetail: d.dwcBreakdown?.photoDefectDetail ?? null,
+              iadcBreakdown: d.iadcBreakdown ?? null,
             };
           });
 
@@ -476,9 +482,7 @@ export const getDriverReportData = query({
         // DNR for this driver (from dnrInvestigations)
         const driverDnr = await ctx.db
           .query("dnrInvestigations")
-          .withIndex("by_driver", (q) =>
-            q.eq("driverId", stat.driverId).eq("year", args.year).eq("week", args.week),
-          )
+          .withIndex("by_driver", (q) => q.eq("driverId", stat.driverId).eq("year", args.year).eq("week", args.week))
           .collect();
 
         const dnrEntries = driverDnr.map((d) => ({
@@ -487,6 +491,12 @@ export const getDriverReportData = query({
           scanType: d.scanType,
           status: d.status,
           entryType: d.entryType ?? "concession",
+          // Full detail for report
+          deliveryDatetime: d.deliveryDatetime,
+          concessionDatetime: d.concessionDatetime,
+          address: d.address,
+          gpsDistanceMeters: d.gpsDistanceMeters ?? null,
+          deliveryType: d.deliveryType ?? null,
         }));
 
         // DNR per day (for daily performance table)
@@ -511,7 +521,9 @@ export const getDriverReportData = query({
           dnrEntries,
           dnrByDay,
           dnrCount: driverDnr.length,
-          investigationCount: driverDnr.filter((d) => d.entryType === "investigation" || d.status === "under_investigation").length,
+          investigationCount: driverDnr.filter(
+            (d) => d.entryType === "investigation" || d.status === "under_investigation",
+          ).length,
         };
       }),
     );

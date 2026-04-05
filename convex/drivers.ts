@@ -642,7 +642,15 @@ export const getDriverWithFullHistory = query({
           iadcPercent: dailyIadcPercent,
           deliveries: dTotal > 0 ? dTotal : null,
           errors: dTotal > 0 ? stat.dwcMisses + stat.failedAttempts : null,
+          concessions: stat.dnrCount ?? 0,
           status,
+          // Sub-breakdowns for Contact Miss / Photo Defect
+          contactMiss: stat.dwcBreakdown?.contactMiss ?? 0,
+          contactMissDetail: stat.dwcBreakdown?.contactMissDetail ?? null,
+          photoDefect: stat.dwcBreakdown?.photoDefect ?? 0,
+          photoDefectDetail: stat.dwcBreakdown?.photoDefectDetail ?? null,
+          // IADC breakdown
+          iadcBreakdown: stat.iadcBreakdown ?? null,
         };
       })
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());

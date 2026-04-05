@@ -12,6 +12,39 @@ import { getDwcColor } from "../utils/performance-color";
 // Types
 // ---------------------------------------------------------------------------
 
+interface ContactMissDetail {
+  mailSlot: number;
+  receptionist: number;
+  safeLocation: number;
+  doorstep: number;
+  shed: number;
+  other: number;
+}
+
+interface PhotoDefectDetail {
+  householdMember: number;
+  safeLocation: number;
+  receptionist: number;
+  mailSlot: number;
+  other: number;
+}
+
+interface IadcBreakdownDetail {
+  mailbox: number;
+  unattended: number;
+  safePlace: number;
+  attended?: number;
+  other: number;
+}
+
+interface DnrAddress {
+  street: string;
+  building?: string;
+  floor?: string;
+  postalCode: string;
+  city: string;
+}
+
 export interface DriverReportData {
   stationName: string;
   stationCode: string;
@@ -34,6 +67,12 @@ export interface DriverReportData {
       iadcPercent: number;
       deliveries: number;
       errors: number;
+      concessions?: number;
+      contactMiss?: number;
+      contactMissDetail?: ContactMissDetail | null;
+      photoDefect?: number;
+      photoDefectDetail?: PhotoDefectDetail | null;
+      iadcBreakdown?: IadcBreakdownDetail | null;
     }>;
     errorBreakdown: {
       contactMiss: number;
@@ -46,6 +85,11 @@ export interface DriverReportData {
       scanType: string;
       status: string;
       entryType: string;
+      deliveryDatetime?: string;
+      concessionDatetime?: string;
+      address?: DnrAddress;
+      gpsDistanceMeters?: number | null;
+      deliveryType?: string | null;
     }>;
     dnrByDay: Record<string, number>;
     dnrCount: number;
@@ -73,7 +117,13 @@ function formatChange(value?: number): string {
 }
 
 const DAYS_FR: Record<string, string> = {
-  "0": "Dim", "1": "Lun", "2": "Mar", "3": "Mer", "4": "Jeu", "5": "Ven", "6": "Sam",
+  "0": "Dim",
+  "1": "Lun",
+  "2": "Mar",
+  "3": "Mer",
+  "4": "Jeu",
+  "5": "Ven",
+  "6": "Sam",
 };
 
 function getDayLabel(dateStr: string): string {
@@ -93,11 +143,31 @@ const scanLabels: Record<string, string> = {
   DELIVERED_TO_MAIL_SLOT: "BAL",
   DELIVERED_TO_CUSTOMER: "Main propre",
   DELIVERED_TO_NEIGHBOUR: "Voisin",
-  DELIVERED_TO_SAFE_PLACE: "Lieu sûr",
+  DELIVERED_TO_SAFE_PLACE: "Lieu sur",
   DELIVERED_TO_RECEPTIONIST: "Gardien",
   DELIVERED_TO_CONCIERGE: "Concierge",
   UNKNOWN: "—",
 };
+
+function formatDelay(deliveryDt: string, concessionDt: string): string {
+  try {
+    const d1 = new Date(deliveryDt.replace(" ", "T"));
+    const d2 = new Date(concessionDt.replace(" ", "T"));
+    const diffMs = d2.getTime() - d1.getTime();
+    if (diffMs <= 0) return "—";
+    const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    if (days > 0) return `${days}j ${hours}h`;
+    return `${hours}h`;
+  } catch {
+    return "—";
+  }
+}
+
+function sub(val: number | undefined): string {
+  if (!val) return '<span style="color:#a1a1a6">·</span>';
+  return `${val}`;
+}
 
 // ---------------------------------------------------------------------------
 // CSS (same design system as daily/weekly)
@@ -151,12 +221,18 @@ body {
 
 /* Table */
 table { width: 100%; border-collapse: collapse; font-size: 9px; }
-thead th { font-weight: 500; font-size: 8px; text-transform: uppercase; letter-spacing: 0.05em; color: #6e6e73; padding: 5px 6px; border-bottom: 1.5px solid #1d1d1f; text-align: left; }
+thead th { font-weight: 500; font-size: 8px; text-transform: uppercase; letter-spacing: 0.05em; color: #6e6e73; padding: 5px 4px; border-bottom: 1.5px solid #1d1d1f; text-align: left; }
 thead th.right { text-align: right; }
-tbody td { padding: 5px 6px; border-bottom: 1px solid #f2f2f7; vertical-align: middle; }
+thead th.center { text-align: center; }
+thead th.sub { font-size: 7px; font-weight: 400; color: #a1a1a6; border-bottom: 1px solid #d2d2d7; text-transform: none; letter-spacing: 0; }
+thead th.group-left { border-left: 1px solid #d2d2d7; }
+tbody td { padding: 5px 4px; border-bottom: 1px solid #f2f2f7; vertical-align: middle; }
 tbody td.right { text-align: right; font-variant-numeric: tabular-nums; }
 tbody td.mono { font-family: "SF Mono", monospace; font-size: 8px; color: #6e6e73; }
+tbody td.group-left { border-left: 1px solid #e8e8ed; }
 tbody tr:last-child td { border-bottom: none; }
+tbody tr.totals { border-top: 2px solid #1d1d1f; background: #f9f9fb; font-weight: 600; }
+tbody td.sub-val { font-size: 8px; color: #a1a1a6; }
 
 /* History chart */
 .history { display: flex; align-items: flex-end; gap: 8px; height: 60px; margin-bottom: 4px; }
@@ -167,16 +243,23 @@ tbody tr:last-child td { border-bottom: none; }
 /* DNR box */
 .dnr-box { background: #fef2f2; border-left: 3px solid #ef4444; padding: 12px 16px; margin-bottom: 16px; }
 .dnr-label { font-size: 8px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: #dc2626; margin-bottom: 6px; }
-.dnr-item { font-size: 10px; padding: 3px 0; border-bottom: 1px solid #fde8e8; }
-.dnr-item:last-child { border-bottom: none; }
-.dnr-tracking { font-family: "SF Mono", monospace; font-size: 9px; color: #6e6e73; }
+
+/* DNR detail cards */
+.dnr-card { background: #fff; border: 1px solid #fde8e8; border-radius: 6px; padding: 10px 14px; margin-bottom: 8px; }
+.dnr-card:last-child { margin-bottom: 0; }
+.dnr-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.dnr-tracking { font-family: "SF Mono", monospace; font-size: 9px; font-weight: 600; color: #1d1d1f; }
+.dnr-delay { font-size: 9px; color: #dc2626; font-weight: 500; }
+.dnr-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 20px; font-size: 9px; }
+.dnr-field-label { color: #6e6e73; }
+.dnr-field-value { color: #1d1d1f; font-weight: 500; }
 .inv-badge { display: inline-block; background: #8b5cf6; color: white; font-size: 7px; padding: 1px 5px; border-radius: 3px; font-weight: 600; margin-left: 4px; }
 
-/* Error breakdown */
-.errors-grid { display: flex; gap: 12px; }
-.error-item { flex: 1; background: #f9fafb; border-radius: 6px; padding: 10px 14px; text-align: center; }
-.error-count { font-size: 20px; font-weight: 700; }
-.error-name { font-size: 8px; text-transform: uppercase; letter-spacing: 0.05em; color: #6e6e73; margin-top: 2px; }
+/* IADC detail */
+.iadc-grid { display: flex; gap: 8px; margin-top: 8px; }
+.iadc-item { flex: 1; background: #f9fafb; border-radius: 6px; padding: 8px 10px; text-align: center; }
+.iadc-count { font-size: 16px; font-weight: 700; }
+.iadc-name { font-size: 7px; text-transform: uppercase; letter-spacing: 0.03em; color: #6e6e73; margin-top: 2px; }
 
 /* Lexique */
 .lexique { font-size: 8px; color: #6e6e73; margin-top: 20px; padding-top: 10px; border-top: 1px solid #e8e8ed; }
@@ -211,32 +294,131 @@ export function generateDriverReportHtml(data: DriverReportData): string {
 
   const historyLabels = d.history.map((h) => `<span>S${h.week}</span>`).join("");
 
-  // Daily performance table
+  // Daily performance table with sub-columns
   const dailyRows = d.dailyPerformance
     .map((day) => {
       const dnr = d.dnrByDay[day.date] ?? 0;
+      const cm = day.contactMissDetail;
+      const pd = day.photoDefectDetail;
+      const cmTotal = day.contactMiss ?? 0;
+      const pdTotal = day.photoDefect ?? 0;
       return `<tr>
         <td>${getDayLabel(day.date)}</td>
-        <td class="right" style="font-weight:600;color:${getDwcColor(day.dwcPercent)}">${formatPercent(day.dwcPercent)}</td>
-        <td class="right">${formatPercent(day.iadcPercent)}</td>
         <td class="right">${day.deliveries}</td>
-        <td class="right">${day.errors}</td>
-        <td class="right">${dnr > 0 ? `<span style="color:#dc2626;font-weight:600">${dnr}</span>` : "—"}</td>
+        <td class="right">${(day.concessions ?? 0) > 0 ? `<span style="color:#dc2626;font-weight:600">${day.concessions}</span>` : '<span style="color:#a1a1a6">0</span>'}</td>
+        <td class="right" style="font-weight:600;color:${getDwcColor(day.dwcPercent)}">${formatPercent(day.dwcPercent)}</td>
+        <td class="right group-left" style="${cmTotal > 0 ? "font-weight:600;color:#dc2626" : "color:#a1a1a6"}">${cmTotal}</td>
+        <td class="right sub-val">${sub(cm?.mailSlot)}</td>
+        <td class="right sub-val">${sub(cm?.receptionist)}</td>
+        <td class="right sub-val">${sub(cm?.safeLocation)}</td>
+        <td class="right sub-val">${sub(cm?.doorstep)}</td>
+        <td class="right group-left" style="${pdTotal > 0 ? "font-weight:600;color:#f59e0b" : "color:#a1a1a6"}">${pdTotal}</td>
+        <td class="right sub-val">${sub(pd?.householdMember)}</td>
+        <td class="right sub-val">${sub(pd?.safeLocation)}</td>
+        <td class="right sub-val">${sub(pd?.receptionist)}</td>
+        <td class="right group-left">${formatPercent(day.iadcPercent)}</td>
+        <td class="right">${dnr > 0 ? `<span style="color:#dc2626;font-weight:600">${dnr}</span>` : '<span style="color:#a1a1a6">—</span>'}</td>
       </tr>`;
     })
     .join("");
 
-  // DNR entries
+  // Totals for daily table
+  const totals = d.dailyPerformance.reduce(
+    (acc, day) => {
+      acc.deliveries += day.deliveries;
+      acc.concessions += day.concessions ?? 0;
+      acc.contactMiss += day.contactMiss ?? 0;
+      acc.cmMailSlot += day.contactMissDetail?.mailSlot ?? 0;
+      acc.cmReceptionist += day.contactMissDetail?.receptionist ?? 0;
+      acc.cmSafeLocation += day.contactMissDetail?.safeLocation ?? 0;
+      acc.cmDoorstep += day.contactMissDetail?.doorstep ?? 0;
+      acc.photoDefect += day.photoDefect ?? 0;
+      acc.pdHouseholdMember += day.photoDefectDetail?.householdMember ?? 0;
+      acc.pdSafeLocation += day.photoDefectDetail?.safeLocation ?? 0;
+      acc.pdReceptionist += day.photoDefectDetail?.receptionist ?? 0;
+      return acc;
+    },
+    {
+      deliveries: 0,
+      concessions: 0,
+      contactMiss: 0,
+      cmMailSlot: 0,
+      cmReceptionist: 0,
+      cmSafeLocation: 0,
+      cmDoorstep: 0,
+      photoDefect: 0,
+      pdHouseholdMember: 0,
+      pdSafeLocation: 0,
+      pdReceptionist: 0,
+    },
+  );
+
+  const totalsRow = `<tr class="totals">
+    <td>Total</td>
+    <td class="right">${totals.deliveries}</td>
+    <td class="right" style="${totals.concessions > 0 ? "color:#dc2626" : "color:#a1a1a6"}">${totals.concessions}</td>
+    <td class="right" style="color:${getDwcColor(d.dwcPercent)}">${formatPercent(d.dwcPercent)}</td>
+    <td class="right group-left" style="${totals.contactMiss > 0 ? "color:#dc2626" : "color:#a1a1a6"}">${totals.contactMiss}</td>
+    <td class="right sub-val">${sub(totals.cmMailSlot)}</td>
+    <td class="right sub-val">${sub(totals.cmReceptionist)}</td>
+    <td class="right sub-val">${sub(totals.cmSafeLocation)}</td>
+    <td class="right sub-val">${sub(totals.cmDoorstep)}</td>
+    <td class="right group-left" style="${totals.photoDefect > 0 ? "color:#f59e0b" : "color:#a1a1a6"}">${totals.photoDefect}</td>
+    <td class="right sub-val">${sub(totals.pdHouseholdMember)}</td>
+    <td class="right sub-val">${sub(totals.pdSafeLocation)}</td>
+    <td class="right sub-val">${sub(totals.pdReceptionist)}</td>
+    <td class="right group-left">${formatPercent(d.iadcPercent)}</td>
+    <td class="right" style="color:#a1a1a6">—</td>
+  </tr>`;
+
+  // DNR detail cards
   const dnrHtml =
     d.dnrEntries.length > 0
       ? d.dnrEntries
           .map((e) => {
             const scan = scanLabels[e.scanType] ?? e.scanType.replace("DELIVERED_TO_", "").replace(/_/g, " ");
-            const invBadge = e.entryType === "investigation" || e.status === "under_investigation" ? '<span class="inv-badge">INV</span>' : "";
-            return `<div class="dnr-item"><span class="dnr-tracking">${escapeHtml(e.trackingId)}</span> — ${getDayLabel(e.date)} — ${escapeHtml(scan)}${invBadge}</div>`;
+            const invBadge =
+              e.entryType === "investigation" || e.status === "under_investigation"
+                ? '<span class="inv-badge">INV</span>'
+                : "";
+            const delay =
+              e.deliveryDatetime && e.concessionDatetime ? formatDelay(e.deliveryDatetime, e.concessionDatetime) : "—";
+            const addr = e.address
+              ? `${escapeHtml(e.address.street)}, ${escapeHtml(e.address.postalCode)} ${escapeHtml(e.address.city)}`
+              : "—";
+            const dist = e.gpsDistanceMeters != null ? `${e.gpsDistanceMeters}m` : "—";
+
+            return `<div class="dnr-card">
+              <div class="dnr-card-header">
+                <span class="dnr-tracking">${escapeHtml(e.trackingId)}${invBadge}</span>
+                <span class="dnr-delay">${delay}</span>
+              </div>
+              <div class="dnr-grid">
+                <span class="dnr-field-label">Livraison</span><span class="dnr-field-value">${e.deliveryDatetime ? escapeHtml(e.deliveryDatetime) : "—"}</span>
+                <span class="dnr-field-label">Concession</span><span class="dnr-field-value">${e.concessionDatetime ? escapeHtml(e.concessionDatetime) : "—"}</span>
+                <span class="dnr-field-label">Mode</span><span class="dnr-field-value">${escapeHtml(scan)}</span>
+                <span class="dnr-field-label">Distance</span><span class="dnr-field-value">${dist}</span>
+                <span class="dnr-field-label">Adresse</span><span class="dnr-field-value">${addr}</span>
+              </div>
+            </div>`;
           })
           .join("")
       : '<div style="font-size:10px;color:#059669;font-weight:500">Aucun DNR cette semaine</div>';
+
+  // IADC detail section — aggregate from daily
+  const iadcTotals = d.dailyPerformance.reduce(
+    (acc, day) => {
+      if (day.iadcBreakdown) {
+        acc.mailbox += day.iadcBreakdown.mailbox;
+        acc.unattended += day.iadcBreakdown.unattended;
+        acc.safePlace += day.iadcBreakdown.safePlace;
+        acc.attended += day.iadcBreakdown.attended ?? 0;
+      }
+      return acc;
+    },
+    { mailbox: 0, unattended: 0, safePlace: 0, attended: 0 },
+  );
+  const hasIadcDetail = iadcTotals.mailbox + iadcTotals.unattended + iadcTotals.safePlace + iadcTotals.attended > 0;
 
   const page = `
   <div class="page">
@@ -247,7 +429,7 @@ export function generateDriverReportHtml(data: DriverReportData): string {
       </div>
       <div class="hero-title">${escapeHtml(d.name)}</div>
       <div class="hero-subtitle">Rapport individuel — Semaine ${data.week} / ${data.year}</div>
-      <div class="hero-rank">${d.rank}${d.rank === 1 ? "er" : "ème"} / ${d.totalDrivers} livreurs</div>
+      <div class="hero-rank">${d.rank}${d.rank === 1 ? "er" : "e"} / ${d.totalDrivers} livreurs</div>
     </div>
     <div class="body">
 
@@ -272,82 +454,116 @@ export function generateDriverReportHtml(data: DriverReportData): string {
         <div class="kpi">
           <div class="kpi-label">DNR</div>
           <div class="kpi-value" style="color:${d.dnrCount > 0 ? "#dc2626" : "#059669"}">${d.dnrCount}</div>
-          ${d.investigationCount > 0 ? `<div class="kpi-delta down">${d.investigationCount} enquête(s)</div>` : ""}
+          ${d.investigationCount > 0 ? `<div class="kpi-delta down">${d.investigationCount} enquete(s)</div>` : ""}
         </div>
       </div>
 
-      ${data.aiSummary ? `<div class="ai-box"><div class="ai-label">Analyse personnalisée</div><div class="ai-text">${data.aiSummary}</div></div>` : ""}
+      ${data.aiSummary ? `<div class="ai-box"><div class="ai-label">Analyse personnalisee</div><div class="ai-text">${data.aiSummary}</div></div>` : ""}
 
-      ${d.history.length > 1 ? `
+      ${
+        d.history.length > 1
+          ? `
       <div class="section">
         <div class="section-head">
           <div class="section-eyebrow">Tendance</div>
-          <div class="section-title">Évolution DWC sur ${d.history.length} semaines</div>
+          <div class="section-title">Evolution DWC sur ${d.history.length} semaines</div>
         </div>
         <div class="history">${historyBars}</div>
         <div class="history-label">${historyLabels}</div>
       </div>
-      ` : ""}
+      `
+          : ""
+      }
 
-      ${d.dnrCount > 0 || d.investigationCount > 0 ? `
+      <div class="section">
+        <div class="section-head">
+          <div class="section-eyebrow">Detail</div>
+          <div class="section-title">Performance par jour</div>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th rowspan="2" style="vertical-align:bottom">Jour</th>
+              <th class="right" rowspan="2" style="vertical-align:bottom">Colis</th>
+              <th class="right" rowspan="2" style="vertical-align:bottom">Conc.</th>
+              <th class="right" rowspan="2" style="vertical-align:bottom">DWC %</th>
+              <th class="center group-left" colspan="5">Contact Miss</th>
+              <th class="center group-left" colspan="4">Photo Defect</th>
+              <th class="right group-left" rowspan="2" style="vertical-align:bottom">IADC %</th>
+              <th class="right" rowspan="2" style="vertical-align:bottom">DNR</th>
+            </tr>
+            <tr>
+              <th class="right sub group-left">Tot</th>
+              <th class="right sub">BAL</th>
+              <th class="right sub">Rec</th>
+              <th class="right sub">LS</th>
+              <th class="right sub">Door</th>
+              <th class="right sub group-left">Tot</th>
+              <th class="right sub">HM</th>
+              <th class="right sub">LS</th>
+              <th class="right sub">Rec</th>
+            </tr>
+          </thead>
+          <tbody>${dailyRows}${totalsRow}</tbody>
+        </table>
+        <div style="font-size:7px;color:#a1a1a6;margin-top:4px">BAL = Boite aux lettres · Rec = Receptionniste · LS = Safe Location · Door = Doorstep · HM = Household Member (main propre)</div>
+      </div>
+
+      ${
+        d.dnrCount > 0 || d.investigationCount > 0
+          ? `
       <div class="dnr-box">
         <div class="dnr-label">DNR — ${d.dnrCount} concession${d.dnrCount > 1 ? "s" : ""}${d.investigationCount > 0 ? ` · ${d.investigationCount} investigation${d.investigationCount > 1 ? "s" : ""}` : ""}</div>
         ${dnrHtml}
       </div>
-      ` : ""}
+      `
+          : ""
+      }
 
+      ${
+        hasIadcDetail
+          ? `
       <div class="section">
         <div class="section-head">
-          <div class="section-eyebrow">Détail</div>
-          <div class="section-title">Performance par jour</div>
+          <div class="section-eyebrow">IADC</div>
+          <div class="section-title">Detail non-conformites IADC</div>
         </div>
-        <table>
-          <thead><tr>
-            <th>Jour</th>
-            <th class="right">DWC %</th>
-            <th class="right">IADC %</th>
-            <th class="right">Colis</th>
-            <th class="right">Erreurs</th>
-            <th class="right">DNR</th>
-          </tr></thead>
-          <tbody>${dailyRows}</tbody>
-        </table>
-      </div>
-
-      <div class="section">
-        <div class="section-head">
-          <div class="section-eyebrow">Erreurs</div>
-          <div class="section-title">Répartition des erreurs</div>
-        </div>
-        <div class="errors-grid">
-          <div class="error-item">
-            <div class="error-count" style="color:${d.errorBreakdown.contactMiss > 0 ? "#dc2626" : "#059669"}">${d.errorBreakdown.contactMiss}</div>
-            <div class="error-name">Contact miss</div>
+        <div class="iadc-grid">
+          <div class="iadc-item">
+            <div class="iadc-count" style="color:${iadcTotals.mailbox > 0 ? "#dc2626" : "#059669"}">${iadcTotals.mailbox}</div>
+            <div class="iadc-name">Mailbox Rec.</div>
           </div>
-          <div class="error-item">
-            <div class="error-count" style="color:${d.errorBreakdown.photoDefect > 0 ? "#f59e0b" : "#059669"}">${d.errorBreakdown.photoDefect}</div>
-            <div class="error-name">Photo</div>
+          <div class="iadc-item">
+            <div class="iadc-count" style="color:${iadcTotals.unattended > 0 ? "#dc2626" : "#059669"}">${iadcTotals.unattended}</div>
+            <div class="iadc-name">Unattended</div>
           </div>
-          <div class="error-item">
-            <div class="error-count" style="color:${d.errorBreakdown.rts > 0 ? "#f59e0b" : "#059669"}">${d.errorBreakdown.rts}</div>
-            <div class="error-name">RTS</div>
+          <div class="iadc-item">
+            <div class="iadc-count" style="color:${iadcTotals.safePlace > 0 ? "#f59e0b" : "#059669"}">${iadcTotals.safePlace}</div>
+            <div class="iadc-name">Safe Place</div>
+          </div>
+          <div class="iadc-item">
+            <div class="iadc-count" style="color:${iadcTotals.attended > 0 ? "#f59e0b" : "#059669"}">${iadcTotals.attended}</div>
+            <div class="iadc-name">Attended</div>
           </div>
         </div>
       </div>
+      `
+          : ""
+      }
 
       <div class="lexique">
-        <div class="entry"><dt>DWC</dt><dd>— Delivered With Customer. Pourcentage de colis livrés conformément aux exigences Amazon.</dd></div>
-        <div class="entry"><dt>IADC</dt><dd>— In Absence Delivery Compliance. Conformité des livraisons en absence du destinataire.</dd></div>
-        <div class="entry"><dt>DNR</dt><dd>— Did Not Receive. Réclamation client signalant un colis non reçu malgré la livraison enregistrée.</dd></div>
-        <div class="entry"><dt>Contact miss</dt><dd>— Erreur de contact lors de la livraison (mauvaise adresse, destinataire absent non géré).</dd></div>
-        <div class="entry"><dt>RTS</dt><dd>— Return To Station. Colis retourné à la station sans livraison.</dd></div>
-        <div class="entry"><dt>Investigation</dt><dd>— Enquête formelle Amazon suite à un DNR. Plus grave qu'une simple concession.</dd></div>
+        <div class="entry"><dt>DWC</dt><dd>— Delivered With Customer. Pourcentage de colis livres conformement aux exigences Amazon.</dd></div>
+        <div class="entry"><dt>IADC</dt><dd>— In Absence Delivery Compliance. Conformite des livraisons en absence du destinataire.</dd></div>
+        <div class="entry"><dt>DNR</dt><dd>— Did Not Receive. Reclamation client signalant un colis non recu malgre la livraison enregistree.</dd></div>
+        <div class="entry"><dt>Contact Miss</dt><dd>— Erreur de contact : colis depose sans verification du destinataire (BAL, gardien, lieu sur, etc.).</dd></div>
+        <div class="entry"><dt>Photo Defect</dt><dd>— Photo de preuve non conforme (main propre, gardien, BAL, lieu sur).</dd></div>
+        <div class="entry"><dt>Concession</dt><dd>— Remboursement accorde au client suite a un DNR. Impact direct sur le score DWC.</dd></div>
       </div>
 
     </div>
     <div class="footer">
       <span>DSPilot — Rapport individuel ${escapeHtml(d.name)} — S${data.week}/${data.year}</span>
-      <span>Généré le ${data.generatedAt}</span>
+      <span>Genere le ${data.generatedAt}</span>
     </div>
   </div>`;
 

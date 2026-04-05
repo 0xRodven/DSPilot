@@ -20,6 +20,25 @@ export interface ExtractedCsv {
   rows: RawCsvRow[];
 }
 
+/** Sub-breakdown Contact Miss par lieu de dépôt */
+export interface ContactMissDetail {
+  mailSlot: number;
+  receptionist: number;
+  safeLocation: number;
+  doorstep: number;
+  shed: number;
+  other: number;
+}
+
+/** Sub-breakdown Photo Defect par lieu de dépôt */
+export interface PhotoDefectDetail {
+  householdMember: number;
+  safeLocation: number;
+  receptionist: number;
+  mailSlot: number;
+  other: number;
+}
+
 /** Breakdown DWC (Delivery Misses par catégorie) */
 export interface DwcBreakdown {
   contactMiss: number;
@@ -27,6 +46,8 @@ export interface DwcBreakdown {
   noPhoto: number;
   otpMiss: number;
   other: number;
+  contactMissDetail?: ContactMissDetail;
+  photoDefectDetail?: PhotoDefectDetail;
 }
 
 /** Breakdown IADC (Non-Compliant par catégorie) */
@@ -90,6 +111,24 @@ export interface ExtractionResult {
   errors: string[];
   warnings: string[];
 }
+
+/** Empty sub-breakdowns pour initialisation */
+export const emptyContactMissDetail: ContactMissDetail = {
+  mailSlot: 0,
+  receptionist: 0,
+  safeLocation: 0,
+  doorstep: 0,
+  shed: 0,
+  other: 0,
+};
+
+export const emptyPhotoDefectDetail: PhotoDefectDetail = {
+  householdMember: 0,
+  safeLocation: 0,
+  receptionist: 0,
+  mailSlot: 0,
+  other: 0,
+};
 
 /** Empty breakdowns pour initialisation */
 export const emptyDwcBreakdown: DwcBreakdown = {

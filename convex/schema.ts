@@ -1,6 +1,25 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
+// Sub-breakdown Contact Miss par lieu de dépôt (shipmentReason)
+const contactMissDetailValidator = v.object({
+  mailSlot: v.number(),
+  receptionist: v.number(),
+  safeLocation: v.number(),
+  doorstep: v.number(),
+  shed: v.number(),
+  other: v.number(),
+});
+
+// Sub-breakdown Photo Defect par lieu de dépôt (shipmentReason)
+const photoDefectDetailValidator = v.object({
+  householdMember: v.number(),
+  safeLocation: v.number(),
+  receptionist: v.number(),
+  mailSlot: v.number(),
+  other: v.number(),
+});
+
 // Breakdown types réutilisables
 const dwcBreakdownValidator = v.object({
   contactMiss: v.number(),
@@ -8,6 +27,8 @@ const dwcBreakdownValidator = v.object({
   noPhoto: v.number(),
   otpMiss: v.number(),
   other: v.number(),
+  contactMissDetail: v.optional(contactMissDetailValidator),
+  photoDefectDetail: v.optional(photoDefectDetailValidator),
 });
 
 const iadcBreakdownValidator = v.object({

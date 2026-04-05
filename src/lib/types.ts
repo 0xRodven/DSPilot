@@ -36,6 +36,31 @@ export interface DriverDetail extends Driver {
   whatsappOptIn?: boolean;
 }
 
+export interface ContactMissDetail {
+  mailSlot: number;
+  receptionist: number;
+  safeLocation: number;
+  doorstep: number;
+  shed: number;
+  other: number;
+}
+
+export interface PhotoDefectDetail {
+  householdMember: number;
+  safeLocation: number;
+  receptionist: number;
+  mailSlot: number;
+  other: number;
+}
+
+export interface IadcBreakdownDetail {
+  mailbox: number;
+  unattended: number;
+  safePlace: number;
+  attended?: number;
+  other: number;
+}
+
 export interface DailyPerformance {
   day: string;
   date: string;
@@ -43,8 +68,15 @@ export interface DailyPerformance {
   iadcPercent: number | null;
   deliveries: number | null;
   errors: number | null;
+  concessions?: number;
   dnrCount?: number;
   status: "excellent" | "tres-bon" | "bon" | "moyen" | "non-travaille";
+  // Sub-breakdowns
+  contactMiss?: number;
+  contactMissDetail?: ContactMissDetail | null;
+  photoDefect?: number;
+  photoDefectDetail?: PhotoDefectDetail | null;
+  iadcBreakdown?: IadcBreakdownDetail | null;
 }
 
 // Error types
