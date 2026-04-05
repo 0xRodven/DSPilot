@@ -39,6 +39,7 @@ interface InvestigationEntry {
   week: number;
   deliveryDatetime: string;
   concessionDatetime: string;
+  scanType?: string;
   investigationReason?: string;
   investigationDate?: string;
   investigationVerdict?: string;

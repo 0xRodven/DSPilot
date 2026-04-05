@@ -112,6 +112,7 @@ export const ingestInvestigations = mutation({
         week: v.number(),
         deliveryDatetime: v.string(),
         concessionDatetime: v.string(),
+        scanType: v.optional(v.string()),
         investigationReason: v.optional(v.string()),
         investigationDate: v.optional(v.string()),
         investigationVerdict: v.optional(v.string()),
@@ -143,13 +144,18 @@ export const ingestInvestigations = mutation({
 
       if (existing) {
         // Escalate existing DNR → investigation
-        await ctx.db.patch(existing._id, {
+        const patch: Record<string, unknown> = {
           status: entry.status,
           entryType: "investigation",
           investigationReason: entry.investigationReason,
           investigationDate: entry.investigationDate,
           investigationVerdict: entry.investigationVerdict,
-        });
+        };
+        // Fill scanType if existing has UNKNOWN but investigation has real value
+        if (existing.scanType === "UNKNOWN" && entry.scanType) {
+          patch.scanType = entry.scanType;
+        }
+        await ctx.db.patch(existing._id, patch);
         linked++;
       } else {
         // New investigation without prior DNR
@@ -164,7 +170,7 @@ export const ingestInvestigations = mutation({
           week: entry.week,
           deliveryDatetime: entry.deliveryDatetime,
           concessionDatetime: entry.concessionDatetime,
-          scanType: "UNKNOWN",
+          scanType: entry.scanType || "UNKNOWN",
           address: { street: "", postalCode: "", city: "" },
           entryType: "investigation",
           investigationReason: entry.investigationReason,
