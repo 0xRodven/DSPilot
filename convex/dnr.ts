@@ -241,7 +241,43 @@ export const getInvestigations = query({
           )
           .collect();
 
-    const results = args.status ? raw.filter((r) => r.status === args.status) : raw;
+    // Enrich investigations with data from matching concessions (same trackingId)
+    // The S3 Investigations report only has trackingId + date + scanType,
+    // but the concession for the same tracking has full detail (driver, address, GPS)
+    const enriched = await Promise.all(
+      raw.map(async (entry) => {
+        const needsEnrichment =
+          entry.entryType === "investigation" &&
+          (!entry.driverName || entry.scanType === "UNKNOWN" || entry.scanType === "");
+
+        if (!needsEnrichment) return entry;
+
+        // Find matching concession by trackingId
+        const concession = await ctx.db
+          .query("dnrInvestigations")
+          .withIndex("by_tracking", (q) => q.eq("trackingId", entry.trackingId))
+          .collect()
+          .then((matches) => matches.find((m) => m._id !== entry._id && m.driverName));
+
+        if (!concession) return entry;
+
+        // Merge: keep investigation fields, fill gaps from concession
+        return {
+          ...entry,
+          driverName: entry.driverName || concession.driverName,
+          driverId: entry.driverId ?? concession.driverId,
+          transporterId: entry.transporterId || concession.transporterId,
+          scanType: entry.scanType === "UNKNOWN" || !entry.scanType ? concession.scanType : entry.scanType,
+          address: entry.address.street ? entry.address : concession.address,
+          gpsPlanned: entry.gpsPlanned ?? concession.gpsPlanned,
+          gpsActual: entry.gpsActual ?? concession.gpsActual,
+          gpsDistanceMeters: entry.gpsDistanceMeters ?? concession.gpsDistanceMeters,
+          customerNotes: entry.customerNotes ?? concession.customerNotes,
+        };
+      }),
+    );
+
+    const results = args.status ? enriched.filter((r) => r.status === args.status) : enriched;
 
     results.sort((a, b) => new Date(b.concessionDatetime).getTime() - new Date(a.concessionDatetime).getTime());
 
