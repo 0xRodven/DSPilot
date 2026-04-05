@@ -32,6 +32,7 @@ scraper/data/
 !scripts/run-weekly-report.sh
 !scripts/run-concessions-pipeline.sh
 !scripts/run-driver-reports.sh
+!scripts/run-amazon-unified.sh
 
 # debug
 npm-debug.log*
