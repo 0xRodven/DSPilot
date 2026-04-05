@@ -9,51 +9,51 @@ import { cn } from "@/lib/utils";
 const plans = [
   {
     name: "Pro",
-    tagline: "Le tableau de bord complet pour piloter votre station au quotidien.",
+    tagline: "The complete dashboard to run your station day to day.",
     price: { monthly: 499, yearly: 399 },
     features: [
-      "Livreurs illimités",
-      "Dashboard complet tendances 8 semaines",
-      "Historique illimité",
-      "Export PDF et Excel",
-      "Alertes automatiques",
-      "Analyse erreurs par livreur",
-      "Support email prioritaire",
+      "Unlimited drivers",
+      "Full dashboard with 8-week trends",
+      "Unlimited history",
+      "PDF and Excel exports",
+      "Automatic alerts",
+      "Error analysis per driver",
+      "Priority email support",
     ],
-    cta: "Passer au Pro",
+    cta: "Go Pro",
     href: "/sign-up?plan=pro",
   },
   {
     name: "Business",
-    tagline: "Performance, coaching et rapports — sans friction.",
+    tagline: "Performance, coaching and reports — zero friction.",
     price: { monthly: 999, yearly: 799 },
     popular: true,
     features: [
-      "Tout Pro +",
-      "Coaching intégré (Kanban, escalade, calendrier)",
-      "Rapports individuels par livreur",
-      "Récaps WhatsApp hebdomadaires",
-      "Rapports professionnels auto",
-      "Accès API",
-      "Support prioritaire",
+      "Everything in Pro +",
+      "Built-in coaching (Kanban, escalation, scheduling)",
+      "Individual driver reports",
+      "Weekly WhatsApp recaps",
+      "Auto-generated professional reports",
+      "API access",
+      "Priority support",
     ],
-    cta: "Choisir Business",
+    cta: "Choose Business",
     href: "/sign-up?plan=business",
   },
   {
     name: "Enterprise",
-    tagline: "Pour les groupes multi-stations qui veulent un partenaire, pas un outil.",
+    tagline: "For multi-station groups who want a partner, not a tool.",
     price: { monthly: null, yearly: null },
     features: [
-      "Tout Business +",
-      "Multi-stations centralisé",
+      "Everything in Business +",
+      "Centralised multi-station view",
       "SSO/SAML",
-      "Account manager dédié",
-      "SLA 99.9%",
-      "Support téléphonique",
-      "Onboarding + formation",
+      "Dedicated account manager",
+      "99.9% SLA",
+      "Phone support",
+      "Onboarding + training",
     ],
-    cta: "Contactez-nous",
+    cta: "Contact us",
     href: "mailto:sales@dspilot.fr",
   },
 ];
@@ -67,19 +67,18 @@ export function Pricing() {
         {/* Header */}
         <div className="mb-12 text-center" data-scroll-reveal>
           <p className="mb-3 font-semibold text-[13px] uppercase tracking-[0.1em]" style={{ color: "#2563EB" }}>
-            Tarifs
+            Pricing
           </p>
           <h2
             className="mb-4 font-[family-name:var(--font-display)] leading-[1.15] tracking-[-0.02em]"
             style={{ fontSize: "clamp(32px, 4vw, 48px)", color: "#1A1A1A" }}
           >
-            Un abonnement qui se rembourse
+            Pays for itself
             <br />
-            dès la première semaine.
+            in the first week.
           </h2>
           <p className="mx-auto max-w-3xl text-lg" style={{ color: "#4A4A4A" }}>
-            DSPilot vous fait gagner 3 à 5 heures par semaine. À l&apos;échelle d&apos;un mois, c&apos;est
-            l&apos;équivalent de 3 jours de travail récupérés.
+            DSPilot saves you 3 to 5 hours every week. Over a month, that&apos;s 3 full working days back.
           </p>
         </div>
 
@@ -99,7 +98,7 @@ export function Pricing() {
               !isYearly ? "bg-white text-[#1A1A1A] shadow-sm" : "bg-transparent text-[#4A4A4A]",
             )}
           >
-            Mensuel
+            Monthly
           </button>
           <button
             type="button"
@@ -111,7 +110,7 @@ export function Pricing() {
               isYearly ? "bg-white text-[#1A1A1A] shadow-sm" : "bg-transparent text-[#4A4A4A]",
             )}
           >
-            Annuel <span style={{ color: "#2563EB" }}>-20%</span>
+            Yearly <span style={{ color: "#2563EB" }}>-20%</span>
           </button>
         </div>
 
@@ -135,7 +134,7 @@ export function Pricing() {
                   className="-top-3 -translate-x-1/2 absolute left-1/2 rounded-full px-4 py-1 font-semibold text-white text-xs"
                   style={{ background: "#2563EB" }}
                 >
-                  Recommandé
+                  Recommended
                 </div>
               )}
 
@@ -166,13 +165,13 @@ export function Pricing() {
                     className="font-[family-name:var(--font-display)]"
                     style={{ fontSize: "32px", color: "#1A1A1A" }}
                   >
-                    Sur devis
+                    Custom
                   </span>
                 )}
               </div>
               {plan.price.monthly !== null && plan.price.monthly > 0 && (
                 <p className="mb-6 text-sm" style={{ color: "#8A8A8A" }}>
-                  par mois
+                  per month
                 </p>
               )}
               {plan.price.monthly === null && <div className="mb-6" />}
@@ -226,7 +225,7 @@ export function Pricing() {
 
         {/* Reassurance */}
         <div className="mt-8 text-center text-[13px]" style={{ color: "#8A8A8A" }} data-scroll-reveal>
-          Sans engagement · Données chiffrées · Conforme RGPD
+          No commitment · Encrypted data · GDPR compliant
         </div>
       </div>
     </section>

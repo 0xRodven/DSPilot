@@ -10,9 +10,9 @@ import { Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navLinks = [
-  { name: "Fonctionnalités", href: "#features" },
-  { name: "Comment ça marche", href: "#process" },
-  { name: "Tarifs", href: "#pricing" },
+  { name: "Features", href: "#features" },
+  { name: "How it works", href: "#process" },
+  { name: "Pricing", href: "#pricing" },
   { name: "FAQ", href: "#faq" },
 ];
 
@@ -30,7 +30,7 @@ export function Navbar() {
       }}
     >
       <nav className="mx-auto flex h-full max-w-[1200px] items-center justify-between px-6">
-        <Link href="/" className="flex items-center">
+        <Link href="/en" className="flex items-center">
           <Image src="/logo/DSPilot_Full.png" alt="DSPilot" width={180} height={68} className="h-10 w-auto" priority />
         </Link>
 
@@ -55,7 +55,7 @@ export function Navbar() {
 
         <div className="hidden items-center gap-4 md:flex">
           <Link
-            href="/en"
+            href="/"
             className="font-medium text-sm transition-colors duration-200"
             style={{ color: "#8A8A8A" }}
             onMouseEnter={(e) => {
@@ -65,14 +65,14 @@ export function Navbar() {
               e.currentTarget.style.color = "#8A8A8A";
             }}
           >
-            EN
+            FR
           </Link>
           <Link
             href="/sign-in"
             className="font-medium text-sm transition-colors duration-200"
             style={{ color: "#4A4A4A" }}
           >
-            Connexion
+            Sign in
           </Link>
           <Link
             href="/sign-up"
@@ -85,7 +85,7 @@ export function Navbar() {
               e.currentTarget.style.background = "#2563EB";
             }}
           >
-            Commencer
+            Get started
           </Link>
         </div>
 
@@ -121,25 +121,25 @@ export function Navbar() {
           ))}
           <div className="mt-4 flex flex-col gap-2 pt-4">
             <Link
-              href="/en"
+              href="/"
               className="block w-full rounded-md px-3 py-2 text-center text-base"
               style={{ color: "#8A8A8A" }}
             >
-              EN
+              FR
             </Link>
             <Link
               href="/sign-in"
               className="block w-full rounded-md px-3 py-2 text-center text-base"
               style={{ color: "#4A4A4A" }}
             >
-              Connexion
+              Sign in
             </Link>
             <Link
               href="/sign-up"
               className="block w-full rounded-lg py-2.5 text-center font-semibold text-sm text-white"
               style={{ background: "#2563EB" }}
             >
-              Commencer
+              Get started
             </Link>
           </div>
         </div>

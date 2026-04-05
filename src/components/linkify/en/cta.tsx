@@ -17,15 +17,15 @@ export function CTA() {
           className="mb-4 font-[family-name:var(--font-display)] leading-[1.15] tracking-[-0.02em]"
           style={{ fontSize: "clamp(36px, 4vw, 52px)", color: "#1A1A1A" }}
         >
-          Vous avez lu jusqu&apos;ici.
+          You&apos;ve read this far.
           <br />
           <em className="bg-gradient-to-br from-[#2563EB] to-[#0891B2] bg-clip-text text-transparent italic">
-            Vos lundis matins peuvent changer maintenant.
+            Your Monday mornings can change now.
           </em>
         </h2>
 
         <p className="mx-auto mb-8 max-w-[500px] text-lg" style={{ color: "#4A4A4A" }}>
-          Commencez avec le plan Pro. Pas d&apos;engagement, pas de mauvaise surprise.
+          Start with the Pro plan. No commitment, no surprises.
         </p>
 
         <Link
@@ -42,12 +42,12 @@ export function CTA() {
             e.currentTarget.style.background = "#2563EB";
           }}
         >
-          Démarrer avec DSPilot
+          Get started with DSPilot
           <ArrowRight className="size-4" />
         </Link>
 
         <p className="mt-4 text-[13px]" style={{ color: "#8A8A8A" }}>
-          Sans engagement · Opérationnel en 2 minutes
+          No commitment · Up and running in 2 minutes
         </p>
       </div>
     </section>

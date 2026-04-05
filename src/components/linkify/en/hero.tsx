@@ -59,25 +59,22 @@ export function Hero() {
               />
               <span className="relative inline-flex size-1.5 rounded-full" style={{ background: "#2563EB" }} />
             </span>
-            Le seul outil DSP Amazon en France
+            Built by a DSP owner. For DSP owners.
           </div>
 
           <h1
             className="font-[family-name:var(--font-display)] leading-[1.08] tracking-[-0.03em]"
             style={{ fontSize: "clamp(42px, 5vw, 72px)", color: "#1A1A1A" }}
           >
-            Pilotez votre{" "}
-            <em className="bg-gradient-to-br from-[#2563EB] to-[#0891B2] bg-clip-text text-transparent italic">
-              station&nbsp;DSP.
-            </em>
+            Run your{" "}
+            <em className="bg-gradient-to-br from-[#2563EB] to-[#0891B2] bg-clip-text text-transparent italic">DSP.</em>
             <br />
-            Pas vos tableurs.
+            Not your spreadsheets.
           </h1>
 
           <p className="mx-auto mt-6 max-w-xl text-lg leading-[1.7]" style={{ color: "#4A4A4A" }}>
-            Scores DWC, IADC, coaching livreurs, rapports hebdomadaires — tout ce que vous faites aujourd&apos;hui en
-            5&nbsp;heures sur Excel, DSPilot le fait en 30&nbsp;secondes. Gardez votre tier Fantastic sans y laisser vos
-            soirées.
+            DWC scores, driver coaching, weekly reports — everything you spend 5&nbsp;hours on in Excel, DSPilot does in
+            30&nbsp;seconds. Keep your Fantastic tier without burning your evenings.
           </p>
 
           <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
@@ -95,7 +92,7 @@ export function Hero() {
                 e.currentTarget.style.background = "#2563EB";
               }}
             >
-              Démarrer avec DSPilot
+              Get started with DSPilot
               <ArrowRight className="size-4" />
             </Link>
             <Link
@@ -111,12 +108,12 @@ export function Hero() {
                 e.currentTarget.style.background = "transparent";
               }}
             >
-              Voir une démo
+              See a demo
             </Link>
           </div>
 
           <p className="mt-4 text-[13px] tracking-wide" style={{ color: "#8A8A8A" }}>
-            Import en 30 secondes · Sans engagement
+            Import in 30 seconds · No commitment
           </p>
         </div>
 

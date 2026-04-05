@@ -8,34 +8,34 @@ import { cn } from "@/lib/utils";
 
 const faqs = [
   {
-    question: "C'est quoi exactement DSPilot ? Ça remplace quoi dans mon quotidien ?",
+    question: "What exactly is DSPilot? What does it replace?",
     answer:
-      "DSPilot est un outil de gestion dédié aux stations Amazon DSP. Il remplace vos fichiers Excel de suivi des scores DWC et IADC, vos exports manuels, vos reportings bricolés et vos notes de coaching éparpillées. Concrètement, tout ce que vous faites aujourd'hui sur tableur pour suivre la performance de vos livreurs, DSPilot le centralise et l'automatise.",
+      "DSPilot is a management platform built specifically for Amazon DSP stations. It replaces your Excel files for tracking DWC and IADC scores, your manual exports, your cobbled-together reports and your scattered coaching notes. Everything you currently do in spreadsheets to monitor driver performance, DSPilot centralises and automates.",
   },
   {
-    question: "499 ou 999\u00A0\u20AC par mois, c'est cher. Ça vaut vraiment le coup ?",
+    question: "499 or 999\u00A0\u20AC a month sounds expensive. Is it really worth it?",
     answer:
-      "Un DSP génère entre 500\u00A0000 et 2 millions d'euros de chiffre d'affaires par an. À 999\u00A0\u20AC par mois, DSPilot représente moins de 0,1\u00A0% de votre CA. En face, il vous fait gagner 3 à 5 heures par semaine — soit l'équivalent de 3 jours de travail par mois. C'est moins cher qu'un livreur à mi-temps, et ça protège directement votre tier Fantastic.",
+      "A DSP generates between \u00A3400k and \u00A32 million in annual revenue. At 999\u00A0\u20AC per month, DSPilot is less than 0.1% of your turnover. In return, it saves you 3 to 5 hours every week \u2014 that\u2019s 3 full working days a month. It costs less than a part-time driver, and it directly protects your Fantastic tier.",
   },
   {
-    question: "Est-ce que c'est compatible avec les rapports Amazon ?",
+    question: "Does it work with Amazon's reports?",
     answer:
-      "Oui. Vous copiez le tableau de métriques livreurs directement depuis votre interface Amazon, vous le collez dans DSPilot, et les données sont extraites automatiquement en 30 secondes. Pas de fichier à reformater, pas de colonne à ajuster. Si Amazon change son format, on met à jour l'import dans la journée.",
+      "Yes. You copy the driver metrics table straight from your Amazon interface, paste it into DSPilot, and the data is extracted automatically in 30 seconds. No file reformatting, no column adjustments. If Amazon changes their format, we update the import within the day.",
   },
   {
-    question: "Mes données de station sont sensibles. C'est sécurisé ?",
+    question: "My station data is sensitive. Is it secure?",
     answer:
-      "Absolument. DSPilot utilise une authentification Clerk, un chiffrement TLS de bout en bout, et un hébergement sur Vercel conforme aux standards européens. Vos données de performance livreurs et métriques IADC ne sont jamais partagées ni revendues. Vous restez propriétaire de tout ce que vous importez.",
+      "Absolutely. DSPilot uses Clerk authentication, end-to-end TLS encryption, and hosting on Vercel compliant with European standards. Your driver performance data and IADC metrics are never shared or sold. You remain the owner of everything you import.",
   },
   {
-    question: "Je peux tester avant de m'engager ?",
+    question: "Can I try it before committing?",
     answer:
-      "Oui. Le plan Pro est accessible directement, et vous pouvez annuler en un clic à tout moment. Pas de contrat, pas de durée minimum. Vous jugez sur pièce.",
+      "Yes. The Pro plan is available immediately, and you can cancel in one click at any time. No contract, no minimum term. Judge it on results.",
   },
   {
-    question: "Et si Amazon change ses métriques ou son format de rapport ?",
+    question: "What if Amazon changes their metrics or report format?",
     answer:
-      "C'est notre métier de suivre ça. DSPilot est maintenu et mis à jour en continu. Si Amazon modifie le format des scorecards ou ajoute de nouvelles métriques de performance livreurs, nous adaptons l'outil. Vous n'avez rien à faire de votre côté.",
+      "That\u2019s our job to track. DSPilot is continuously maintained and updated. If Amazon modifies the scorecard format or adds new driver performance metrics, we adapt the tool. You don\u2019t have to do anything on your end.",
   },
 ];
 
@@ -96,7 +96,7 @@ export function FAQ() {
             className="mb-12 font-[family-name:var(--font-display)] leading-[1.15] tracking-[-0.02em]"
             style={{ fontSize: "clamp(32px, 4vw, 48px)", color: "#1A1A1A" }}
           >
-            Questions fréquentes
+            Frequently asked questions
           </h2>
         </div>
 
