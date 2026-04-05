@@ -5,12 +5,31 @@ import type { Id } from "./_generated/dataModel";
 import { internalAction, internalMutation, internalQuery, type MutationCtx } from "./_generated/server";
 import { getTier } from "./lib/tier";
 
+const contactMissDetailValidator = v.object({
+  mailSlot: v.number(),
+  receptionist: v.number(),
+  safeLocation: v.number(),
+  doorstep: v.number(),
+  shed: v.number(),
+  other: v.number(),
+});
+
+const photoDefectDetailValidator = v.object({
+  householdMember: v.number(),
+  safeLocation: v.number(),
+  receptionist: v.number(),
+  mailSlot: v.number(),
+  other: v.number(),
+});
+
 const dwcBreakdownValidator = v.object({
   contactMiss: v.number(),
   photoDefect: v.number(),
   noPhoto: v.number(),
   otpMiss: v.number(),
   other: v.number(),
+  contactMissDetail: v.optional(contactMissDetailValidator),
+  photoDefectDetail: v.optional(photoDefectDetailValidator),
 });
 
 const iadcBreakdownValidator = v.object({
@@ -129,6 +148,21 @@ type IngestParsedAmazonReportArgs = {
       noPhoto: number;
       otpMiss: number;
       other: number;
+      contactMissDetail?: {
+        mailSlot: number;
+        receptionist: number;
+        safeLocation: number;
+        doorstep: number;
+        shed: number;
+        other: number;
+      };
+      photoDefectDetail?: {
+        householdMember: number;
+        safeLocation: number;
+        receptionist: number;
+        mailSlot: number;
+        other: number;
+      };
     };
     iadcBreakdown?: {
       mailbox: number;
@@ -152,6 +186,21 @@ type IngestParsedAmazonReportArgs = {
       noPhoto: number;
       otpMiss: number;
       other: number;
+      contactMissDetail?: {
+        mailSlot: number;
+        receptionist: number;
+        safeLocation: number;
+        doorstep: number;
+        shed: number;
+        other: number;
+      };
+      photoDefectDetail?: {
+        householdMember: number;
+        safeLocation: number;
+        receptionist: number;
+        mailSlot: number;
+        other: number;
+      };
     };
     iadcBreakdown?: {
       mailbox: number;
