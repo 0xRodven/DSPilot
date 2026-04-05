@@ -114,15 +114,7 @@ export function PostLayout({
         <div className="grid gap-12 lg:grid-cols-[1fr_250px]">
           {/* Article */}
           <article
-            className="prose prose-lg max-w-none"
-            style={
-              {
-                "--tw-prose-headings": "#1A1A1A",
-                "--tw-prose-body": "#4A4A4A",
-                "--tw-prose-bold": "#1A1A1A",
-                "--tw-prose-links": "#2563EB",
-              } as React.CSSProperties
-            }
+            className="max-w-none [&>h2]:mb-4 [&>h2]:mt-12 [&>h2]:font-[family-name:var(--font-display)] [&>h2]:text-[28px] [&>h2]:leading-[1.3] [&>h2]:tracking-[-0.02em] [&>h2]:text-[#1A1A1A] [&>h3]:mb-3 [&>h3]:mt-8 [&>h3]:font-[family-name:var(--font-display)] [&>h3]:text-[22px] [&>h3]:leading-[1.3] [&>h3]:text-[#1A1A1A] [&>hr]:my-12 [&>hr]:border-[#E8E5DF] [&>ol]:my-6 [&>ol]:space-y-2 [&>ol]:pl-6 [&>ol]:text-[16px] [&>ol]:leading-[1.8] [&>ol]:text-[#4A4A4A] [&>p>a]:text-[#2563EB] [&>p>a]:underline [&>p>strong]:font-semibold [&>p>strong]:text-[#1A1A1A] [&>p]:mb-6 [&>p]:text-[16px] [&>p]:leading-[1.8] [&>p]:text-[#4A4A4A] [&>ul]:my-6 [&>ul]:space-y-2 [&>ul]:pl-6 [&>ul]:text-[16px] [&>ul]:leading-[1.8] [&>ul]:text-[#4A4A4A]"
             // biome-ignore lint/security/noDangerouslySetInnerHtml: Markdown content rendered from trusted source
             dangerouslySetInnerHTML={{ __html: contentHtml }}
           />
