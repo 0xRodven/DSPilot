@@ -397,15 +397,22 @@ export function generateDriverReportHtml(data: DriverReportData): string {
               : "—";
             const dist = e.gpsDistanceMeters != null ? `${e.gpsDistanceMeters}m` : "—";
 
-            // Static map using OpenStreetMap tiles
+            // Leaflet inline map
             const gps = e.gpsActual ?? e.gpsPlanned;
+            const mapId = `map-${e.trackingId.replace(/[^a-zA-Z0-9]/g, "")}`;
             const mapHtml = gps
               ? `<div class="dnr-map">
-                  <a href="https://www.google.com/maps?q=${gps.lat},${gps.lng}" target="_blank">
-                    <img src="https://staticmap.openstreetmap.de/staticmap.php?center=${gps.lat},${gps.lng}&zoom=16&size=320x200&markers=${gps.lat},${gps.lng},ol-marker" alt="Map" />
-                  </a>
-                  <a class="dnr-map-link" href="https://www.google.com/maps?q=${gps.lat},${gps.lng}" target="_blank">Ouvrir Maps</a>
-                </div>`
+                  <div id="${mapId}" style="width:100%;height:100%"></div>
+                  <a class="dnr-map-link" href="https://www.google.com/maps?q=${gps.lat},${gps.lng}" target="_blank">Ouvrir Google Maps</a>
+                </div>
+                <script>
+                  (function(){
+                    var m=L.map('${mapId}',{zoomControl:false,attributionControl:false}).setView([${gps.lat},${gps.lng}],16);
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(m);
+                    L.circleMarker([${gps.lat},${gps.lng}],{radius:6,color:'#dc2626',fillColor:'#dc2626',fillOpacity:1}).addTo(m);
+                    ${e.gpsPlanned && e.gpsActual ? `L.circleMarker([${e.gpsPlanned.lat},${e.gpsPlanned.lng}],{radius:5,color:'#2563eb',fillColor:'#2563eb',fillOpacity:0.7}).addTo(m);` : ""}
+                  })();
+                </script>`
               : "";
 
             const notesHtml = e.customerNotes ? `<div class="dnr-notes">${escapeHtml(e.customerNotes)}</div>` : "";
@@ -595,5 +602,9 @@ export function generateDriverReportHtml(data: DriverReportData): string {
     </div>
   </div>`;
 
-  return `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>DSPilot — ${escapeHtml(d.name)} — S${data.week}</title><style>${CSS}</style></head><body>${page}</body></html>`;
+  const leafletCdn = d.dnrEntries.some((e) => e.gpsActual || e.gpsPlanned)
+    ? `<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/><script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>`
+    : "";
+
+  return `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>DSPilot — ${escapeHtml(d.name)} — S${data.week}</title>${leafletCdn}<style>${CSS}</style></head><body>${page}</body></html>`;
 }
