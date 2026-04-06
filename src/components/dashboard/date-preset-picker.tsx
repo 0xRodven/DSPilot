@@ -201,7 +201,7 @@ export function DatePresetPicker({ selectedDate, onDateChange, granularity, clas
               onSelect={handleCalendarSelect}
               numberOfMonths={1}
               locale={fr}
-              weekStartsOn={1}
+              weekStartsOn={0}
               initialFocus
             />
 
