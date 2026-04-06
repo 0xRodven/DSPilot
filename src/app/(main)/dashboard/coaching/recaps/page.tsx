@@ -39,8 +39,8 @@ export default function RecapsPage() {
 
   // Week date range - compute from year/week
   const selectedDate = getDateFromWeek(year, weekNum);
-  const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 });
-  const weekEnd = endOfWeek(selectedDate, { weekStartsOn: 1 });
+  const weekStart = startOfWeek(selectedDate, { weekStartsOn: 0 });
+  const weekEnd = endOfWeek(selectedDate, { weekStartsOn: 0 });
   const weekRange = `${format(weekStart, "d", { locale: fr })} - ${format(weekEnd, "d MMM", { locale: fr })}`;
 
   // Handle generate single

@@ -1,7 +1,7 @@
 // src/lib/filters/parsers.ts
 // Parsers nuqs pour la gestion de l'état URL
 
-import { getISOWeek, getISOWeekYear } from "date-fns";
+import { getWeek, getWeekYear } from "date-fns";
 import { parseAsString } from "nuqs";
 
 // ============================================================================
@@ -68,10 +68,9 @@ export function serializeRange(value: RangeValue): string {
 
 function getCurrentWeekString(): string {
   const now = new Date();
-  // Use ISO week year to handle year boundary correctly
-  // e.g., Dec 29, 2025 is ISO week 1 of 2026, not week 1 of 2025
-  const year = getISOWeekYear(now);
-  const week = getISOWeek(now);
+  // Amazon week convention: Sunday-Saturday, first week contains Jan 1
+  const year = getWeekYear(now, { weekStartsOn: 0, firstWeekContainsDate: 1 });
+  const week = getWeek(now, { weekStartsOn: 0, firstWeekContainsDate: 1 });
   return serializeWeek({ year, week });
 }
 

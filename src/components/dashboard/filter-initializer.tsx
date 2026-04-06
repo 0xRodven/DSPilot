@@ -10,7 +10,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import { api } from "@convex/_generated/api";
 import { useQuery } from "convex/react";
-import { getISOWeek, getISOWeekYear } from "date-fns";
+import { getWeek, getWeekYear } from "date-fns";
 
 import { parseWeekString, serializeWeek } from "@/lib/filters/parsers";
 
@@ -41,7 +41,7 @@ export function FilterInitializer() {
 
     // Current week (what nuqs defaults to when no param)
     const now = new Date();
-    const currentWeek = { year: getISOWeekYear(now), week: getISOWeek(now) };
+    const currentWeek = { year: getWeekYear(now, { weekStartsOn: 0, firstWeekContainsDate: 1 }), week: getWeek(now, { weekStartsOn: 0, firstWeekContainsDate: 1 }) };
 
     // Week from URL (null if not present)
     const urlWeekStr = searchParams.get("week");

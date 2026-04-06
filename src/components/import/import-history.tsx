@@ -5,6 +5,7 @@ import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { api } from "@convex/_generated/api";
+import { getDateFromWeek } from "@/lib/utils/time-context";
 import type { Id } from "@convex/_generated/dataModel";
 import { useMutation } from "convex/react";
 import {
@@ -122,15 +123,8 @@ export function ImportHistory({ imports, stationCode }: ImportHistoryProps) {
 
   // Handler: View data - Navigate to dashboard with selected week
   const handleViewData = (imp: ConvexImport) => {
-    // Calculate the date for the start of the week
-    // ISO week starts on Monday, so we calculate the date from year and week
-    const jan4 = new Date(imp.year, 0, 4); // Jan 4 is always in week 1
-    const dayOfWeek = jan4.getDay() || 7; // Convert Sunday (0) to 7
-    const week1Start = new Date(jan4);
-    week1Start.setDate(jan4.getDate() - dayOfWeek + 1); // Monday of week 1
-
-    const targetDate = new Date(week1Start);
-    targetDate.setDate(week1Start.getDate() + (imp.week - 1) * 7);
+    // Calculate the date for the start of the week (Amazon: Sunday-Saturday)
+    const targetDate = getDateFromWeek(imp.year, imp.week);
 
     setSelectedDate(targetDate);
     router.push("/dashboard");

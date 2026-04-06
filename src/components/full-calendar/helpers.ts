@@ -284,7 +284,7 @@ export const getEventsForDay = (events: IEvent[], date: Date, isWeek = false): I
 };
 
 export const getWeekDates = (date: Date): Date[] => {
-  const startDate = startOfWeek(date, { weekStartsOn: 1 });
+  const startDate = startOfWeek(date, { weekStartsOn: 0 });
   return Array.from({ length: 7 }, (_, i) => addDays(startDate, i));
 };
 

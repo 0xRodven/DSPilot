@@ -20,8 +20,8 @@ interface DailyPerformanceProps {
   week: number;
 }
 
-// Days of the week in order (Monday first)
-const weekDays = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
+// Days of the week in order (Sunday first — Amazon convention)
+const weekDays = ["Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"];
 
 export function DailyPerformance({ driver, week }: DailyPerformanceProps) {
   const [isOpen, setIsOpen] = useState(true);
@@ -115,7 +115,7 @@ export function DailyPerformance({ driver, week }: DailyPerformanceProps) {
                 <TableHeader>
                   {/* Top-level grouped headers */}
                   <TableRow className="border-border hover:bg-transparent">
-                    <TableHead rowSpan={2} className="font-medium text-muted-foreground text-sm align-bottom">
+                    <TableHead rowSpan={2} className="align-bottom font-medium text-muted-foreground text-sm">
                       Jour
                     </TableHead>
                     <TableHead rowSpan={2} className={cn(headerBase, "align-bottom")}>
@@ -129,17 +129,17 @@ export function DailyPerformance({ driver, week }: DailyPerformanceProps) {
                     </TableHead>
                     <TableHead
                       colSpan={5}
-                      className="text-center font-medium text-muted-foreground text-xs border-border border-b-0 border-l"
+                      className="border-border border-b-0 border-l text-center font-medium text-muted-foreground text-xs"
                     >
                       Contact Miss
                     </TableHead>
                     <TableHead
                       colSpan={4}
-                      className="text-center font-medium text-muted-foreground text-xs border-border border-b-0 border-l"
+                      className="border-border border-b-0 border-l text-center font-medium text-muted-foreground text-xs"
                     >
                       Photo Defect
                     </TableHead>
-                    <TableHead rowSpan={2} className={cn(headerBase, "align-bottom border-border border-l")}>
+                    <TableHead rowSpan={2} className={cn(headerBase, "border-border border-l align-bottom")}>
                       IADC %
                     </TableHead>
                     <TableHead rowSpan={2} className={cn(headerBase, "align-bottom")}>
@@ -241,7 +241,7 @@ export function DailyPerformance({ driver, week }: DailyPerformanceProps) {
                           {worked ? (day.photoDefectDetail?.receptionist ?? 0) || "·" : "—"}
                         </TableCell>
                         {/* IADC */}
-                        <TableCell className={cn(cellBase, "text-card-foreground border-border border-l")}>
+                        <TableCell className={cn(cellBase, "border-border border-l text-card-foreground")}>
                           {worked && day.iadcPercent !== null ? `${day.iadcPercent}%` : "—"}
                         </TableCell>
                         {/* DNR */}
@@ -265,7 +265,7 @@ export function DailyPerformance({ driver, week }: DailyPerformanceProps) {
                   {/* Totals row */}
                   <TableRow className="border-border border-t-2 bg-muted/10 font-semibold hover:bg-muted/20">
                     <TableCell className="text-card-foreground text-sm">Total</TableCell>
-                    <TableCell className={cn(cellBase, "text-card-foreground font-semibold")}>
+                    <TableCell className={cn(cellBase, "font-semibold text-card-foreground")}>
                       {totals.deliveries}
                     </TableCell>
                     <TableCell
@@ -301,7 +301,7 @@ export function DailyPerformance({ driver, week }: DailyPerformanceProps) {
                     <TableCell className={subCell}>{totals.photoDefectHM || "·"}</TableCell>
                     <TableCell className={subCell}>{totals.photoDefectSL || "·"}</TableCell>
                     <TableCell className={subCell}>{totals.photoDefectRec || "·"}</TableCell>
-                    <TableCell className={cn(cellBase, "text-card-foreground border-border border-l")}>
+                    <TableCell className={cn(cellBase, "border-border border-l text-card-foreground")}>
                       {driver.iadcPercent}%
                     </TableCell>
                     <TableCell className="text-right text-muted-foreground">—</TableCell>
@@ -310,7 +310,7 @@ export function DailyPerformance({ driver, week }: DailyPerformanceProps) {
               </Table>
             </div>
             {/* Legend */}
-            <div className="px-4 py-2 text-[11px] text-muted-foreground border-border border-t">
+            <div className="border-border border-t px-4 py-2 text-[11px] text-muted-foreground">
               BAL = Boite aux lettres · Rec = Receptionniste · LS = Safe Location · Door = Doorstep · HM = Household
               Member
             </div>

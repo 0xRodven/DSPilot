@@ -5,7 +5,7 @@
 
 import { useCallback, useMemo } from "react";
 
-import { getISOWeek, getISOWeekYear } from "date-fns";
+import { getWeek, getWeekYear } from "date-fns";
 import { parseAsString, useQueryState, useQueryStates } from "nuqs";
 
 import { formatTimeDisplay, getTodayValues, isCurrentPeriod, navigateTime, normalizeTimeFilter } from "./normalization";
@@ -40,8 +40,8 @@ export function useFilters() {
   // Fallback to CURRENT week (not week 1!) if parsing fails
   const parsedWeek = parseWeekString(rawFilters.week);
   const week = parsedWeek ?? {
-    year: getISOWeekYear(new Date()),
-    week: getISOWeek(new Date()),
+    year: getWeekYear(new Date(), { weekStartsOn: 0, firstWeekContainsDate: 1 }),
+    week: getWeek(new Date(), { weekStartsOn: 0, firstWeekContainsDate: 1 }),
   };
   const date = rawFilters.date;
   const range = rawFilters.range ? parseRangeString(rawFilters.range) : null;

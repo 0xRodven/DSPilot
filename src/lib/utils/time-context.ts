@@ -25,6 +25,9 @@ import { fr } from "date-fns/locale";
 
 import type { SerializedTimeContext, TimeContext, TimePreset, TimeQueryParams } from "@/lib/types/filters";
 
+// Amazon weeks: Sunday–Saturday (NOT ISO Monday–Sunday)
+const AMAZON_WEEK_OPTIONS = { weekStartsOn: 0 as const, firstWeekContainsDate: 1 as const };
+
 // ============================================================================
 // CONVERSION → QUERY PARAMS
 // ============================================================================
@@ -145,7 +148,7 @@ export function navigateTimeContext(time: TimeContext, direction: "prev" | "next
     case "week": {
       const baseDate = getDateFromWeek(time.year, time.week);
       const newDate = addWeeks(baseDate, delta);
-      const weekOptions = { weekStartsOn: 1 as const, firstWeekContainsDate: 4 as const };
+      const weekOptions = AMAZON_WEEK_OPTIONS;
       return {
         type: "week",
         year: getWeekYear(newDate, weekOptions),
@@ -187,7 +190,7 @@ export function isCurrentPeriod(time: TimeContext): boolean {
       return isSameDay(time.date, now);
 
     case "week":
-      return time.year === getYear(now) && time.week === getWeek(now, { weekStartsOn: 1 });
+      return time.year === getYear(now) && time.week === getWeek(now, AMAZON_WEEK_OPTIONS);
 
     case "range":
     case "relative":
@@ -211,7 +214,7 @@ export function getCurrentPeriod(currentType: TimeContext["type"]): TimeContext 
       return {
         type: "week",
         year: getYear(now),
-        week: getWeek(now, { weekStartsOn: 1 }),
+        week: getWeek(now, AMAZON_WEEK_OPTIONS),
       };
   }
 }
@@ -291,13 +294,12 @@ export function deserializeTimeContext(serialized: SerializedTimeContext): TimeC
 // ============================================================================
 
 /**
- * Retourne la date du lundi d'une semaine donnée
+ * Retourne la date du dimanche (début de semaine Amazon) d'une semaine donnée
  */
 export function getDateFromWeek(year: number, week: number): Date {
-  // Create a date in January of the target year to avoid year boundary issues
-  const jan4 = new Date(year, 0, 4); // Jan 4 is always in week 1 (ISO standard)
-  const weekOptions = { weekStartsOn: 1 as const, firstWeekContainsDate: 4 as const };
-  return startOfWeek(setWeek(jan4, week, weekOptions), weekOptions);
+  // Amazon week convention: Sunday-Saturday, first week contains Jan 1
+  const jan1 = new Date(year, 0, 1);
+  return startOfWeek(setWeek(jan1, week, AMAZON_WEEK_OPTIONS), AMAZON_WEEK_OPTIONS);
 }
 
 /**
@@ -310,11 +312,11 @@ export function getWeeksInRange(
   const start = typeof startDate === "string" ? new Date(startDate) : startDate;
   const end = typeof endDate === "string" ? new Date(endDate) : endDate;
 
-  const weeks = eachWeekOfInterval({ start, end }, { weekStartsOn: 1 });
+  const weeks = eachWeekOfInterval({ start, end }, AMAZON_WEEK_OPTIONS);
 
   return weeks.map((date) => ({
     year: getYear(date),
-    week: getWeek(date, { weekStartsOn: 1 }),
+    week: getWeek(date, AMAZON_WEEK_OPTIONS),
   }));
 }
 
@@ -322,7 +324,7 @@ export function getWeeksInRange(
  * Retourne le numéro de la semaine courante
  */
 export function getCurrentWeek(): number {
-  return getWeek(new Date(), { weekStartsOn: 1 });
+  return getWeek(new Date(), AMAZON_WEEK_OPTIONS);
 }
 
 /**

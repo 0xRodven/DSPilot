@@ -44,31 +44,31 @@ const PRESETS: Preset[] = [
   {
     key: "thisWeek",
     label: "Cette semaine",
-    getDate: () => startOfWeek(new Date(), { weekStartsOn: 1 }),
+    getDate: () => startOfWeek(new Date(), { weekStartsOn: 0 }),
     granularity: "week",
   },
   {
     key: "lastWeek",
     label: "Semaine dernière",
-    getDate: () => startOfWeek(subWeeks(new Date(), 1), { weekStartsOn: 1 }),
+    getDate: () => startOfWeek(subWeeks(new Date(), 1), { weekStartsOn: 0 }),
     granularity: "week",
   },
   {
     key: "week2",
     label: "Il y a 2 semaines",
-    getDate: () => startOfWeek(subWeeks(new Date(), 2), { weekStartsOn: 1 }),
+    getDate: () => startOfWeek(subWeeks(new Date(), 2), { weekStartsOn: 0 }),
     granularity: "week",
   },
   {
     key: "week3",
     label: "Il y a 3 semaines",
-    getDate: () => startOfWeek(subWeeks(new Date(), 3), { weekStartsOn: 1 }),
+    getDate: () => startOfWeek(subWeeks(new Date(), 3), { weekStartsOn: 0 }),
     granularity: "week",
   },
   {
     key: "week4",
     label: "Il y a 4 semaines",
-    getDate: () => startOfWeek(subWeeks(new Date(), 4), { weekStartsOn: 1 }),
+    getDate: () => startOfWeek(subWeeks(new Date(), 4), { weekStartsOn: 0 }),
     granularity: "week",
   },
   // Day presets
@@ -134,7 +134,7 @@ export function DatePresetPicker({ selectedDate, onDateChange, granularity, clas
     (date: Date | undefined) => {
       if (date) {
         // For week mode, snap to start of week
-        const finalDate = granularity === "week" ? startOfWeek(date, { weekStartsOn: 1 }) : date;
+        const finalDate = granularity === "week" ? startOfWeek(date, { weekStartsOn: 0 }) : date;
         setTempDate(finalDate);
       }
     },
@@ -149,8 +149,8 @@ export function DatePresetPicker({ selectedDate, onDateChange, granularity, clas
   const isPresetSelected = (preset: Preset) => {
     const presetDate = preset.getDate();
     if (granularity === "week") {
-      const presetWeek = getWeek(presetDate, { weekStartsOn: 1 });
-      const selectedWeek = getWeek(tempDate, { weekStartsOn: 1 });
+      const presetWeek = getWeek(presetDate, { weekStartsOn: 0 });
+      const selectedWeek = getWeek(tempDate, { weekStartsOn: 0 });
       return presetWeek === selectedWeek && presetDate.getFullYear() === tempDate.getFullYear();
     }
     return presetDate.toDateString() === tempDate.toDateString();
@@ -158,7 +158,7 @@ export function DatePresetPicker({ selectedDate, onDateChange, granularity, clas
 
   const formatTempDate = () => {
     if (granularity === "week") {
-      const weekNum = getWeek(tempDate, { weekStartsOn: 1 });
+      const weekNum = getWeek(tempDate, { weekStartsOn: 0 });
       return `S${weekNum} - ${format(tempDate, "d MMM yyyy", { locale: fr })}`;
     }
     return format(tempDate, "EEEE d MMMM yyyy", { locale: fr });

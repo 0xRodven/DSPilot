@@ -34,7 +34,7 @@ export function normalizeTimeFilter(
 
     case "week": {
       const weekStart = getDateFromWeek(week.year, week.week);
-      const weekEnd = endOfWeek(weekStart, { weekStartsOn: 1 });
+      const weekEnd = endOfWeek(weekStart, { weekStartsOn: 0 });
       return {
         start: format(weekStart, "yyyy-MM-dd"),
         end: format(weekEnd, "yyyy-MM-dd"),
@@ -48,7 +48,7 @@ export function normalizeTimeFilter(
       if (!range) {
         // Fallback vers semaine courante si pas de range
         const weekStart = getDateFromWeek(week.year, week.week);
-        const weekEnd = endOfWeek(weekStart, { weekStartsOn: 1 });
+        const weekEnd = endOfWeek(weekStart, { weekStartsOn: 0 });
         return {
           start: format(weekStart, "yyyy-MM-dd"),
           end: format(weekEnd, "yyyy-MM-dd"),
@@ -67,7 +67,7 @@ export function normalizeTimeFilter(
     default: {
       // Fallback vers semaine
       const weekStart = getDateFromWeek(week.year, week.week);
-      const weekEnd = endOfWeek(weekStart, { weekStartsOn: 1 });
+      const weekEnd = endOfWeek(weekStart, { weekStartsOn: 0 });
       return {
         start: format(weekStart, "yyyy-MM-dd"),
         end: format(weekEnd, "yyyy-MM-dd"),
@@ -147,7 +147,7 @@ export function navigateTime(
     case "week": {
       const weekStart = getDateFromWeek(week.year, week.week);
       const newDate = addWeeks(weekStart, delta);
-      const weekOptions = { weekStartsOn: 1 as const, firstWeekContainsDate: 4 as const };
+      const weekOptions = { weekStartsOn: 0 as const, firstWeekContainsDate: 1 as const };
       return {
         week: {
           year: getWeekYear(newDate, weekOptions),
@@ -177,7 +177,7 @@ export function navigateTime(
  */
 export function getTodayValues(period: FilterValues["period"]): Partial<FilterValues> {
   const now = new Date();
-  const weekOptions = { weekStartsOn: 1 as const, firstWeekContainsDate: 4 as const };
+  const weekOptions = { weekStartsOn: 0 as const, firstWeekContainsDate: 1 as const };
 
   switch (period) {
     case "day":
@@ -203,7 +203,7 @@ export function isCurrentPeriod(
   date: FilterValues["date"],
 ): boolean {
   const now = new Date();
-  const weekOptions = { weekStartsOn: 1 as const, firstWeekContainsDate: 4 as const };
+  const weekOptions = { weekStartsOn: 0 as const, firstWeekContainsDate: 1 as const };
 
   switch (period) {
     case "day":

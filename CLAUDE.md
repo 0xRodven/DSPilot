@@ -31,6 +31,20 @@ Si tu te surprends à écrire du code sans avoir d'abord utilisé `/apex` ou `/o
 
 ---
 
+## Wiki Knowledge Base (Karpathy Pattern)
+
+Chemin : `~/wiki/`
+
+Quand tu as besoin de contexte domain (Amazon, DWC, IADC, coaching, architecture, décisions...) :
+1. Lis `~/wiki/wiki/hot-DSPilot.md` — cache chaud, contexte récent (~30 secondes)
+2. Lis `~/wiki/wiki/index.md` — si tu dois chercher plus profond
+3. Lis les pages wiki ciblées — 2-5 pages max
+4. **NE LIS PAS le wiki si tu n'en as pas besoin** (économie de tokens)
+
+Le wiki est maintenu par le LLM. Schema : `~/wiki/CLAUDE.md`.
+
+---
+
 ## Contexte
 
 DSPilot est une plateforme SaaS de gestion des performances livreurs Amazon (DWC/IADC).

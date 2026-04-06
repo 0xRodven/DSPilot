@@ -75,8 +75,8 @@ function getEffectiveDateRangeFromTime(time: TimeContext): DateRange {
     case "week": {
       const date = getDateFromWeek(time.year, time.week);
       return {
-        from: startOfWeek(date, { weekStartsOn: 1 }),
-        to: endOfWeek(date, { weekStartsOn: 1 }),
+        from: startOfWeek(date, { weekStartsOn: 0 }),
+        to: endOfWeek(date, { weekStartsOn: 0 }),
       };
     }
     case "range":
@@ -153,7 +153,7 @@ export const useDashboardStore = create<FiltersState>()(
             time: {
               type: "week",
               year: getYear(date),
-              week: getWeek(date, { weekStartsOn: 1 }),
+              week: getWeek(date, { weekStartsOn: 0 }),
             },
           });
         }
@@ -170,7 +170,7 @@ export const useDashboardStore = create<FiltersState>()(
               time: {
                 type: "week",
                 year: getYear(now),
-                week: getWeek(now, { weekStartsOn: 1 }),
+                week: getWeek(now, { weekStartsOn: 0 }),
               },
             });
             break;
@@ -178,8 +178,8 @@ export const useDashboardStore = create<FiltersState>()(
             set({
               time: {
                 type: "range",
-                from: startOfWeek(now, { weekStartsOn: 1 }),
-                to: endOfWeek(now, { weekStartsOn: 1 }),
+                from: startOfWeek(now, { weekStartsOn: 0 }),
+                to: endOfWeek(now, { weekStartsOn: 0 }),
                 granularity: "week",
               },
             });

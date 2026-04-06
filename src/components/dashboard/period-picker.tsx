@@ -51,14 +51,14 @@ export function PeriodPicker() {
           period: "week",
           week: {
             year: getYear(now),
-            week: getWeek(now, { weekStartsOn: 1 }),
+            week: getWeek(now, { weekStartsOn: 0 }),
           },
         });
         break;
       case "range": {
         // Initialize with current week when switching to range
-        const from = startOfWeek(now, { weekStartsOn: 1 });
-        const to = endOfWeek(now, { weekStartsOn: 1 });
+        const from = startOfWeek(now, { weekStartsOn: 0 });
+        const to = endOfWeek(now, { weekStartsOn: 0 });
         setFilters({
           period: "range",
           range: { start: from, end: to },
@@ -81,7 +81,7 @@ export function PeriodPicker() {
     if (selectedDate) {
       setWeek({
         year: getYear(selectedDate),
-        week: getWeek(selectedDate, { weekStartsOn: 1 }),
+        week: getWeek(selectedDate, { weekStartsOn: 0 }),
       });
       setOpen(false);
     }
@@ -122,8 +122,8 @@ export function PeriodPicker() {
   // Handle relative presets (convert to actual range)
   const handleRelativePreset = (offsetWeeks: number) => {
     const now = new Date();
-    const end = endOfWeek(now, { weekStartsOn: 1 });
-    const start = startOfWeek(addWeeks(now, offsetWeeks), { weekStartsOn: 1 });
+    const end = endOfWeek(now, { weekStartsOn: 0 });
+    const start = startOfWeek(addWeeks(now, offsetWeeks), { weekStartsOn: 0 });
     setFilters({
       period: "range",
       range: { start, end },
@@ -188,8 +188,8 @@ export function PeriodPicker() {
                 onSelect={handleWeekSelect}
                 modifiers={{
                   selectedWeek: (d) => {
-                    const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 });
-                    const weekEnd = endOfWeek(selectedDate, { weekStartsOn: 1 });
+                    const weekStart = startOfWeek(selectedDate, { weekStartsOn: 0 });
+                    const weekEnd = endOfWeek(selectedDate, { weekStartsOn: 0 });
                     return d >= weekStart && d <= weekEnd;
                   },
                 }}

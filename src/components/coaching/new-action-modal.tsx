@@ -99,7 +99,7 @@ export function NewActionModal({ open, onOpenChange, prefillSuggestion, stationI
   const drivers = useQuery(api.stats.getDashboardDrivers, {
     stationId,
     year: getYear(now),
-    week: getWeek(now, { weekStartsOn: 1 }),
+    week: getWeek(now, { weekStartsOn: 0 }),
   });
 
   const createAction = useMutation(api.coaching.createCoachingAction);

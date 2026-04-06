@@ -1,6 +1,6 @@
 // Extraction des CSVs base64 depuis le HTML Amazon
 
-import { getISOWeek, getISOWeekYear } from "date-fns";
+import { getWeek, getWeekYear } from "date-fns";
 
 import {
   CSV_HREF_REGEX,
@@ -70,8 +70,8 @@ export function extractCsvsFromHtml(html: string): ExtractionResult {
         const [, y, m, d] = dailyMatch;
         const date = `${y}-${m}-${d}`;
         const dateObj = new Date(`${y}-${m}-${d}T00:00:00`);
-        const weekNum = getISOWeek(dateObj);
-        const weekYear = getISOWeekYear(dateObj);
+        const weekNum = getWeek(dateObj, { weekStartsOn: 0, firstWeekContainsDate: 1 });
+        const weekYear = getWeekYear(dateObj, { weekStartsOn: 0, firstWeekContainsDate: 1 });
 
         csvs.push({
           periodType: "daily",
