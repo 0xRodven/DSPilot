@@ -964,53 +964,9 @@ export const processImportedWeek = internalAction({
 
       let reportCount = 0;
 
-      for (const audience of config.audiences) {
-        await ctx.runMutation(storeReportDeliveryInternalRef, {
-          stationId: args.stationId,
-          runId: args.runId,
-          importId: args.importId,
-          reportType: "weekly",
-          logicalChannel: "reports_weekly",
-          audience,
-          periodLabel: weeklyDoc.periodLabel,
-          year: args.year,
-          week: args.week,
-          title: weeklyDoc.headline,
-          summary: weeklyDoc.summary,
-          asciiContent: renderReportAscii(weeklyDoc),
-          htmlContent: renderReportHtml(weeklyDoc),
-          pdfStatus: "pending",
-          deliveryStatus: shouldAutoSend(confidenceScore, config.autoApproveMinConfidence) ? "pending" : "skipped",
-          targetPath: `/dashboard/recaps?year=${args.year}&week=${args.week}`,
-          confidenceScore,
-        });
-        reportCount += 1;
-
-        if (dailyDoc) {
-          await ctx.runMutation(storeReportDeliveryInternalRef, {
-            stationId: args.stationId,
-            runId: args.runId,
-            importId: args.importId,
-            reportType: "daily",
-            logicalChannel: "reports_daily",
-            audience,
-            periodLabel: dailyDoc.periodLabel,
-            year: args.year,
-            week: args.week,
-            title: dailyDoc.headline,
-            summary: dailyDoc.summary,
-            asciiContent: renderReportAscii(dailyDoc),
-            htmlContent: renderReportHtml(dailyDoc),
-            pdfStatus: "pending",
-            deliveryStatus: shouldAutoSend(confidenceScore, config.autoApproveMinConfidence) ? "pending" : "skipped",
-            targetPath: snapshot.latestDailyDate
-              ? `/dashboard?period=day&date=${snapshot.latestDailyDate}`
-              : `/dashboard?period=day`,
-            confidenceScore,
-          });
-          reportCount += 1;
-        }
-      }
+      // Reports quotidiens et hebdomadaires désactivés ici — générés par run-daily-report.sh
+      // et run-weekly-report.sh avec analyse IA Claude (format "Rapport Quotidien — Jeudi X")
+      // Ne pas recréer des "Daily operations brief" sans analyse IA depuis l'automation.
 
       const runStatus = alertResult.lowConfidenceCount > 0 ? "partial" : "success";
 
