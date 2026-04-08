@@ -1,7 +1,7 @@
 "use client";
 
 import type React from "react";
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 
 import { useLocalStorage } from "@/components/full-calendar/hooks";
 import type { IEvent, IUser } from "@/components/full-calendar/interfaces";
@@ -31,6 +31,8 @@ interface ICalendarContext {
   clearFilter: () => void;
 }
 
+type EventDeleteHandler = (event: IEvent) => Promise<void> | void;
+
 interface CalendarSettings {
   badgeVariant: "dot" | "colored";
   view: TCalendarView;
@@ -53,12 +55,14 @@ export function CalendarProvider({
   events,
   badge = "colored",
   view = "day",
+  onEventDelete,
 }: {
   children: React.ReactNode;
   users: IUser[];
   events: IEvent[];
   view?: TCalendarView;
   badge?: "dot" | "colored";
+  onEventDelete?: EventDeleteHandler;
 }) {
   const [settings, setSettings] = useLocalStorage<CalendarSettings>("calendar-settings", {
     ...DEFAULT_SETTINGS,
@@ -77,6 +81,13 @@ export function CalendarProvider({
 
   const [allEvents, setAllEvents] = useState<IEvent[]>(events || []);
   const [filteredEvents, setFilteredEvents] = useState<IEvent[]>(events || []);
+
+  // Keep local state in sync with the events prop so external refreshes
+  // (e.g. Convex query updates after a mutation) propagate to the UI.
+  useEffect(() => {
+    setAllEvents(events || []);
+    setFilteredEvents(events || []);
+  }, [events]);
 
   const updateSettings = (newPartialSettings: Partial<CalendarSettings>) => {
     setSettings({
@@ -155,8 +166,14 @@ export function CalendarProvider({
   };
 
   const removeEvent = (eventId: number) => {
+    // Capture the event before removing so the parent's delete handler
+    // (which usually needs the externalId) still has access to it.
+    const target = allEvents.find((e) => e.id === eventId);
     setAllEvents((prev) => prev.filter((e) => e.id !== eventId));
     setFilteredEvents((prev) => prev.filter((e) => e.id !== eventId));
+    if (target && onEventDelete) {
+      void Promise.resolve(onEventDelete(target));
+    }
   };
 
   const clearFilter = () => {

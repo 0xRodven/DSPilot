@@ -8,6 +8,7 @@ import { ArrowUpDown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { describeDriver } from "@/lib/utils/driver-display";
 
 export type DnrStatus = "ongoing" | "resolved" | "confirmed_dnr" | "under_investigation" | "investigation_closed";
 export type EntryType = "concession" | "investigation";
@@ -132,7 +133,27 @@ export const columns: ColumnDef<DnrRow>[] = [
         <ArrowUpDown className="ml-2 h-4 w-4" />
       </Button>
     ),
-    cell: ({ row }) => <span className="font-medium text-card-foreground">{row.original.driverName}</span>,
+    cell: ({ row }) => {
+      const { label, isWalker } = describeDriver(row.original.driverName, row.original.transporterId);
+      return (
+        <div className="flex items-center gap-1.5">
+          <span className="font-medium text-card-foreground">{label}</span>
+          {isWalker && (
+            <Badge
+              variant="outline"
+              className="border-sky-500/40 bg-sky-500/15 px-1.5 py-0 text-[10px] font-medium text-sky-300"
+            >
+              walker
+            </Badge>
+          )}
+        </div>
+      );
+    },
+    sortingFn: (a, b) => {
+      const la = describeDriver(a.original.driverName, a.original.transporterId).label;
+      const lb = describeDriver(b.original.driverName, b.original.transporterId).label;
+      return la.localeCompare(lb);
+    },
   },
   {
     accessorKey: "trackingId",
@@ -217,34 +238,12 @@ export const columns: ColumnDef<DnrRow>[] = [
   },
   {
     id: "city",
-    header: "Ville",
+    header: "CP",
     cell: ({ row }) => {
+      // User decision (2026-04-08): keep only the postal code — much cleaner
+      // than the noisy raw city string Amazon ships.
       const pc = row.original.address.postalCode?.slice(0, 5) ?? "";
-      // Clean city: remove noise (Group stop, Notes du client, addresses, codes)
-      const rawCity = row.original.address.city ?? "";
-      const cleaned =
-        rawCity
-          .replace(/\bGroup\s+stop\b.*/i, "")
-          .replace(/\bNotes\s+du\s+client\b.*/i, "")
-          .replace(/\bEmplacement\b.*/i, "")
-          .replace(/\bAccess\b.*/i, "")
-          .replace(/\b\d{5}\b/g, "")
-          .replace(/\d+\s*(rue|avenue|boulevard|r\b|av\b|bd\b)\b.*/i, "")
-          .trim()
-          .split(/\s{2,}/)[0]
-          ?.trim() ?? "";
-      const city =
-        cleaned ||
-        rawCity
-          .split(/\s{2,}/)[0]
-          ?.trim()
-          .slice(0, 20) ||
-        "";
-      return (
-        <span className="text-muted-foreground text-sm" title={`${pc} ${city}`}>
-          {pc} {city}
-        </span>
-      );
+      return <span className="text-muted-foreground text-sm tabular-nums">{pc || "—"}</span>;
     },
   },
   {

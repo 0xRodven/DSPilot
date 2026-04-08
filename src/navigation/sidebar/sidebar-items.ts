@@ -8,6 +8,7 @@ import {
   type LucideIcon,
   PackageX,
   Settings,
+  ShieldAlert,
   Upload,
   Users,
 } from "lucide-react";
@@ -93,6 +94,12 @@ export function getSidebarItems(orgName?: string): NavGroup[] {
           title: "Calendrier",
           url: "/dashboard/coaching/calendar",
           icon: Calendar,
+        },
+        {
+          title: "Avertissements",
+          url: "/dashboard/warnings",
+          icon: ShieldAlert,
+          isNew: true,
         },
         {
           title: "Rapports",

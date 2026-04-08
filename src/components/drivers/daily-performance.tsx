@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import Link from "next/link";
 
+import { addDays, format } from "date-fns";
+import { fr } from "date-fns/locale";
 import { ChevronDown, ChevronUp } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -11,38 +13,55 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import type { DriverDetail } from "@/lib/types";
+import type { DailyPerformance as DailyPerformanceData, DriverDetail } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { getDwcTextClass } from "@/lib/utils/performance-color";
+import { getDateFromWeek } from "@/lib/utils/time-context";
 
 interface DailyPerformanceProps {
   driver: DriverDetail;
+  year: number;
   week: number;
 }
 
 // Days of the week in order (Sunday first — Amazon convention)
 const weekDays = ["Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"];
 
-export function DailyPerformance({ driver, week }: DailyPerformanceProps) {
+type FullWeekRow = DailyPerformanceData & { isoDate: string; displayDate: string };
+
+function emptyDay(dayName: string, isoDate: string, displayDate: string): FullWeekRow {
+  return {
+    day: dayName,
+    date: isoDate,
+    isoDate,
+    displayDate,
+    dwcPercent: null,
+    iadcPercent: null,
+    deliveries: null,
+    errors: null,
+    concessions: 0,
+    status: "non-travaille",
+  };
+}
+
+export function DailyPerformance({ driver, year, week }: DailyPerformanceProps) {
   const [isOpen, setIsOpen] = useState(true);
 
-  // Build full week with all 7 days
-  const fullWeekPerformance = weekDays.map((dayName) => {
-    const existingDay = driver.dailyPerformance.find((d) => d.day === dayName);
-    if (existingDay) {
-      return existingDay;
-    }
-    return {
-      day: dayName,
-      date: "",
-      dwcPercent: null,
-      iadcPercent: null,
-      deliveries: null,
-      errors: null,
-      concessions: 0,
-      status: "non-travaille" as const,
-    };
-  });
+  // Build the canonical 7 dates for this Amazon week (Sunday → Saturday)
+  // and merge with the driver's actual daily performance entries.
+  const fullWeekPerformance: FullWeekRow[] = useMemo(() => {
+    const weekStart = getDateFromWeek(year, week); // Sunday
+    return weekDays.map((dayName, idx) => {
+      const date = addDays(weekStart, idx);
+      const isoDate = format(date, "yyyy-MM-dd");
+      const displayDate = format(date, "d MMM", { locale: fr });
+      const existing = driver.dailyPerformance.find((d) => d.date === isoDate);
+      if (existing) {
+        return { ...existing, day: dayName, isoDate, displayDate };
+      }
+      return emptyDay(dayName, isoDate, displayDate);
+    });
+  }, [driver.dailyPerformance, year, week]);
 
   // Calculate totals
   const totals = fullWeekPerformance.reduce(
@@ -163,11 +182,11 @@ export function DailyPerformance({ driver, week }: DailyPerformanceProps) {
                   {fullWeekPerformance.map((day) => {
                     const worked = day.deliveries !== null;
                     return (
-                      <TableRow key={day.day} className="border-border transition-colors hover:bg-muted/30">
+                      <TableRow key={day.isoDate} className="border-border transition-colors hover:bg-muted/30">
                         <TableCell>
                           <div>
                             <div className="font-medium text-card-foreground">{day.day}</div>
-                            {day.date && <div className="text-muted-foreground text-xs">{day.date}</div>}
+                            <div className="text-muted-foreground text-xs">{day.displayDate}</div>
                           </div>
                         </TableCell>
                         <TableCell className={cn(cellBase, "text-card-foreground")}>

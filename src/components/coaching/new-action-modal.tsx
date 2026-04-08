@@ -325,6 +325,7 @@ export function NewActionModal({ open, onOpenChange, prefillSuggestion, stationI
                     <div className="space-y-2">
                       {suggestedDrivers.map((driver) => (
                         <button
+                          type="button"
                           key={driver.id}
                           className="flex w-full items-center justify-between rounded-lg border border-zinc-700 bg-zinc-800/50 p-3 text-left transition-colors hover:bg-zinc-800"
                           onClick={() => {
@@ -353,6 +354,7 @@ export function NewActionModal({ open, onOpenChange, prefillSuggestion, stationI
                   <div className="max-h-40 space-y-1 overflow-y-auto rounded-lg border border-zinc-700 bg-zinc-800 p-2">
                     {filteredDrivers.map((driver) => (
                       <button
+                        type="button"
                         key={driver.id}
                         className={cn(
                           "flex w-full items-center justify-between rounded-md p-2 text-left transition-colors hover:bg-zinc-700",
@@ -462,6 +464,7 @@ export function NewActionModal({ open, onOpenChange, prefillSuggestion, stationI
                 <div className="grid grid-cols-4 gap-2">
                   {actionTypes.map(({ type, label, icon: Icon }) => (
                     <button
+                      type="button"
                       key={type}
                       className={cn(
                         "flex flex-col items-center gap-2 rounded-lg border p-4 transition-colors",
@@ -493,6 +496,7 @@ export function NewActionModal({ open, onOpenChange, prefillSuggestion, stationI
                   <span className="text-xs text-zinc-500">Suggestions:</span>
                   {reasonSuggestions.map((suggestion) => (
                     <button
+                      type="button"
                       key={suggestion}
                       className="rounded-full bg-zinc-800 px-2 py-1 text-xs text-zinc-400 transition-colors hover:bg-zinc-700 hover:text-white"
                       onClick={() => setReason(suggestion)}
@@ -507,31 +511,62 @@ export function NewActionModal({ open, onOpenChange, prefillSuggestion, stationI
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Catégorie d'erreur ciblée (optionnel)</Label>
-                  <Select value={targetCategory} onValueChange={setTargetCategory}>
-                    <SelectTrigger className="border-zinc-700 bg-zinc-800">
-                      <SelectValue placeholder="Sélectionner..." />
-                    </SelectTrigger>
-                    <SelectContent className="border-zinc-700 bg-zinc-900">
-                      <SelectItem value="contact-miss">Contact Miss</SelectItem>
-                      <SelectItem value="photo-defect">Photo Defect</SelectItem>
-                      <SelectItem value="no-photo">No Photo</SelectItem>
-                      <SelectItem value="otp-miss">OTP Miss</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <div className="flex items-center gap-2">
+                    <Select value={targetCategory} onValueChange={setTargetCategory}>
+                      <SelectTrigger className="flex-1 border-zinc-700 bg-zinc-800">
+                        <SelectValue placeholder="Sélectionner..." />
+                      </SelectTrigger>
+                      <SelectContent className="border-zinc-700 bg-zinc-900">
+                        <SelectItem value="contact-miss">Contact Miss</SelectItem>
+                        <SelectItem value="photo-defect">Photo Defect</SelectItem>
+                        <SelectItem value="no-photo">No Photo</SelectItem>
+                        <SelectItem value="otp-miss">OTP Miss</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {targetCategory && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-9 px-2 text-zinc-400 hover:text-white"
+                        onClick={() => {
+                          setTargetCategory("");
+                          setTargetSubcategory("");
+                        }}
+                        aria-label="Effacer catégorie"
+                      >
+                        ✕
+                      </Button>
+                    )}
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <Label>Sous-catégorie (optionnel)</Label>
-                  <Select value={targetSubcategory} onValueChange={setTargetSubcategory}>
-                    <SelectTrigger className="border-zinc-700 bg-zinc-800">
-                      <SelectValue placeholder="Sélectionner..." />
-                    </SelectTrigger>
-                    <SelectContent className="border-zinc-700 bg-zinc-900">
-                      <SelectItem value="receptionist">Receptionist</SelectItem>
-                      <SelectItem value="mailbox">Mailbox</SelectItem>
-                      <SelectItem value="doorstep">Doorstep</SelectItem>
-                      <SelectItem value="household">Household Member</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <div className="flex items-center gap-2">
+                    <Select value={targetSubcategory} onValueChange={setTargetSubcategory}>
+                      <SelectTrigger className="flex-1 border-zinc-700 bg-zinc-800">
+                        <SelectValue placeholder="Sélectionner..." />
+                      </SelectTrigger>
+                      <SelectContent className="border-zinc-700 bg-zinc-900">
+                        <SelectItem value="receptionist">Receptionist</SelectItem>
+                        <SelectItem value="mailbox">Mailbox</SelectItem>
+                        <SelectItem value="doorstep">Doorstep</SelectItem>
+                        <SelectItem value="household">Household Member</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {targetSubcategory && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-9 px-2 text-zinc-400 hover:text-white"
+                        onClick={() => setTargetSubcategory("")}
+                        aria-label="Effacer sous-catégorie"
+                      >
+                        ✕
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </div>
 

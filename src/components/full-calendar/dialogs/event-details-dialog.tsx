@@ -4,7 +4,6 @@ import type { ReactNode } from "react";
 
 import { format, parseISO } from "date-fns";
 import { Calendar, Clock, Text, User } from "lucide-react";
-import { toast } from "sonner";
 
 import { useCalendar } from "@/components/full-calendar/contexts/calendar-context";
 import { AddEditEventDialog } from "@/components/full-calendar/dialogs/add-edit-event-dialog";
@@ -25,12 +24,9 @@ export function EventDetailsDialog({ event, children }: IProps) {
   const { use24HourFormat, removeEvent } = useCalendar();
 
   const deleteEvent = (eventId: number) => {
-    try {
-      removeEvent(eventId);
-      toast.success("Event deleted successfully.");
-    } catch {
-      toast.error("Error deleting event.");
-    }
+    // Toast feedback comes from the page-level onEventDelete handler so
+    // persistence and UI feedback stay in sync.
+    removeEvent(eventId);
   };
 
   return (

@@ -57,7 +57,7 @@ export function DnrDataTable({ columns, data, onRowClick, selectedDay }: DnrData
   const globalFilterFn = useCallback((row: { original: DnrRow }, _columnId: string, filterValue: string) => {
     const search = filterValue.toLowerCase();
     return (
-      row.original.driverName.toLowerCase().includes(search) ||
+      (row.original.driverName ?? "").toLowerCase().includes(search) ||
       row.original.trackingId.toLowerCase().includes(search) ||
       row.original.transporterId.toLowerCase().includes(search)
     );

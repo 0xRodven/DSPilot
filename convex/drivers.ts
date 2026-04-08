@@ -3,6 +3,104 @@ import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import { mutation, query } from "./_generated/server";
 import { getTier } from "./lib/tier";
+import { getWeekDateRange } from "./lib/timeQuery";
+
+type WeeklyStatsForBreakdown = {
+  dwcBreakdown?: {
+    contactMiss: number;
+    photoDefect: number;
+    noPhoto: number;
+    otpMiss: number;
+    other: number;
+    contactMissDetail?: {
+      mailSlot: number;
+      receptionist: number;
+      safeLocation: number;
+      doorstep: number;
+      shed: number;
+      other: number;
+    };
+    photoDefectDetail?: {
+      householdMember: number;
+      safeLocation: number;
+      receptionist: number;
+      mailSlot: number;
+      other: number;
+    };
+  };
+  iadcBreakdown?: {
+    mailbox: number;
+    unattended: number;
+    safePlace: number;
+    other: number;
+  };
+};
+
+/**
+ * Builds a structured error breakdown (DWC + IADC) with subcategories
+ * for "Contact Miss" and "Photo Defect" from a weekly stat record.
+ */
+function buildDriverErrorBreakdown(stats: WeeklyStatsForBreakdown | null) {
+  const dwc = stats?.dwcBreakdown ?? {
+    contactMiss: 0,
+    photoDefect: 0,
+    noPhoto: 0,
+    otpMiss: 0,
+    other: 0,
+  };
+  const iadc = stats?.iadcBreakdown ?? {
+    mailbox: 0,
+    unattended: 0,
+    safePlace: 0,
+    other: 0,
+  };
+
+  const contactMissDetail = dwc.contactMissDetail;
+  const photoDefectDetail = dwc.photoDefectDetail;
+
+  const contactMissSubs = contactMissDetail
+    ? [
+        { name: "Boîte aux lettres", count: contactMissDetail.mailSlot },
+        { name: "Réceptionniste", count: contactMissDetail.receptionist },
+        { name: "Lieu sûr", count: contactMissDetail.safeLocation },
+        { name: "Doorstep", count: contactMissDetail.doorstep },
+        { name: "Cabane / Shed", count: contactMissDetail.shed },
+        { name: "Autre", count: contactMissDetail.other },
+      ].filter((s) => s.count > 0)
+    : [];
+
+  const photoDefectSubs = photoDefectDetail
+    ? [
+        { name: "Tiers (HM)", count: photoDefectDetail.householdMember },
+        { name: "Lieu sûr", count: photoDefectDetail.safeLocation },
+        { name: "Réceptionniste", count: photoDefectDetail.receptionist },
+        { name: "Boîte aux lettres", count: photoDefectDetail.mailSlot },
+        { name: "Autre", count: photoDefectDetail.other },
+      ].filter((s) => s.count > 0)
+    : [];
+
+  return {
+    dwcMisses: {
+      total: dwc.contactMiss + dwc.photoDefect + dwc.noPhoto + dwc.otpMiss + dwc.other,
+      categories: [
+        { name: "Contact Miss", count: dwc.contactMiss, subcategories: contactMissSubs },
+        { name: "Photo Defect", count: dwc.photoDefect, subcategories: photoDefectSubs },
+        { name: "No Photo", count: dwc.noPhoto, subcategories: [] },
+        { name: "OTP Miss", count: dwc.otpMiss, subcategories: [] },
+        { name: "Other", count: dwc.other, subcategories: [] },
+      ].filter((c) => c.count > 0),
+    },
+    iadcNonCompliant: {
+      total: iadc.mailbox + iadc.unattended + iadc.safePlace + iadc.other,
+      categories: [
+        { name: "Mailbox", count: iadc.mailbox },
+        { name: "Unattended", count: iadc.unattended },
+        { name: "Safe Place", count: iadc.safePlace },
+        { name: "Other", count: iadc.other },
+      ].filter((c) => c.count > 0),
+    },
+  };
+}
 
 /**
  * Récupère ou crée un driver par son Amazon ID
@@ -338,47 +436,9 @@ export const getDriverDetail = query({
     // Sort by date
     dailyPerformance.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
-    // Format error breakdown
-    const dwcBreakdown = currentWeekStats?.dwcBreakdown || {
-      contactMiss: 0,
-      photoDefect: 0,
-      noPhoto: 0,
-      otpMiss: 0,
-      other: 0,
-    };
-    const iadcBreakdown = currentWeekStats?.iadcBreakdown || {
-      mailbox: 0,
-      unattended: 0,
-      safePlace: 0,
-      other: 0,
-    };
-
-    const errorBreakdown = {
-      dwcMisses: {
-        total:
-          dwcBreakdown.contactMiss +
-          dwcBreakdown.photoDefect +
-          dwcBreakdown.noPhoto +
-          dwcBreakdown.otpMiss +
-          dwcBreakdown.other,
-        categories: [
-          { name: "Contact Miss", count: dwcBreakdown.contactMiss, subcategories: [] },
-          { name: "Photo Defect", count: dwcBreakdown.photoDefect, subcategories: [] },
-          { name: "No Photo", count: dwcBreakdown.noPhoto, subcategories: [] },
-          { name: "OTP Miss", count: dwcBreakdown.otpMiss, subcategories: [] },
-          { name: "Other", count: dwcBreakdown.other, subcategories: [] },
-        ].filter((c) => c.count > 0),
-      },
-      iadcNonCompliant: {
-        total: iadcBreakdown.mailbox + iadcBreakdown.unattended + iadcBreakdown.safePlace + iadcBreakdown.other,
-        categories: [
-          { name: "Mailbox", count: iadcBreakdown.mailbox },
-          { name: "Unattended", count: iadcBreakdown.unattended },
-          { name: "Safe Place", count: iadcBreakdown.safePlace },
-          { name: "Other", count: iadcBreakdown.other },
-        ].filter((c) => c.count > 0),
-      },
-    };
+    // Format error breakdown (with subcategories + previous week for WoW)
+    const errorBreakdown = buildDriverErrorBreakdown(currentWeekStats ?? null);
+    const errorBreakdownPrevious = prevWeekStats ? buildDriverErrorBreakdown(prevWeekStats) : undefined;
 
     // Format weekly history
     const formattedWeeklyHistory = weeklyHistory
@@ -432,6 +492,7 @@ export const getDriverDetail = query({
       totalDrivers: allStationDriverStats.length,
       dailyPerformance,
       errorBreakdown,
+      errorBreakdownPrevious,
       coachingHistory: [], // Will be filled by separate query
       weeklyHistory: formattedWeeklyHistory,
     };
@@ -541,11 +602,18 @@ export const getDriverWithFullHistory = query({
     const prevStats =
       targetWeekIndex >= 0 && targetWeekIndex < weeklyHistory.length - 1 ? weeklyHistory[targetWeekIndex + 1] : null;
 
-    // 5. Get daily stats for TARGET week (not necessarily latest)
-    const dailyStats = await ctx.db
+    // 5. Get daily stats for TARGET week using the SAME date-range filter
+    // as the dashboard's getDashboardDrivers query, to guarantee that
+    // "days worked" matches between the bottom table and the driver
+    // detail page. We can't trust the (year, week) tag alone — if the
+    // import wrote it with the wrong week convention, the indexed query
+    // would silently miss days. Date strings are the source of truth.
+    const { start: weekStart, end: weekEnd } = getWeekDateRange(targetYear, targetWeek);
+    const allDailyStatsForDriver = await ctx.db
       .query("driverDailyStats")
-      .withIndex("by_driver_week", (q) => q.eq("driverId", args.driverId).eq("year", targetYear).eq("week", targetWeek))
+      .withIndex("by_driver_date", (q) => q.eq("driverId", args.driverId))
       .collect();
+    const dailyStats = allDailyStatsForDriver.filter((d) => d.date >= weekStart && d.date <= weekEnd);
 
     // 6. Get station stats for ranking (for target week)
     const allStationDriverStats = await ctx.db
@@ -656,48 +724,8 @@ export const getDriverWithFullHistory = query({
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
     // Error breakdown for TARGET week (handle null targetStats)
-    const emptyDwcBreakdown = {
-      contactMiss: 0,
-      photoDefect: 0,
-      noPhoto: 0,
-      otpMiss: 0,
-      other: 0,
-    };
-    const emptyIadcBreakdown = {
-      mailbox: 0,
-      unattended: 0,
-      safePlace: 0,
-      other: 0,
-    };
-    const dwcBreakdown = targetStats?.dwcBreakdown || emptyDwcBreakdown;
-    const iadcBreakdown = targetStats?.iadcBreakdown || emptyIadcBreakdown;
-
-    const errorBreakdown = {
-      dwcMisses: {
-        total:
-          dwcBreakdown.contactMiss +
-          dwcBreakdown.photoDefect +
-          dwcBreakdown.noPhoto +
-          dwcBreakdown.otpMiss +
-          dwcBreakdown.other,
-        categories: [
-          { name: "Contact Miss", count: dwcBreakdown.contactMiss, subcategories: [] },
-          { name: "Photo Defect", count: dwcBreakdown.photoDefect, subcategories: [] },
-          { name: "No Photo", count: dwcBreakdown.noPhoto, subcategories: [] },
-          { name: "OTP Miss", count: dwcBreakdown.otpMiss, subcategories: [] },
-          { name: "Other", count: dwcBreakdown.other, subcategories: [] },
-        ].filter((c) => c.count > 0),
-      },
-      iadcNonCompliant: {
-        total: iadcBreakdown.mailbox + iadcBreakdown.unattended + iadcBreakdown.safePlace + iadcBreakdown.other,
-        categories: [
-          { name: "Mailbox", count: iadcBreakdown.mailbox },
-          { name: "Unattended", count: iadcBreakdown.unattended },
-          { name: "Safe Place", count: iadcBreakdown.safePlace },
-          { name: "Other", count: iadcBreakdown.other },
-        ].filter((c) => c.count > 0),
-      },
-    };
+    const errorBreakdown = buildDriverErrorBreakdown(targetStats);
+    const errorBreakdownPrevious = prevStats ? buildDriverErrorBreakdown(prevStats) : undefined;
 
     // Format weekly history for chart
     const formattedWeeklyHistory = weeklyHistory
@@ -752,6 +780,7 @@ export const getDriverWithFullHistory = query({
       totalDrivers: allStationDriverStats.length,
       dailyPerformance,
       errorBreakdown,
+      errorBreakdownPrevious,
       coachingHistory: [],
       weeklyHistory: formattedWeeklyHistory,
       hasData: true,

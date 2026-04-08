@@ -101,9 +101,10 @@ export function DnrDailyChart({ data, selectedDay, onDayClick }: DnrDailyChartPr
         </div>
       </div>
 
-      <ChartContainer config={chartConfig} className="h-[180px] w-full">
+      <ChartContainer config={chartConfig} className="h-[220px] w-full">
         <BarChart
           data={chartData}
+          margin={{ top: 24, right: 8, left: 0, bottom: 0 }}
           onClick={(state) => {
             if (state?.activePayload?.[0]) {
               const clickedDate = state.activePayload[0].payload.date as string;
@@ -123,6 +124,8 @@ export function DnrDailyChart({ data, selectedDay, onDayClick }: DnrDailyChartPr
             tickLine={false}
             tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
             width={30}
+            domain={[0, (max: number) => Math.max(1, Math.ceil(max * 1.2))]}
+            allowDecimals={false}
           />
           <ChartTooltip content={<ChartTooltipContent />} />
           <Bar dataKey="concessions" stackId="stack" fill="var(--color-concessions)" radius={[0, 0, 0, 0]}>
@@ -138,7 +141,7 @@ export function DnrDailyChart({ data, selectedDay, onDayClick }: DnrDailyChartPr
               dataKey="total"
               position="top"
               className="fill-muted-foreground text-xs font-medium"
-              offset={6}
+              offset={8}
             />
           </Bar>
         </BarChart>

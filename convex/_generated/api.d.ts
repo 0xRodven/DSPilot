@@ -34,6 +34,7 @@ import type * as stationDeliveryStats from "../stationDeliveryStats.js";
 import type * as stationObjectives from "../stationObjectives.js";
 import type * as stations from "../stations.js";
 import type * as stats from "../stats.js";
+import type * as warnings from "../warnings.js";
 import type * as whatsapp from "../whatsapp.js";
 import type * as whatsappCron from "../whatsappCron.js";
 
@@ -70,6 +71,7 @@ declare const fullApi: ApiFromModules<{
   stationObjectives: typeof stationObjectives;
   stations: typeof stations;
   stats: typeof stats;
+  warnings: typeof warnings;
   whatsapp: typeof whatsapp;
   whatsappCron: typeof whatsappCron;
 }>;

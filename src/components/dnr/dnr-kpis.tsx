@@ -5,21 +5,13 @@ import { useMemo, useState } from "react";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { useQuery } from "convex/react";
-import {
-  AlertTriangle,
-  ChevronDown,
-  ChevronRight,
-  HelpCircle,
-  PackageX,
-  ShieldCheck,
-  TrendingDown,
-  TrendingUp,
-} from "lucide-react";
+import { AlertTriangle, ChevronDown, ChevronRight, HelpCircle, PackageX, TrendingDown, TrendingUp } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardAction, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { describeDriver } from "@/lib/utils/driver-display";
 
 interface DnrKpisProps {
   stationId: Id<"stations">;
@@ -33,25 +25,29 @@ export function DnrKpis({ stationId, year, week }: DnrKpisProps) {
   const [showDnrList, setShowDnrList] = useState(false);
   const [expandedDriver, setExpandedDriver] = useState<string | null>(null);
 
-  // Group investigations by driver name
+  // Group investigations by driver (transporter ID for stability — name may be missing/walker)
   const groupedDnr = useMemo(() => {
     if (!dnrList) return [];
-    const map = new Map<string, { name: string; items: typeof dnrList }>();
+    const map = new Map<string, { label: string; isWalker: boolean; items: typeof dnrList }>();
     for (const inv of dnrList) {
-      const existing = map.get(inv.driverName);
+      const key = inv.transporterId || inv.driverName;
+      if (!key) continue;
+      const existing = map.get(key);
       if (existing) {
         existing.items.push(inv);
       } else {
-        map.set(inv.driverName, { name: inv.driverName, items: [inv] });
+        const display = describeDriver(inv.driverName, inv.transporterId);
+        map.set(key, { label: display.label, isWalker: display.isWalker, items: [inv] });
       }
     }
-    return Array.from(map.values()).sort((a, b) => b.items.length - a.items.length);
+    return Array.from(map.entries())
+      .map(([key, value]) => ({ key, ...value }))
+      .sort((a, b) => b.items.length - a.items.length);
   }, [dnrList]);
 
   if (kpis === undefined) {
     return (
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
-        <Skeleton className="h-[120px]" />
+      <div className="grid grid-cols-2 gap-4">
         <Skeleton className="h-[120px]" />
         <Skeleton className="h-[120px]" />
       </div>
@@ -62,7 +58,7 @@ export function DnrKpis({ stationId, year, week }: DnrKpisProps) {
 
   return (
     <TooltipProvider delayDuration={300}>
-      <div className="grid grid-cols-2 gap-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card *:data-[slot=card]:shadow-xs md:grid-cols-3 dark:*:data-[slot=card]:bg-card">
+      <div className="grid grid-cols-1 gap-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card *:data-[slot=card]:shadow-xs md:grid-cols-2 dark:*:data-[slot=card]:bg-card">
         {/* DNR Count — with hover list */}
         <fieldset
           className="relative m-0 border-0 p-0"
@@ -112,25 +108,33 @@ export function DnrKpis({ stationId, year, week }: DnrKpisProps) {
               </p>
               <div className="space-y-1">
                 {groupedDnr.map((group) => (
-                  <div key={group.name}>
+                  <div key={group.key}>
                     <button
                       type="button"
                       className="flex w-full items-center justify-between rounded-lg bg-muted/50 px-3 py-2 text-left text-sm transition-colors hover:bg-muted/80"
-                      onClick={() => setExpandedDriver(expandedDriver === group.name ? null : group.name)}
+                      onClick={() => setExpandedDriver(expandedDriver === group.key ? null : group.key)}
                     >
                       <div className="flex items-center gap-2">
-                        {expandedDriver === group.name ? (
+                        {expandedDriver === group.key ? (
                           <ChevronDown className="h-3 w-3 text-muted-foreground" />
                         ) : (
                           <ChevronRight className="h-3 w-3 text-muted-foreground" />
                         )}
-                        <span className="font-medium">{group.name}</span>
+                        <span className="font-medium">{group.label}</span>
+                        {group.isWalker && (
+                          <Badge
+                            variant="outline"
+                            className="border-sky-500/40 bg-sky-500/15 px-1.5 py-0 text-[10px] font-medium text-sky-300"
+                          >
+                            walker
+                          </Badge>
+                        )}
                       </div>
                       <span className="rounded-md bg-red-500/10 px-1.5 py-0.5 font-medium text-red-400 text-xs tabular-nums">
                         ×{group.items.length}
                       </span>
                     </button>
-                    {expandedDriver === group.name && (
+                    {expandedDriver === group.key && (
                       <div className="ml-7 space-y-1 py-1">
                         {group.items.map((inv) => (
                           <div key={inv._id} className="flex items-center justify-between rounded-md px-2 py-1 text-xs">
@@ -148,34 +152,6 @@ export function DnrKpis({ stationId, year, week }: DnrKpisProps) {
             </div>
           )}
         </fieldset>
-
-        {/* Prevention Rate */}
-        <Card className="@container/card">
-          <CardHeader>
-            <CardDescription className="flex items-center gap-1">
-              <span>Taux de résolution</span>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <HelpCircle className="h-3 w-3 cursor-help text-muted-foreground/60" />
-                </TooltipTrigger>
-                <TooltipContent side="top" className="max-w-xs">
-                  <p className="text-xs">% de DNR résolus (non confirmés comme perdus) — 100% = tous résolus</p>
-                </TooltipContent>
-              </Tooltip>
-            </CardDescription>
-            <CardTitle
-              className={`@[250px]/card:text-3xl text-2xl tabular-nums ${kpis.preventionRate >= 75 ? "text-emerald-400" : kpis.preventionRate >= 50 ? "text-amber-400" : "text-red-400"}`}
-            >
-              {kpis.preventionRate}%
-            </CardTitle>
-            <CardAction>
-              <ShieldCheck className="h-5 w-5 text-muted-foreground" />
-            </CardAction>
-          </CardHeader>
-          <CardFooter className="flex-col items-start gap-1.5 text-sm">
-            <div className="text-muted-foreground">cette semaine</div>
-          </CardFooter>
-        </Card>
 
         {/* Formal Investigations */}
         <Card className="@container/card">

@@ -24,6 +24,7 @@ export interface DriverDetail extends Driver {
   totalDrivers: number;
   dailyPerformance: DailyPerformance[];
   errorBreakdown: ErrorBreakdown;
+  errorBreakdownPrevious?: ErrorBreakdown; // Previous week breakdown for WoW comparison
   coachingHistory: CoachingAction[];
   weeklyHistory: WeeklyData[];
   hasDataForSelectedWeek?: boolean; // false when selected week has no data

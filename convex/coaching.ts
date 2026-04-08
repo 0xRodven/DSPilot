@@ -4,6 +4,14 @@ import { mutation, query } from "./_generated/server";
 import { canAccessStation, checkStationAccess, requireWriteAccess } from "./lib/permissions";
 import { getTier } from "./lib/tier";
 
+// Soft-delete predicate — single source of truth.
+// All queries below filter out actions where deletedAt is set so they
+// disappear from the calendar/planning/list views, but the row remains
+// in the database for audit history.
+function isNotDeleted<T extends { deletedAt?: number }>(action: T): boolean {
+  return !action.deletedAt;
+}
+
 // ============================================
 // COACHING QUERIES
 // ============================================
@@ -20,11 +28,13 @@ export const listCoachingActions = query({
     const hasAccess = await checkStationAccess(ctx, args.stationId);
     if (!hasAccess) return [];
 
-    // Get all coaching actions for this station
-    let actions = await ctx.db
-      .query("coachingActions")
-      .withIndex("by_station", (q) => q.eq("stationId", args.stationId))
-      .collect();
+    // Get all coaching actions for this station (excluding soft-deleted)
+    let actions = (
+      await ctx.db
+        .query("coachingActions")
+        .withIndex("by_station", (q) => q.eq("stationId", args.stationId))
+        .collect()
+    ).filter(isNotDeleted);
 
     // Filter by status if provided
     if (args.status && args.status !== "all") {
@@ -116,10 +126,12 @@ export const getCoachingStats = query({
     const hasAccess = await checkStationAccess(ctx, args.stationId);
     if (!hasAccess) return null;
 
-    const actions = await ctx.db
-      .query("coachingActions")
-      .withIndex("by_station", (q) => q.eq("stationId", args.stationId))
-      .collect();
+    const actions = (
+      await ctx.db
+        .query("coachingActions")
+        .withIndex("by_station", (q) => q.eq("stationId", args.stationId))
+        .collect()
+    ).filter(isNotDeleted);
 
     const now = Date.now();
     const thirtyDaysAgo = now - 30 * 24 * 60 * 60 * 1000;
@@ -176,10 +188,12 @@ export const getCoachingEffectiveness = query({
 
     const cutoff = now - periodMs;
 
-    const actions = await ctx.db
-      .query("coachingActions")
-      .withIndex("by_station", (q) => q.eq("stationId", args.stationId))
-      .collect();
+    const actions = (
+      await ctx.db
+        .query("coachingActions")
+        .withIndex("by_station", (q) => q.eq("stationId", args.stationId))
+        .collect()
+    ).filter(isNotDeleted);
 
     // Filter to actions within period that have been evaluated
     const evaluated = actions.filter((a) => a.createdAt >= cutoff && a.status !== "pending");
@@ -259,11 +273,13 @@ export const getCoachingSuggestions = query({
       )
       .collect();
 
-    // Get pending coaching actions
-    const pendingActions = await ctx.db
-      .query("coachingActions")
-      .withIndex("by_station", (q) => q.eq("stationId", args.stationId))
-      .collect();
+    // Get pending coaching actions (excluding soft-deleted)
+    const pendingActions = (
+      await ctx.db
+        .query("coachingActions")
+        .withIndex("by_station", (q) => q.eq("stationId", args.stationId))
+        .collect()
+    ).filter(isNotDeleted);
     const driversWithPendingAction = new Set(
       pendingActions.filter((a) => a.status === "pending").map((a) => a.driverId),
     );
@@ -354,11 +370,13 @@ export const getDriverCoachingHistory = query({
     const hasAccess = await canAccessStation(ctx, driver.stationId);
     if (!hasAccess) return [];
 
-    const actions = await ctx.db
-      .query("coachingActions")
-      .withIndex("by_driver", (q) => q.eq("driverId", args.driverId))
-      .order("desc")
-      .take(20);
+    const actions = (
+      await ctx.db
+        .query("coachingActions")
+        .withIndex("by_driver", (q) => q.eq("driverId", args.driverId))
+        .order("desc")
+        .take(40)
+    ).filter(isNotDeleted);
 
     // Format for the CoachingAction type used in DriverDetail
     return actions.map((action) => {
@@ -484,6 +502,36 @@ export const evaluateCoachingAction = mutation({
 });
 
 /**
+ * Soft-delete a coaching action.
+ *
+ * Sets `deletedAt` (and optional `deletedBy`) so the row disappears
+ * from every coaching query (calendar, planning, kanban, history,
+ * suggestions) but stays in the database for audit history.
+ */
+export const deleteCoachingAction = mutation({
+  args: {
+    actionId: v.id("coachingActions"),
+    deletedBy: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const action = await ctx.db.get(args.actionId);
+    if (!action) {
+      throw new Error("Coaching action not found");
+    }
+
+    // Permission check (write access on the station owning this action)
+    await requireWriteAccess(ctx, action.stationId);
+
+    const now = Date.now();
+    await ctx.db.patch(args.actionId, {
+      deletedAt: now,
+      deletedBy: args.deletedBy,
+      updatedAt: now,
+    });
+  },
+});
+
+/**
  * Get coaching actions for calendar view
  * Returns actions with follow-up dates for display on a calendar
  */
@@ -498,11 +546,13 @@ export const getCalendarEvents = query({
     const hasAccess = await checkStationAccess(ctx, args.stationId);
     if (!hasAccess) return [];
 
-    // Get all coaching actions for this station
-    const actions = await ctx.db
-      .query("coachingActions")
-      .withIndex("by_station", (q) => q.eq("stationId", args.stationId))
-      .collect();
+    // Get all coaching actions for this station (excluding soft-deleted)
+    const actions = (
+      await ctx.db
+        .query("coachingActions")
+        .withIndex("by_station", (q) => q.eq("stationId", args.stationId))
+        .collect()
+    ).filter(isNotDeleted);
 
     // Filter to actions with follow-up dates in the range
     const startTime = new Date(args.startDate).getTime();
@@ -566,11 +616,13 @@ export const getFollowUpDatesForMonth = query({
     const hasAccess = await checkStationAccess(ctx, args.stationId);
     if (!hasAccess) return [];
 
-    // Get all pending coaching actions for this station
-    const actions = await ctx.db
-      .query("coachingActions")
-      .withIndex("by_station", (q) => q.eq("stationId", args.stationId))
-      .collect();
+    // Get all pending coaching actions for this station (excluding soft-deleted)
+    const actions = (
+      await ctx.db
+        .query("coachingActions")
+        .withIndex("by_station", (q) => q.eq("stationId", args.stationId))
+        .collect()
+    ).filter(isNotDeleted);
 
     // Filter to pending actions with follow-up dates in the specified month
     const startOfMonth = new Date(args.year, args.month - 1, 1);
@@ -620,10 +672,12 @@ export const getCoachingPipelineSuggestion = query({
     const hasAccess = await canAccessStation(ctx, driver.stationId);
     if (!hasAccess) return null;
 
-    const actions = await ctx.db
-      .query("coachingActions")
-      .withIndex("by_driver", (q) => q.eq("driverId", args.driverId))
-      .collect();
+    const actions = (
+      await ctx.db
+        .query("coachingActions")
+        .withIndex("by_driver", (q) => q.eq("driverId", args.driverId))
+        .collect()
+    ).filter(isNotDeleted);
 
     // Count by type and status
     const discussionCount = actions.filter((a) => a.actionType === "discussion").length;
@@ -749,11 +803,13 @@ export const getKanbanData = query({
       )
       .collect();
 
-    // 2. Get all pending coaching actions for this station
-    const allActions = await ctx.db
-      .query("coachingActions")
-      .withIndex("by_station", (q) => q.eq("stationId", args.stationId))
-      .collect();
+    // 2. Get all coaching actions for this station (excluding soft-deleted)
+    const allActions = (
+      await ctx.db
+        .query("coachingActions")
+        .withIndex("by_station", (q) => q.eq("stationId", args.stationId))
+        .collect()
+    ).filter(isNotDeleted);
 
     const pendingActions = allActions.filter((a) => a.status === "pending");
     const driversWithPendingAction = new Set(pendingActions.map((a) => a.driverId));

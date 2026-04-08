@@ -14,6 +14,9 @@ export interface IEvent {
   color: TEventColor;
   description: string;
   user: IUser;
+  // Optional opaque external identifier (e.g. a Convex document id) so a
+  // generic calendar can persist deletes/updates back to a backing store.
+  externalId?: string;
 }
 
 export interface ICalendarCell {

@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
+import { describeDriver } from "@/lib/utils/driver-display";
 
 import type { DnrRow } from "./dnr-table/columns";
 
@@ -41,6 +42,7 @@ const statusLabels: Record<string, string> = {
 export function DnrDetailSheet({ investigation, open, onOpenChange }: DnrDetailSheetProps) {
   if (!investigation) return null;
 
+  const driverDisplay = describeDriver(investigation.driverName, investigation.transporterId);
   const deliveryDate = new Date(investigation.deliveryDatetime);
   const concessionDate = new Date(investigation.concessionDatetime);
   const delayDays = differenceInDays(concessionDate, deliveryDate);
@@ -84,10 +86,18 @@ export function DnrDetailSheet({ investigation, open, onOpenChange }: DnrDetailS
                     href={`/dashboard/drivers/${investigation.driverId}`}
                     className="font-medium text-primary hover:underline"
                   >
-                    {investigation.driverName}
+                    {driverDisplay.label}
                   </Link>
                 ) : (
-                  <span className="font-medium">{investigation.driverName}</span>
+                  <span className="font-medium">{driverDisplay.label}</span>
+                )}
+                {driverDisplay.isWalker && (
+                  <Badge
+                    variant="outline"
+                    className="ml-1 border-sky-500/40 bg-sky-500/15 px-1.5 py-0 text-[10px] font-medium text-sky-300"
+                  >
+                    walker
+                  </Badge>
                 )}
               </div>
               <div className="flex justify-between">

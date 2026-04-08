@@ -16,6 +16,7 @@ import { DailyPerformanceChartWithCoaching } from "@/components/drivers/daily-pe
 import { DriverHeader } from "@/components/drivers/driver-header";
 import { DriverKpis } from "@/components/drivers/driver-kpis";
 import { DriverPerformanceChart } from "@/components/drivers/driver-performance-chart";
+import { DriverWarningsCard } from "@/components/drivers/driver-warnings-card";
 import { ErrorBreakdown } from "@/components/drivers/error-breakdown";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -309,14 +310,19 @@ export default function DriverDetailPage({ params }: DriverDetailPageProps) {
           <DriverPerformanceChart driver={driver} />
         </div>
 
+        {/* Warnings card (active formal warnings — links to /warnings) */}
+        <div className="mb-6">
+          <DriverWarningsCard driverId={id as Id<"drivers">} stationId={station._id} />
+        </div>
+
         {/* Two Columns: Error Breakdown + Coaching History */}
         <div className="mb-6 grid gap-6 lg:grid-cols-2">
-          <ErrorBreakdown driver={driver} />
+          <ErrorBreakdown driver={driver} week={weekNum} />
           <CoachingHistory driver={driver} onPlanCoaching={() => setCoachingModalOpen(true)} />
         </div>
 
         {/* Daily Performance (includes DNR column) */}
-        <DailyPerformance driver={driver} week={weekNum} />
+        <DailyPerformance driver={driver} year={globalWeek.year} week={weekNum} />
       </div>
 
       {/* Coaching Modal */}

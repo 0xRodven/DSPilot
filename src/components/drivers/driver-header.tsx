@@ -19,10 +19,12 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import type { DriverDetail } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { describeDriver } from "@/lib/utils/driver-display";
 import { getDwcBadgeClass, getDwcTextClass } from "@/lib/utils/performance-color";
 
 import { PhoneEditModal } from "./phone-edit-modal";
@@ -39,6 +41,8 @@ interface DriverHeaderProps {
 export function DriverHeader({ driver, driverId, stationId, year, week, onPlanCoaching }: DriverHeaderProps) {
   const [showPhoneModal, setShowPhoneModal] = useState(false);
   const [isSending, setIsSending] = useState(false);
+
+  const driverDisplay = describeDriver(driver.name, driver.amazonId);
 
   const sendManualRecap = useAction(api.whatsapp.sendManualRecap);
 
@@ -72,7 +76,7 @@ export function DriverHeader({ driver, driverId, stationId, year, week, onPlanCo
         week,
       });
       toast.success("Récapitulatif envoyé", {
-        description: `Le récap S${week} a été envoyé à ${driver.name}`,
+        description: `Le récap S${week} a été envoyé à ${driverDisplay.label}`,
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Erreur lors de l'envoi";
@@ -104,7 +108,17 @@ export function DriverHeader({ driver, driverId, stationId, year, week, onPlanCo
               <User className="h-10 w-10 text-muted-foreground" />
             </div>
             <div>
-              <h2 className="font-bold text-2xl text-card-foreground">{driver.name}</h2>
+              <h2 className="flex items-center gap-2 font-bold text-2xl text-card-foreground">
+                {driverDisplay.label}
+                {driverDisplay.isWalker && (
+                  <Badge
+                    variant="outline"
+                    className="border-sky-500/40 bg-sky-500/15 font-medium text-[11px] text-sky-300"
+                  >
+                    Walker
+                  </Badge>
+                )}
+              </h2>
               <p className="font-mono text-muted-foreground text-sm">{driver.amazonId}</p>
               <div className="mt-2 flex flex-wrap items-center gap-3 text-muted-foreground text-sm">
                 <span className="flex items-center gap-1">
@@ -113,6 +127,7 @@ export function DriverHeader({ driver, driverId, stationId, year, week, onPlanCo
                 </span>
                 {/* Phone number display */}
                 <button
+                  type="button"
                   onClick={() => setShowPhoneModal(true)}
                   className="flex items-center gap-1.5 rounded-md px-2 py-0.5 transition-colors hover:bg-muted"
                 >

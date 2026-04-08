@@ -1,5 +1,4 @@
 import { TrashIcon } from "lucide-react";
-import { toast } from "sonner";
 
 import { useCalendar } from "@/components/full-calendar/contexts/calendar-context";
 import {
@@ -23,12 +22,9 @@ export default function DeleteEventDialog({ eventId }: DeleteEventDialogProps) {
   const { removeEvent } = useCalendar();
 
   const deleteEvent = () => {
-    try {
-      removeEvent(eventId);
-      toast.success("Event deleted successfully.");
-    } catch {
-      toast.error("Error deleting event.");
-    }
+    // Toast success/failure is handled by the page-level onEventDelete
+    // handler so persistence and UI feedback stay in sync.
+    removeEvent(eventId);
   };
 
   if (!eventId) {

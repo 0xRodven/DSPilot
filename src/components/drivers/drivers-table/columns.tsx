@@ -23,6 +23,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { describeDriver } from "@/lib/utils/driver-display";
 import { getDwcBadgeClass, getDwcTextClass } from "@/lib/utils/performance-color";
 
 export interface DriversListDriver {
@@ -63,17 +64,35 @@ export const createColumns = ({
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       ),
-      cell: ({ row }) => (
-        <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-muted">
-            <User className="h-4 w-4 text-muted-foreground" />
+      cell: ({ row }) => {
+        const { label, isWalker } = describeDriver(row.original.name, row.original.amazonId);
+        return (
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-muted">
+              <User className="h-4 w-4 text-muted-foreground" />
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5">
+                <span className="truncate font-medium text-card-foreground">{label}</span>
+                {isWalker && (
+                  <Badge
+                    variant="outline"
+                    className="border-sky-500/40 bg-sky-500/15 px-1.5 py-0 text-[10px] font-medium text-sky-300"
+                  >
+                    walker
+                  </Badge>
+                )}
+              </div>
+              <div className="font-mono text-muted-foreground text-xs">{row.original.amazonId}</div>
+            </div>
           </div>
-          <div>
-            <div className="font-medium text-card-foreground">{row.getValue("name")}</div>
-            <div className="font-mono text-muted-foreground text-xs">{row.original.amazonId}</div>
-          </div>
-        </div>
-      ),
+        );
+      },
+      sortingFn: (a, b) => {
+        const la = describeDriver(a.original.name, a.original.amazonId).label;
+        const lb = describeDriver(b.original.name, b.original.amazonId).label;
+        return la.localeCompare(lb);
+      },
     },
     {
       accessorKey: "dwcPercent",

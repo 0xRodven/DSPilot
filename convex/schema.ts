@@ -346,10 +346,55 @@ export default defineSchema({
     createdBy: v.string(),
     createdAt: v.number(),
     updatedAt: v.number(),
+
+    // Soft delete — when set, the action is hidden from queries but kept
+    // for audit. Use deleteCoachingAction mutation to set it.
+    deletedAt: v.optional(v.number()),
+    deletedBy: v.optional(v.string()),
   })
     .index("by_driver", ["driverId"])
     .index("by_station", ["stationId"])
     .index("by_station_status", ["stationId", "status"])
+    .index("by_driver_status", ["driverId", "status"]),
+
+  // Driver warnings (avertissements) — formal disciplinary warnings
+  // tracked separately from coaching actions because they have a long
+  // lifecycle (months), feed into the escalation pipeline (warning 1 →
+  // warning 2 → final → suspension), and need a global view across the
+  // station rather than a per-driver weekly view.
+  warnings: defineTable({
+    stationId: v.id("stations"),
+    driverId: v.id("drivers"),
+    organizationId: v.optional(v.string()), // Clerk org for multi-tenant safety
+
+    // Severity level — drives the escalation pipeline
+    level: v.union(v.literal("first"), v.literal("second"), v.literal("final")),
+
+    reason: v.string(),
+    notes: v.optional(v.string()),
+
+    // Lifecycle dates
+    issuedAt: v.number(), // ms epoch
+    expiresAt: v.optional(v.string()), // ISO date — when the warning lapses
+    issuedBy: v.string(), // Clerk user id
+
+    // Status — active = currently effective; expired = past expiresAt;
+    // cancelled = manually withdrawn (kept for audit, hidden from active list)
+    status: v.union(v.literal("active"), v.literal("expired"), v.literal("cancelled")),
+    cancelledAt: v.optional(v.number()),
+    cancelledBy: v.optional(v.string()),
+    cancelledReason: v.optional(v.string()),
+
+    // Optional link back to the coaching action that triggered this
+    // warning — lets the warnings page show "issued from coaching X".
+    linkedCoachingActionId: v.optional(v.id("coachingActions")),
+
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_station", ["stationId"])
+    .index("by_station_status", ["stationId", "status"])
+    .index("by_driver", ["driverId"])
     .index("by_driver_status", ["driverId", "status"]),
 
   // Import history
