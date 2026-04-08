@@ -56,6 +56,21 @@ const associateWeeklyStatValidator = v.object({
   rtsDpmo: v.optional(v.number()),
 });
 
+const associateDailyStatValidator = v.object({
+  amazonId: v.string(),
+  name: v.string(),
+  date: v.string(), // ISO YYYY-MM-DD
+  year: v.number(),
+  week: v.number(),
+  packagesDelivered: v.optional(v.number()),
+  dnrCount: v.optional(v.number()),
+  dnrDpmo: v.optional(v.number()),
+  packagesShipped: v.optional(v.number()),
+  rtsCount: v.optional(v.number()),
+  rtsPercent: v.optional(v.number()),
+  rtsDpmo: v.optional(v.number()),
+});
+
 const dailyReportStatValidator = v.object({
   transporterId: v.string(),
   date: v.string(),
@@ -216,6 +231,20 @@ type IngestParsedAmazonReportArgs = {
   associateWeeklyStats?: Array<{
     amazonId: string;
     name: string;
+    packagesDelivered?: number;
+    dnrCount?: number;
+    dnrDpmo?: number;
+    packagesShipped?: number;
+    rtsCount?: number;
+    rtsPercent?: number;
+    rtsDpmo?: number;
+  }>;
+  associateDailyStats?: Array<{
+    amazonId: string;
+    name: string;
+    date: string;
+    year: number;
+    week: number;
     packagesDelivered?: number;
     dnrCount?: number;
     dnrDpmo?: number;
@@ -487,6 +516,7 @@ export const applyAutomationParsedReport = internalMutation({
     weeklyStats: v.array(weeklyStatInputValidator),
     driverMappings: v.optional(v.array(driverNameMappingValidator)),
     associateWeeklyStats: v.optional(v.array(associateWeeklyStatValidator)),
+    associateDailyStats: v.optional(v.array(associateDailyStatValidator)),
     driverRosterEntries: v.optional(v.array(driverRosterEntryValidator)),
     deliveryMetrics: v.optional(v.array(deliveryMetricValidator)),
     dailyReportStats: v.optional(v.array(dailyReportStatValidator)),
@@ -499,6 +529,7 @@ export const applyAutomationParsedReport = internalMutation({
           ...args.transporterIds,
           ...(args.driverMappings || []).map((mapping) => mapping.amazonId),
           ...(args.associateWeeklyStats || []).map((row) => row.amazonId),
+          ...(args.associateDailyStats || []).map((row) => row.amazonId),
         ].filter(Boolean),
       ),
     );
@@ -648,6 +679,42 @@ export const applyAutomationParsedReport = internalMutation({
       });
     }
 
+    // Daily Associate Overview snapshots — upsert by (driverId, date)
+    // so re-running an ingestion overwrites stale data instead of
+    // duplicating rows.
+    for (const stat of args.associateDailyStats || []) {
+      const driverId = getDriverId(driverMap, stat.amazonId);
+      const existing = await ctx.db
+        .query("driverDailyAssociateStats")
+        .withIndex("by_station_driver_date", (q) =>
+          q.eq("stationId", args.stationId).eq("driverId", driverId).eq("date", stat.date),
+        )
+        .first();
+
+      const payload = {
+        stationId: args.stationId,
+        driverId,
+        amazonId: stat.amazonId,
+        date: stat.date,
+        year: stat.year,
+        week: stat.week,
+        packagesDelivered: stat.packagesDelivered,
+        dnrCount: stat.dnrCount,
+        dnrDpmo: stat.dnrDpmo,
+        packagesShipped: stat.packagesShipped,
+        rtsCount: stat.rtsCount,
+        rtsPercent: stat.rtsPercent,
+        rtsDpmo: stat.rtsDpmo,
+        updatedAt: now,
+      };
+
+      if (existing) {
+        await ctx.db.patch(existing._id, payload);
+      } else {
+        await ctx.db.insert("driverDailyAssociateStats", { ...payload, createdAt: now });
+      }
+    }
+
     const rosterLinkedCount = await syncDriverRosterSnapshots(ctx, {
       stationId: args.stationId,
       year: args.year,
@@ -725,6 +792,7 @@ export const ingestParsedAmazonReport = internalAction({
     weeklyStats: v.array(weeklyStatInputValidator),
     driverMappings: v.optional(v.array(driverNameMappingValidator)),
     associateWeeklyStats: v.optional(v.array(associateWeeklyStatValidator)),
+    associateDailyStats: v.optional(v.array(associateDailyStatValidator)),
     driverRosterEntries: v.optional(v.array(driverRosterEntryValidator)),
     deliveryMetrics: v.optional(v.array(deliveryMetricValidator)),
     dailyReportStats: v.optional(v.array(dailyReportStatValidator)),

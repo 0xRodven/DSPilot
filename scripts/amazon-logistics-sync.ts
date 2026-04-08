@@ -119,6 +119,20 @@ type AutomationActionArgs = {
     rtsPercent?: number;
     rtsDpmo?: number;
   }>;
+  associateDailyStats?: Array<{
+    amazonId: string;
+    name: string;
+    date: string; // ISO YYYY-MM-DD
+    year: number;
+    week: number;
+    packagesDelivered?: number;
+    dnrCount?: number;
+    dnrDpmo?: number;
+    packagesShipped?: number;
+    rtsCount?: number;
+    rtsPercent?: number;
+    rtsDpmo?: number;
+  }>;
   driverRosterEntries?: Array<{
     name: string;
     providerId: string;
@@ -227,6 +241,9 @@ async function main() {
   }
 
   const associateStats = await parseAssociateOverviewArtifacts(supplementalPaths.associateOverviewHtmlPaths);
+  const associateDailyStats = await parseAssociateOverviewDailyArtifacts(
+    supplementalPaths.associateOverviewDailyHtmlPaths || [],
+  );
   const rosterEntries = supplementalPaths.driverRosterHtmlPath
     ? parseDriverRosterHtml(await readFile(supplementalPaths.driverRosterHtmlPath, "utf-8"))
     : null;
@@ -234,6 +251,10 @@ async function main() {
 
   if (associateStats.errors.length > 0) {
     throw new Error(`Associate Overview invalide: ${associateStats.errors.join(" | ")}`);
+  }
+
+  if (associateDailyStats.errors.length > 0) {
+    throw new Error(`Associate Overview daily invalide: ${associateDailyStats.errors.join(" | ")}`);
   }
 
   if (dailyReportStats.errors.length > 0) {
@@ -302,6 +323,7 @@ async function main() {
     driverMappings: mergedDriverMappings,
     deliveryMetrics: deliveryOverview?.metrics,
     associateWeeklyStats: associateStats.rows,
+    associateDailyStats: associateDailyStats.rows,
     driverRosterEntries: rosterEntries?.rows,
     dailyReportStats: dailyReportStats.stats,
     source: options.artifactsDir ? "amazon_artifacts_dir" : "amazon_explicit_files",
@@ -544,12 +566,22 @@ async function discoverSupplementaryPaths(options: CliOptions, year: number, wee
       const filename = path.basename(filePath).toLowerCase();
       return (
         filename.endsWith(".html") &&
+        !filename.includes("associate_overview_daily_") && // exclude daily — handled separately
         (filename.includes(associateWeekTag) ||
           filename.includes("associate-overview") ||
           filename.includes("associate_overview"))
       );
     }),
   ]);
+
+  // Daily Associate Overview snapshots — one HTML per date.
+  // Filename pattern: associate_overview_daily_YYYY-MM-DD(_pN)?.html
+  const associateOverviewDailyHtmlPaths = dedupePaths(
+    files.filter((filePath) => {
+      const filename = path.basename(filePath).toLowerCase();
+      return filename.endsWith(".html") && filename.includes("associate_overview_daily_");
+    }),
+  );
 
   const driverRosterHtmlPath =
     options.driverRosterHtmlPath ||
@@ -568,6 +600,7 @@ async function discoverSupplementaryPaths(options: CliOptions, year: number, wee
 
   return {
     associateOverviewHtmlPaths,
+    associateOverviewDailyHtmlPaths,
     driverRosterHtmlPath,
     dailyReportHtmlPaths,
   };
@@ -821,6 +854,94 @@ async function parseAssociateOverviewArtifacts(filePaths: string[]) {
     errors,
     warnings,
   };
+}
+
+/**
+ * Parse the daily Associate Overview HTML snapshots.
+ *
+ * Each file is named associate_overview_daily_YYYY-MM-DD(_pN)?.html.
+ * The date is extracted from the filename and attached to every row
+ * so the convex side can store one record per (driver, date).
+ */
+async function parseAssociateOverviewDailyArtifacts(filePaths: string[]) {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+  const byKey = new Map<
+    string, // amazonId|date
+    {
+      amazonId: string;
+      name: string;
+      date: string;
+      year: number;
+      week: number;
+      packagesDelivered?: number;
+      dnrCount?: number;
+      dnrDpmo?: number;
+      packagesShipped?: number;
+      rtsCount?: number;
+      rtsPercent?: number;
+      rtsDpmo?: number;
+    }
+  >();
+
+  for (const filePath of filePaths) {
+    const filename = path.basename(filePath);
+    const dateMatch = filename.match(/associate_overview_daily_(\d{4}-\d{2}-\d{2})/);
+    if (!dateMatch) {
+      warnings.push(`${filename}: no date in filename, skipped`);
+      continue;
+    }
+    const date = dateMatch[1];
+    const dateObj = new Date(`${date}T00:00:00Z`);
+    if (Number.isNaN(dateObj.getTime())) {
+      warnings.push(`${filename}: invalid date ${date}`);
+      continue;
+    }
+    const year = dateObj.getUTCFullYear();
+    // Use Amazon week convention (Sunday-Saturday, firstWeekContainsDate=1)
+    const week = computeAmazonWeek(dateObj);
+
+    const parsed = parseAssociateOverviewHtml(await readFile(filePath, "utf-8"));
+    errors.push(...parsed.errors.map((error) => `${filename}: ${error}`));
+    warnings.push(...parsed.warnings.map((warning) => `${filename}: ${warning}`));
+
+    for (const row of parsed.rows) {
+      const key = `${row.amazonId}|${date}`;
+      const existing = byKey.get(key);
+      if (!existing) {
+        byKey.set(key, { ...row, date, year, week });
+        continue;
+      }
+      // Merge across paginated pages of the same date
+      byKey.set(key, {
+        ...existing,
+        ...pickDefinedFields(row),
+        name: existing.name || row.name,
+      });
+    }
+  }
+
+  return {
+    rows: Array.from(byKey.values()),
+    errors,
+    warnings,
+  };
+}
+
+/**
+ * Compute the Amazon week number (Sunday-Saturday, week 1 contains
+ * January 1) for a given date. Hand-rolled to avoid pulling date-fns
+ * into a script that runs in node directly.
+ */
+function computeAmazonWeek(date: Date): number {
+  const year = date.getUTCFullYear();
+  const jan1 = new Date(Date.UTC(year, 0, 1));
+  const jan1Day = jan1.getUTCDay(); // 0 = Sunday
+  // Sunday of week 1 (may be in December of the previous year)
+  const week1Sunday = new Date(jan1);
+  week1Sunday.setUTCDate(jan1.getUTCDate() - jan1Day);
+  const diffDays = Math.floor((date.getTime() - week1Sunday.getTime()) / (24 * 60 * 60 * 1000));
+  return Math.floor(diffDays / 7) + 1;
 }
 
 async function parseDailyReportArtifacts(filePaths: string[]) {

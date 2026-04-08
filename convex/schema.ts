@@ -294,6 +294,33 @@ export default defineSchema({
     .index("by_station_week", ["stationId", "year", "week"])
     .index("by_station_driver_week", ["stationId", "driverId", "year", "week"]),
 
+  // Daily granularity of the Amazon Associate Overview — same fields
+  // as driverAssociateStats but per-day. Required because the daily
+  // DWC report does not contain a "delivered packages" count, only
+  // compliance buckets. The Associate Overview "Jour" view is the
+  // only Amazon source that exposes the per-day delivered count per
+  // driver, and the user explicitly wants that number on the profile.
+  driverDailyAssociateStats: defineTable({
+    stationId: v.id("stations"),
+    driverId: v.id("drivers"),
+    amazonId: v.string(),
+    date: v.string(), // ISO YYYY-MM-DD
+    year: v.number(),
+    week: v.number(),
+    packagesDelivered: v.optional(v.number()),
+    dnrCount: v.optional(v.number()),
+    dnrDpmo: v.optional(v.number()),
+    packagesShipped: v.optional(v.number()),
+    rtsCount: v.optional(v.number()),
+    rtsPercent: v.optional(v.number()),
+    rtsDpmo: v.optional(v.number()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_station_date", ["stationId", "date"])
+    .index("by_driver_date", ["driverId", "date"])
+    .index("by_station_driver_date", ["stationId", "driverId", "date"]),
+
   driverRosterSnapshots: defineTable({
     stationId: v.id("stations"),
     driverId: v.optional(v.id("drivers")),

@@ -721,7 +721,20 @@ export const getDriverWithFullHistory = query({
     // Return null if driver not found (instead of 0)
     const rank = rankIndex >= 0 ? rankIndex + 1 : null;
 
-    // Format daily performance
+    // Format daily performance.
+    //
+    // We pull the per-day "delivered packages" count from the Amazon
+    // Associate Overview daily snapshots (driverDailyAssociateStats),
+    // which is the only Amazon source that exposes that number per
+    // driver per day. The DWC report only has compliance counts.
+    const dailyAssociateForDriver = await ctx.db
+      .query("driverDailyAssociateStats")
+      .withIndex("by_driver_date", (q) => q.eq("driverId", args.driverId))
+      .collect();
+    const dailyAssociateMap = new Map(
+      dailyAssociateForDriver.filter((s) => s.date >= weekStart && s.date <= weekEnd).map((s) => [s.date, s]),
+    );
+
     const dayNames = ["Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"];
     const dailyPerformance = dailyStats
       .map((stat) => {
@@ -740,14 +753,18 @@ export const getDriverWithFullHistory = query({
           else status = "moyen";
         }
 
+        // Prefer the Amazon Associate Overview daily count when we
+        // have it; otherwise fall back to dwcCompliant so older data
+        // (no daily Associate Overview captured yet) still renders.
+        const dailyAssociate = dailyAssociateMap.get(stat.date);
+        const deliveries = dTotal > 0 ? (dailyAssociate?.packagesDelivered ?? stat.dwcCompliant) : null;
+
         return {
           day: dayNames[dayIndex],
           date: stat.date,
           dwcPercent: dailyDwcPercent,
           iadcPercent: dailyIadcPercent,
-          // "Colis livrés" = the actual count of successfully delivered
-          // packages that day (dwcCompliant). Not the DWC denominator.
-          deliveries: dTotal > 0 ? stat.dwcCompliant : null,
+          deliveries,
           errors: dTotal > 0 ? stat.dwcMisses + stat.failedAttempts : null,
           concessions: stat.dnrCount ?? 0,
           status,
