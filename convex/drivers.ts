@@ -427,7 +427,9 @@ export const getDriverDetail = query({
         date: stat.date,
         dwcPercent: dailyDwcPercent,
         iadcPercent: dailyIadcPercent,
-        deliveries: dwcTotal > 0 ? dwcTotal : null,
+        // "Colis livrés" = the literal Compliant count from the daily
+        // DWC report, not the DWC denominator.
+        deliveries: dwcTotal > 0 ? stat.dwcCompliant : null,
         errors: dwcTotal > 0 ? stat.dwcMisses + stat.failedAttempts : null,
         status,
       };
@@ -743,7 +745,9 @@ export const getDriverWithFullHistory = query({
           date: stat.date,
           dwcPercent: dailyDwcPercent,
           iadcPercent: dailyIadcPercent,
-          deliveries: dTotal > 0 ? dTotal : null,
+          // "Colis livrés" = the actual count of successfully delivered
+          // packages that day (dwcCompliant). Not the DWC denominator.
+          deliveries: dTotal > 0 ? stat.dwcCompliant : null,
           errors: dTotal > 0 ? stat.dwcMisses + stat.failedAttempts : null,
           concessions: stat.dnrCount ?? 0,
           status,
@@ -893,7 +897,8 @@ export const getDriverDailyPerformanceWithCoaching = query({
         date: stat.date,
         dwcPercent,
         iadcPercent,
-        deliveries: dwcTotal,
+        // Actual delivered packages (Compliant), not the DWC denominator.
+        deliveries: stat.dwcCompliant,
         errors: stat.dwcMisses + stat.failedAttempts,
         coachingAction: coachingAction
           ? {

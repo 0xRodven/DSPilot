@@ -137,12 +137,8 @@ export function DailyPerformance({ driver, year, week }: DailyPerformanceProps) 
                     <TableHead rowSpan={2} className="align-bottom font-medium text-muted-foreground text-sm">
                       Jour
                     </TableHead>
-                    <TableHead
-                      rowSpan={2}
-                      className={cn(headerBase, "align-bottom")}
-                      title="Volume DWC du jour (Compliant + Miss + Failed). Le total Livraisons en haut de page vient directement d'Amazon Associate Overview."
-                    >
-                      Vol DWC
+                    <TableHead rowSpan={2} className={cn(headerBase, "align-bottom")}>
+                      Colis
                     </TableHead>
                     <TableHead rowSpan={2} className={cn(headerBase, "align-bottom")}>
                       Conc.
