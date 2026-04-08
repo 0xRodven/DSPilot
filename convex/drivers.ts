@@ -623,6 +623,33 @@ export const getDriverWithFullHistory = query({
       )
       .collect();
 
+    // 6b. Get the Amazon "Associate Overview" stats for the target and
+    // previous week. This is the source of truth for `packagesDelivered`
+    // (the literal number Amazon shows on the per-driver weekly page).
+    // Falling back to the DWC base sum (compliant + miss + failed)
+    // produced numbers that did not match Amazon — see user report
+    // 2026-04-08.
+    const targetAssociateStats = await ctx.db
+      .query("driverAssociateStats")
+      .withIndex("by_station_driver_week", (q) =>
+        q.eq("stationId", driver.stationId).eq("driverId", args.driverId).eq("year", targetYear).eq("week", targetWeek),
+      )
+      .first();
+
+    let prevAssociateStats: typeof targetAssociateStats = null;
+    if (prevStats) {
+      prevAssociateStats = await ctx.db
+        .query("driverAssociateStats")
+        .withIndex("by_station_driver_week", (q) =>
+          q
+            .eq("stationId", driver.stationId)
+            .eq("driverId", args.driverId)
+            .eq("year", prevStats.year)
+            .eq("week", prevStats.week),
+        )
+        .first();
+    }
+
     // Calculate DWC% for TARGET week (handle null targetStats)
     let dwcTotal = 0;
     let dwcPercent = 0;
@@ -637,6 +664,14 @@ export const getDriverWithFullHistory = query({
       iadcPercent = iadcTotal > 0 ? Math.round((targetStats.iadcCompliant / iadcTotal) * 1000) / 10 : 0;
       totalErrors = targetStats.dwcMisses + targetStats.failedAttempts;
     }
+
+    // Resolved deliveries: prefer the Amazon Associate Overview number,
+    // fall back to the DWC base sum so older imports without associate
+    // data still display something sensible.
+    const resolvedDeliveries = targetAssociateStats?.packagesDelivered ?? dwcTotal;
+    const resolvedPrevDeliveries =
+      prevAssociateStats?.packagesDelivered ??
+      (prevStats ? prevStats.dwcCompliant + prevStats.dwcMisses + prevStats.failedAttempts : 0);
 
     // Calculate DWC trend
     let trend = 0;
@@ -654,11 +689,11 @@ export const getDriverWithFullHistory = query({
       iadcTrend = Math.round((iadcPercent - prevIadcPercent) * 10) / 10;
     }
 
-    // Calculate deliveries trend (absolute difference)
+    // Calculate deliveries trend (absolute difference) using the
+    // resolved deliveries (Amazon source of truth when available).
     let deliveriesTrend = 0;
     if (targetStats && prevStats) {
-      const prevDeliveries = prevStats.dwcCompliant + prevStats.dwcMisses + prevStats.failedAttempts;
-      deliveriesTrend = dwcTotal - prevDeliveries;
+      deliveriesTrend = resolvedDeliveries - resolvedPrevDeliveries;
     }
 
     // Calculate errors trend (absolute difference)
@@ -772,7 +807,7 @@ export const getDriverWithFullHistory = query({
       iadcTrend,
       deliveriesTrend,
       errorsTrend,
-      deliveries: dwcTotal,
+      deliveries: resolvedDeliveries,
       errors: totalErrors,
       activeSince: driver.firstSeenWeek || "Inconnu",
       streak,

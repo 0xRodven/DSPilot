@@ -546,6 +546,17 @@ export const getDashboardDrivers = query({
     // Create a map for quick lookup of previous week stats by driver
     const prevStatsMap = new Map(prevWeeklyStats.map((stat) => [stat.driverId.toString(), stat]));
 
+    // Amazon Associate Overview stats — source of truth for
+    // packagesDelivered. Without these, we'd have to compute deliveries
+    // from the DWC base which doesn't match the Amazon files.
+    const associateStats = await ctx.db
+      .query("driverAssociateStats")
+      .withIndex("by_station_week", (q) =>
+        q.eq("stationId", args.stationId).eq("year", args.year).eq("week", args.week),
+      )
+      .collect();
+    const associateMap = new Map(associateStats.map((stat) => [stat.driverId.toString(), stat]));
+
     // Get driver info for each stat
     const driversWithStats = await Promise.all(
       weeklyStats.map(async (stat) => {
@@ -584,13 +595,18 @@ export const getDashboardDrivers = query({
           trend = Math.round((dwcPercent - prevDwcPercent) * 10) / 10;
         }
 
+        // Resolve deliveries from Amazon Associate Overview when
+        // available, fall back to the DWC base sum for older imports.
+        const associate = associateMap.get(stat.driverId.toString());
+        const totalDeliveries = associate?.packagesDelivered ?? dwcTotal;
+
         return {
           id: driver._id,
           name: driver.name,
           amazonId: driver.amazonId,
           dwcPercent,
           iadcPercent,
-          totalDeliveries: dwcTotal,
+          totalDeliveries,
           daysActive,
           tier,
           trend, // null if no previous week data
