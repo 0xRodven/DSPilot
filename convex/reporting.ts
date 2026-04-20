@@ -338,6 +338,85 @@ export const deleteReport = mutation({
 });
 
 /**
+ * Upserts an individual driver weekly report into the driverReports
+ * table. Used by the driver-reports routine — one row per
+ * (stationId, driverId, year, week). Re-running overwrites the HTML
+ * so the routine is idempotent.
+ */
+export const storeDriverReport = mutation({
+  args: {
+    stationId: v.id("stations"),
+    driverId: v.id("drivers"),
+    year: v.number(),
+    week: v.number(),
+    driverName: v.string(),
+    htmlContent: v.string(),
+    summary: v.string(),
+    aiSummary: v.optional(v.string()),
+    dwcPercent: v.number(),
+    rank: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query("driverReports")
+      .withIndex("by_station_driver_week", (q) =>
+        q.eq("stationId", args.stationId).eq("driverId", args.driverId).eq("year", args.year).eq("week", args.week),
+      )
+      .first();
+
+    const now = Date.now();
+    const payload = {
+      stationId: args.stationId,
+      driverId: args.driverId,
+      year: args.year,
+      week: args.week,
+      driverName: args.driverName,
+      htmlContent: args.htmlContent,
+      summary: args.summary,
+      aiSummary: args.aiSummary,
+      dwcPercent: args.dwcPercent,
+      rank: args.rank,
+      updatedAt: now,
+    };
+
+    if (existing) {
+      await ctx.db.patch(existing._id, payload);
+      return existing._id;
+    }
+    return await ctx.db.insert("driverReports", { ...payload, createdAt: now });
+  },
+});
+
+/**
+ * Lists driver reports for a station/week (summary view, no HTML content
+ * to keep it light).
+ */
+export const listDriverReports = query({
+  args: {
+    stationId: v.id("stations"),
+    year: v.number(),
+    week: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const reports = await ctx.db
+      .query("driverReports")
+      .withIndex("by_station_week", (q) =>
+        q.eq("stationId", args.stationId).eq("year", args.year).eq("week", args.week),
+      )
+      .collect();
+    return reports.map((r) => ({
+      id: r._id,
+      driverId: r.driverId,
+      driverName: r.driverName,
+      summary: r.summary,
+      dwcPercent: r.dwcPercent,
+      rank: r.rank,
+      createdAt: r.createdAt,
+    }));
+  },
+});
+
+/**
  * Get individual driver report data for a station/week.
  * Returns all drivers with their stats, rank, and history for individual reports.
  */

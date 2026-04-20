@@ -3,6 +3,11 @@
 # 1. Query Convex for structured data (drivers + DNR) → JSON dump
 # 2. Claude Opus analyzes the JSON → AI summary
 # 3. generate-daily-report.ts builds the HTML with AI content
+#
+# Exit codes:
+#   0 — report generated and stored in Convex
+#   1 — no data in Convex for the requested date (expected on Sundays / before DWC publication)
+#   2 — unexpected error during AI or report generation
 
 set -o pipefail
 cd /root/DSPilot
@@ -16,10 +21,18 @@ DATE=${1:-$(date -d yesterday +%Y-%m-%d)}
 echo "[run-daily-report] Date: $DATE"
 mkdir -p .artifacts/reports
 
+# Wipe any stale context from a previous run so our no-data check isn't
+# fooled by a leftover file. Bug #1 was: the old code just checked for
+# "does daily-context.json exist?" which was ALWAYS true because a prior
+# run left the file there, masking the "no data" condition.
+rm -f .artifacts/reports/daily-context.json
+rm -f .artifacts/reports/ai-daily.json
+rm -f .artifacts/reports/ai-daily-raw.txt
+
 # Step 1: Extract structured data as JSON for Claude context
 echo "[run-daily-report] Extracting structured data..."
 
-npx tsx -e "
+if ! npx tsx -e "
 const { ConvexHttpClient } = require('convex/browser');
 const { api } = require('./convex/_generated/api');
 const fs = require('fs');
@@ -59,11 +72,17 @@ async function main() {
   console.log('Data extracted: ' + data.drivers.length + ' drivers, ' + (data.dnr?.newConcessions || 0) + ' DNR');
 }
 main();
-" 2>&1
+" 2>&1; then
+  echo "[run-daily-report] FAILED: no data in Convex for $DATE (Amazon report not yet published, or ingestion failed earlier in the pipeline)"
+  exit 1
+fi
 
-if [ ! -f .artifacts/reports/daily-context.json ]; then
-  echo "[run-daily-report] No data for $DATE, skipping"
-  exit 0
+# Safety net — should not happen given the tsx exit code check above,
+# but defensive programming: confirm the file actually exists and is
+# non-empty before we feed it to Claude.
+if [ ! -s .artifacts/reports/daily-context.json ]; then
+  echo "[run-daily-report] FAILED: daily-context.json missing or empty after tsx run"
+  exit 2
 fi
 
 echo "[run-daily-report] Data OK"
@@ -136,10 +155,26 @@ else
 fi
 
 # Step 4: Generate FINAL report with AI summary
+# generate-daily-report.ts calls process.exit(1) when the query returns
+# no data. We run it directly (no || true) so its exit code propagates
+# and the unified pipeline can tell whether a report was really stored.
 echo "[run-daily-report] Generating final report..."
-npx tsx scripts/generate-daily-report.ts \
+if ! npx tsx scripts/generate-daily-report.ts \
   --station-code FR-PSUA-DIF1 \
   --date "$DATE" \
-  --ai-file .artifacts/reports/ai-daily.json
+  --ai-file .artifacts/reports/ai-daily.json; then
+  echo "[run-daily-report] FAILED: generate-daily-report.ts returned non-zero"
+  exit 2
+fi
 
+# Confirm the HTML was actually written to disk. generate-daily-report.ts
+# writes to .artifacts/reports/daily-${date}-${station}.html — verify
+# it exists and is non-empty before declaring success.
+REPORT_HTML=".artifacts/reports/daily-${DATE}-fr-psua-dif1.html"
+if [ ! -s "$REPORT_HTML" ]; then
+  echo "[run-daily-report] FAILED: expected HTML file missing: $REPORT_HTML"
+  exit 2
+fi
+
+echo "[run-daily-report] SUCCESS: report generated for $DATE"
 echo "[run-daily-report] DONE"

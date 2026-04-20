@@ -206,6 +206,14 @@ PREV_COUNT=${PREV_COUNT:-0}
 step_ok $STEP "Previous week S${PREV_WEEK}: ${PREV_COUNT} concessions"
 
 # ── Step 5: Daily Report with AI ───────────────────────────────────────────
+# We trust the run-daily-report.sh exit code (fixed 2026-04-20):
+#   0  — report generated + stored in Convex
+#   1  — expected no-data (Amazon not yet published, e.g. Sunday runs)
+#   2+ — unexpected failure
+#
+# The old detection (grep for "DONE") was broken — the wrapper printed
+# DONE unconditionally, so Step 5 always looked green even when nothing
+# was produced. See fix in run-daily-report.sh for the matching change.
 STEP=5
 echo ""
 if [ "$SKIP_REPORT" -eq 1 ]; then
@@ -214,13 +222,22 @@ else
   echo "── Step $STEP/$TOTAL_STEPS: Daily Station Report ──"
   REPORT_LOG="$LOG_DIR/daily-report.log"
 
-  bash /root/DSPilot/scripts/run-daily-report.sh > "$REPORT_LOG" 2>&1 || true
+  bash /root/DSPilot/scripts/run-daily-report.sh > "$REPORT_LOG" 2>&1
+  REPORT_EXIT=$?
 
-  if grep -q "DONE\|report.*generated\|HTML" "$REPORT_LOG"; then
-    step_ok $STEP "Daily Report generated"
+  # Defense in depth — verify the HTML file actually exists on disk so
+  # we catch any wrapper that claims success without writing output.
+  YESTERDAY=$(date -d yesterday +%Y-%m-%d)
+  EXPECTED_HTML="/root/DSPilot/.artifacts/reports/daily-${YESTERDAY}-fr-psua-dif1.html"
+
+  if [ $REPORT_EXIT -eq 0 ] && [ -s "$EXPECTED_HTML" ]; then
+    step_ok $STEP "Daily Report generated ($(basename $EXPECTED_HTML))"
+  elif [ $REPORT_EXIT -eq 1 ]; then
+    # Expected no-data condition — warn, don't fail the pipeline.
+    echo "[$(date +%H:%M:%S)] ⊘ Step $STEP/$TOTAL_STEPS: Daily Report skipped — no data for $YESTERDAY (Amazon not published yet)"
   else
-    step_fail $STEP "Daily Report"
-    grep -E "Error|error|BLOCKED" "$REPORT_LOG" | tail -2 | sed 's/^/  /'
+    step_fail $STEP "Daily Report (exit=$REPORT_EXIT, html=$([ -s "$EXPECTED_HTML" ] && echo ok || echo missing))"
+    grep -E "FAILED|Error|error|BLOCKED" "$REPORT_LOG" | tail -3 | sed 's/^/  /'
   fi
 fi
 

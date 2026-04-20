@@ -559,6 +559,28 @@ export default defineSchema({
     .index("by_station_type", ["stationId", "reportType"])
     .index("by_station_week", ["stationId", "year", "week"]),
 
+  // Per-driver weekly reports — stored separately from reportDeliveries
+  // because there are ~40 per week per station and the existing table
+  // upsert logic collapses by station/week for weekly reports. Keeping
+  // them in their own table also keeps /dashboard/reports clean.
+  driverReports: defineTable({
+    stationId: v.id("stations"),
+    driverId: v.id("drivers"),
+    year: v.number(),
+    week: v.number(),
+    driverName: v.string(),
+    htmlContent: v.string(),
+    summary: v.string(),
+    aiSummary: v.optional(v.string()),
+    dwcPercent: v.number(),
+    rank: v.optional(v.number()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_station_week", ["stationId", "year", "week"])
+    .index("by_driver", ["driverId"])
+    .index("by_station_driver_week", ["stationId", "driverId", "year", "week"]),
+
   stationAutomationConfigs: defineTable({
     stationId: v.id("stations"),
     enabled: v.boolean(),
