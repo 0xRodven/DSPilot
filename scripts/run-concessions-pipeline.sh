@@ -77,6 +77,49 @@ for WEEK in $(seq "$START_WEEK" "$END_WEEK"); do
   # Show ingestion results
   grep -E "Batch|Total:|upserted" "$CONC_LOG" | tail -3 | sed 's/^/  /'
 
+  # ── Health check : if > 10% of concessions are UNKNOWN after ingest,
+  # re-run the concessions step ONCE more. Amazon detail popups sometimes
+  # mis-render and leave rows with scanType=UNKNOWN despite the retry
+  # inside fetch_detail_for_tracking. One extra pass is usually enough.
+  if [ "${CONC_RETRY:-0}" != "1" ] && [ "$CONC_COUNT" -gt 0 ]; then
+    UNKNOWN_COUNT=$(npx convex data --prod dnrInvestigations --limit 2000 --format jsonl 2>/dev/null | \
+      python3 -c "
+import json, sys
+cnt = 0
+for line in sys.stdin:
+    line = line.strip()
+    if not line: continue
+    try:
+        r = json.loads(line)
+        if r.get('year') == $YEAR and r.get('week') == $WEEK and r.get('scanType') == 'UNKNOWN':
+            cnt += 1
+    except Exception:
+        pass
+print(cnt)
+" 2>/dev/null || echo 0)
+    UNKNOWN_COUNT=${UNKNOWN_COUNT:-0}
+    UNKNOWN_PCT=0
+    [ "$CONC_COUNT" -gt 0 ] && UNKNOWN_PCT=$((UNKNOWN_COUNT * 100 / CONC_COUNT))
+
+    if [ "$UNKNOWN_PCT" -gt 10 ]; then
+      echo "  ⚠ Health check: ${UNKNOWN_COUNT}/${CONC_COUNT} UNKNOWN (${UNKNOWN_PCT}%). Re-running concessions for S${WEEK}..."
+      export CONC_RETRY=1
+      python3 scraper/amazon_concessions_sync.py \
+        --company-id "$COMPANY_ID" \
+        --station-filter "$STATION_FILTER" \
+        --target-week "$WEEK" \
+        --target-year "$YEAR" \
+        --invoke-ingest \
+        --station-code "$STATION_CODE" \
+        --organization-id "$ORG_ID" \
+        >> "$CONC_LOG" 2>&1 || true
+      echo "  ↻ Recovery pass done. Check log: $CONC_LOG"
+      unset CONC_RETRY
+    else
+      echo "  ✓ Health check: ${UNKNOWN_COUNT}/${CONC_COUNT} UNKNOWN (${UNKNOWN_PCT}%) within tolerance"
+    fi
+  fi
+
   # ── Step 2: Investigations (S3 HTML report) ──────────────────────────────
   echo "[2/3] Scraping investigations S${WEEK} (S3 report)..."
   INV_LOG="$LOG_DIR/investigations-s${WEEK}.log"

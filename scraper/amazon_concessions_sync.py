@@ -431,27 +431,52 @@ async def click_next_page(page):
     return False
 
 
-async def fetch_detail_for_tracking(page, tracking_id):
+async def fetch_detail_for_tracking(page, tracking_id, max_attempts=3):
     """Click a tracking ID — detail appears inline on the same page.
+
+    Retries up to max_attempts times with backoff to survive Amazon's
+    occasional slow renders or transient click failures. This is what
+    prevents rows from ending up as scanType=UNKNOWN in Convex when
+    only the detail popup briefly mis-rendered.
 
     Important: Each click APPENDS detail rows to the DOM (they accumulate).
     We take the LAST 10 two-cell rows as the current detail.
     """
-    try:
-        link = await page.find(tracking_id, timeout=5)
-        if not link:
-            return None
+    last_err = None
+    for attempt in range(1, max_attempts + 1):
+        try:
+            link = await page.find(tracking_id, timeout=5)
+            if not link:
+                # Not on current page — no point retrying, caller will skip.
+                return None
 
-        await link.click()
-        await asyncio.sleep(4)  # Amazon needs time to render detail
+            await link.click()
+            # Longer wait on each retry in case Amazon UI is slow.
+            await asyncio.sleep(3 + attempt)
 
-        html = await get_page_html(page)
-        detail = parse_detail_section_last(html)
+            html = await get_page_html(page)
+            detail = parse_detail_section_last(html)
 
-        return detail
-    except Exception as e:
-        log(f"      Detail error for {tracking_id}: {e}")
-        return None
+            # Validate the detail actually has the scanType field we care about.
+            if detail and any(
+                ("lieu de depot" in k.lower()) or ("lieu de dépôt" in k.lower())
+                for k in detail.keys()
+            ):
+                return detail
+
+            # No scanType in parsed detail — if we still have attempts left, retry
+            if attempt == max_attempts:
+                # Final attempt: return whatever we got (address/GPS may still be usable)
+                return detail
+            log(f"      Detail attempt {attempt}/{max_attempts} for {tracking_id}: no scanType, retrying")
+        except Exception as e:
+            last_err = e
+            log(f"      Detail attempt {attempt}/{max_attempts} for {tracking_id}: {e}")
+        await asyncio.sleep(2)
+
+    if last_err:
+        log(f"      Detail FAILED for {tracking_id} after {max_attempts} attempts: {last_err}")
+    return None
 
 
 # ---------------------------------------------------------------------------
