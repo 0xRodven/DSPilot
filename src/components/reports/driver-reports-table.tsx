@@ -1,10 +1,13 @@
 "use client";
 
+import { useMemo, useState } from "react";
+
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { Download, ExternalLink, FileText, User } from "lucide-react";
+import { Download, ExternalLink, FileText, Search, User } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 interface DriverReport {
@@ -23,7 +26,23 @@ interface DriverReportsTableProps {
   onPrint: (htmlContent: string, title: string) => void;
 }
 
+function normalize(str: string) {
+  return str
+    .toLocaleLowerCase("fr-FR")
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "");
+}
+
 export function DriverReportsTable({ reports, onOpen, onPrint }: DriverReportsTableProps) {
+  const [query, setQuery] = useState("");
+
+  const filtered = useMemo(() => {
+    const sorted = [...reports].sort((a, b) => (a.rank ?? 999) - (b.rank ?? 999));
+    const q = normalize(query.trim());
+    if (!q) return sorted;
+    return sorted.filter((r) => normalize(r.driverName).includes(q));
+  }, [reports, query]);
+
   if (reports.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-16">
@@ -36,65 +55,88 @@ export function DriverReportsTable({ reports, onOpen, onPrint }: DriverReportsTa
     );
   }
 
-  const sorted = [...reports].sort((a, b) => (a.rank ?? 999) - (b.rank ?? 999));
-
   return (
-    <div className="rounded-lg border">
-      <Table>
-        <TableHeader>
-          <TableRow className="hover:bg-transparent">
-            <TableHead className="w-[80px] text-muted-foreground">Rang</TableHead>
-            <TableHead className="text-muted-foreground">Livreur</TableHead>
-            <TableHead className="w-[120px] text-right text-muted-foreground">DWC</TableHead>
-            <TableHead className="w-[160px] text-right text-muted-foreground">Généré le</TableHead>
-            <TableHead className="w-[120px] text-right text-muted-foreground">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {sorted.map((r) => {
-            const title = `Rapport ${r.driverName} — S${format(new Date(r.createdAt), "I")}`;
-            return (
-              <TableRow key={r.id}>
-                <TableCell className="font-mono text-muted-foreground text-sm tabular-nums">
-                  {r.rank != null ? `#${r.rank}` : "—"}
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    <User className="h-3.5 w-3.5 text-muted-foreground" />
-                    <span className="font-medium">{r.driverName}</span>
-                  </div>
-                </TableCell>
-                <TableCell className="text-right font-mono text-sm tabular-nums">{r.dwcPercent}%</TableCell>
-                <TableCell className="text-right text-muted-foreground text-sm tabular-nums">
-                  {format(new Date(r.createdAt), "d MMM yyyy, HH:mm", { locale: fr })}
-                </TableCell>
-                <TableCell className="text-right">
-                  <div className="flex justify-end gap-1">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8"
-                      title="Ouvrir"
-                      onClick={() => onOpen(r.htmlContent, title)}
-                    >
-                      <ExternalLink className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8"
-                      title="Imprimer / PDF"
-                      onClick={() => onPrint(r.htmlContent, title)}
-                    >
-                      <Download className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </TableCell>
+    <div className="space-y-3">
+      <div className="flex items-center justify-between gap-3">
+        <div className="relative w-full max-w-sm">
+          <Search className="pointer-events-none absolute top-1/2 left-2.5 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            type="search"
+            placeholder="Rechercher un livreur..."
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+        <div className="text-muted-foreground text-sm tabular-nums">
+          {filtered.length} / {reports.length} livreur{reports.length > 1 ? "s" : ""}
+        </div>
+      </div>
+
+      {filtered.length === 0 ? (
+        <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-12">
+          <Search className="mb-3 h-8 w-8 text-muted-foreground/40" />
+          <p className="text-muted-foreground text-sm">Aucun livreur ne correspond à « {query} »</p>
+        </div>
+      ) : (
+        <div className="rounded-lg border">
+          <Table>
+            <TableHeader>
+              <TableRow className="hover:bg-transparent">
+                <TableHead className="w-[80px] text-muted-foreground">Rang</TableHead>
+                <TableHead className="text-muted-foreground">Livreur</TableHead>
+                <TableHead className="w-[120px] text-right text-muted-foreground">DWC</TableHead>
+                <TableHead className="w-[160px] text-right text-muted-foreground">Généré le</TableHead>
+                <TableHead className="w-[120px] text-right text-muted-foreground">Actions</TableHead>
               </TableRow>
-            );
-          })}
-        </TableBody>
-      </Table>
+            </TableHeader>
+            <TableBody>
+              {filtered.map((r) => {
+                const title = `Rapport ${r.driverName} — S${format(new Date(r.createdAt), "I")}`;
+                return (
+                  <TableRow key={r.id}>
+                    <TableCell className="font-mono text-muted-foreground text-sm tabular-nums">
+                      {r.rank != null ? `#${r.rank}` : "—"}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <User className="h-3.5 w-3.5 text-muted-foreground" />
+                        <span className="font-medium">{r.driverName}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-right font-mono text-sm tabular-nums">{r.dwcPercent}%</TableCell>
+                    <TableCell className="text-right text-muted-foreground text-sm tabular-nums">
+                      {format(new Date(r.createdAt), "d MMM yyyy, HH:mm", { locale: fr })}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          title="Ouvrir"
+                          onClick={() => onOpen(r.htmlContent, title)}
+                        >
+                          <ExternalLink className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          title="Imprimer / PDF"
+                          onClick={() => onPrint(r.htmlContent, title)}
+                        >
+                          <Download className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </div>
+      )}
     </div>
   );
 }
