@@ -53,8 +53,6 @@ export function ExportButton() {
 
     try {
       const versionLabel = blurNames ? "LIVREURS" : "DSP";
-      console.log(`Starting HTML report generation (${versionLabel}) for:`, station.code, "Week", weekNum);
-
       // Sort drivers by DWC descending
       const sortedDrivers = [...drivers].sort((a, b) => b.dwcPercent - a.dwcPercent);
 
@@ -110,7 +108,6 @@ export function ExportButton() {
       };
 
       // Generate HTML
-      console.log("Generating HTML report...");
       const html = generateReportHtml(data, { blurNames });
 
       // Create a Blob and open in new tab for print-to-PDF
