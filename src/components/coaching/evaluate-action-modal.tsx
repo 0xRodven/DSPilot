@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 
 import { api } from "@convex/_generated/api";
+import type { Id } from "@convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
 import { addDays, format } from "date-fns";
 import {
@@ -65,7 +66,7 @@ export function EvaluateActionModal({ open, onOpenChange, action }: EvaluateActi
   // Get pipeline suggestion for escalation
   const pipelineSuggestion = useQuery(
     api.coaching.getCoachingPipelineSuggestion,
-    action ? { driverId: action.driverId as any } : "skip",
+    action ? { driverId: action.driverId as Id<"drivers"> } : "skip",
   );
 
   // Reset form when modal opens
@@ -100,7 +101,7 @@ export function EvaluateActionModal({ open, onOpenChange, action }: EvaluateActi
     try {
       // 1. Evaluate current action
       await evaluateAction({
-        actionId: action.id as any,
+        actionId: action.id as Id<"coachingActions">,
         result: result,
         dwcAfterAction: currentDwc,
         evaluationNotes: notes || undefined,
@@ -112,8 +113,8 @@ export function EvaluateActionModal({ open, onOpenChange, action }: EvaluateActi
 
         // Use the user-selected nextActionType from the form, not the pipeline suggestion
         await createAction({
-          stationId: action.stationId as any,
-          driverId: action.driverId as any,
+          stationId: action.stationId as Id<"stations">,
+          driverId: action.driverId as Id<"drivers">,
           actionType: nextActionType, // Uses the state value from the Select component
           reason: `Escalade: ${action.reason}`,
           dwcAtAction: currentDwc,
@@ -192,9 +193,10 @@ export function EvaluateActionModal({ open, onOpenChange, action }: EvaluateActi
           <div className="space-y-3">
             <Label>Résultat de l'action</Label>
             <RadioGroup value={result} onValueChange={(v) => setResult(v as typeof result)} className="space-y-2">
-              <div
+              <button
+                type="button"
                 className={cn(
-                  "flex cursor-pointer items-center gap-3 rounded-lg border p-4 transition-colors",
+                  "flex w-full cursor-pointer items-center gap-3 rounded-lg border p-4 text-left transition-colors",
                   result === "improved" ? "border-emerald-500 bg-emerald-500/10" : "border-border",
                 )}
                 onClick={() => setResult("improved")}
@@ -207,11 +209,12 @@ export function EvaluateActionModal({ open, onOpenChange, action }: EvaluateActi
                   </Label>
                   <p className="text-muted-foreground text-sm">Le driver a progressé</p>
                 </div>
-              </div>
+              </button>
 
-              <div
+              <button
+                type="button"
                 className={cn(
-                  "flex cursor-pointer items-center gap-3 rounded-lg border p-4 transition-colors",
+                  "flex w-full cursor-pointer items-center gap-3 rounded-lg border p-4 text-left transition-colors",
                   result === "no_effect" ? "border-amber-500 bg-amber-500/10" : "border-border",
                 )}
                 onClick={() => setResult("no_effect")}
@@ -224,7 +227,7 @@ export function EvaluateActionModal({ open, onOpenChange, action }: EvaluateActi
                   </Label>
                   <p className="text-muted-foreground text-sm">Pas d'amélioration → Escalade</p>
                 </div>
-              </div>
+              </button>
             </RadioGroup>
           </div>
 
