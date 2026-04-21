@@ -8,6 +8,7 @@ import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { Download, ExternalLink, FileText } from "lucide-react";
 
+import { DriverReportsTable } from "@/components/reports/driver-reports-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -17,7 +18,7 @@ import { useFilters } from "@/lib/filters";
 import { useDashboardStore } from "@/lib/store";
 
 type ReportType = "daily" | "weekly";
-type FilterTab = "all" | ReportType;
+type FilterTab = "all" | ReportType | "drivers";
 
 export default function ReportsPage() {
   const { selectedStation } = useDashboardStore();
@@ -32,10 +33,24 @@ export default function ReportsPage() {
   // Filtered by current week from global filter
   const reports = useQuery(
     api.reporting.listReports,
-    station
+    station && activeTab !== "drivers"
       ? {
           stationId: station._id,
-          reportType: activeTab === "all" ? undefined : activeTab,
+          reportType: activeTab === "all" ? undefined : (activeTab as ReportType),
+          year,
+          week: weekNum,
+        }
+      : "skip",
+  );
+
+  // Per-driver reports for the "drivers" tab (listDriverReports returns
+  // them sorted by driver but only for one given week — we pass the
+  // global week filter)
+  const driverReports = useQuery(
+    api.reporting.listDriverReports,
+    station && activeTab === "drivers"
+      ? {
+          stationId: station._id,
           year,
           week: weekNum,
         }
@@ -73,7 +88,8 @@ export default function ReportsPage() {
   }, []);
 
   // Loading
-  if (!station || reports === undefined) {
+  const tabLoading = activeTab === "drivers" ? driverReports === undefined : reports === undefined;
+  if (!station || tabLoading) {
     return (
       <main className="fade-in min-h-[calc(100vh-3.5rem)] animate-in duration-300 md:min-h-[calc(100vh-4rem)]">
         <div className="p-4 md:p-6">
@@ -96,7 +112,7 @@ export default function ReportsPage() {
   }
 
   const totalCount = allReports?.length ?? 0;
-  const weekCount = reports.length;
+  const weekCount = activeTab === "drivers" ? (driverReports?.length ?? 0) : (reports?.length ?? 0);
 
   return (
     <main className="fade-in min-h-[calc(100vh-3.5rem)] animate-in duration-300 md:min-h-[calc(100vh-4rem)]">
@@ -129,11 +145,14 @@ export default function ReportsPage() {
             <TabsTrigger value="all">Tous</TabsTrigger>
             <TabsTrigger value="weekly">Hebdomadaires</TabsTrigger>
             <TabsTrigger value="daily">Quotidiens</TabsTrigger>
+            <TabsTrigger value="drivers">Livreurs</TabsTrigger>
           </TabsList>
         </Tabs>
 
         {/* Table */}
-        {reports.length === 0 ? (
+        {activeTab === "drivers" ? (
+          <DriverReportsTable reports={driverReports ?? []} onOpen={handleOpenReport} onPrint={handlePrintReport} />
+        ) : (reports?.length ?? 0) === 0 ? (
           <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-16">
             <FileText className="mb-4 h-12 w-12 text-muted-foreground/40" />
             <p className="font-medium text-lg text-muted-foreground">Aucun rapport pour cette semaine</p>
@@ -155,7 +174,7 @@ export default function ReportsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {reports.map((report) => {
+                {(reports ?? []).map((report) => {
                   const isWeekly = report.reportType === "weekly";
                   return (
                     <TableRow key={report._id}>

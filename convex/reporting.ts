@@ -409,6 +409,7 @@ export const listDriverReports = query({
       driverId: r.driverId,
       driverName: r.driverName,
       summary: r.summary,
+      htmlContent: r.htmlContent,
       dwcPercent: r.dwcPercent,
       rank: r.rank,
       createdAt: r.createdAt,
