@@ -11,7 +11,6 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { getTier, getTierColor } from "@/lib/utils/tier";
 
 interface DriverReportsSectionProps {
   driverId: Id<"drivers">;
@@ -91,7 +90,9 @@ export function DriverReportsSection({ driverId }: DriverReportsSectionProps) {
         <div className="flex items-center gap-4 rounded-lg border bg-muted/30 p-3 text-sm">
           <div>
             <span className="text-muted-foreground">DWC</span>
-            <Badge className={`ml-2 ${getTierColor(getTier(current.dwcPercent))}`}>{current.dwcPercent}%</Badge>
+            <Badge variant="outline" className="ml-2 font-mono">
+              {current.dwcPercent}%
+            </Badge>
           </div>
           {current.rank != null && (
             <div>
