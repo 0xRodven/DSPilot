@@ -5,7 +5,7 @@ import Link from "next/link";
 
 import { differenceInDays, differenceInHours, format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { Info, MapPin, Navigation, User } from "lucide-react";
+import { Info, MapPin, MessageSquare, Navigation, User } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -94,7 +94,7 @@ export function DnrDetailSheet({ investigation, open, onOpenChange }: DnrDetailS
                 {driverDisplay.isWalker && (
                   <Badge
                     variant="outline"
-                    className="ml-1 border-sky-500/40 bg-sky-500/15 px-1.5 py-0 text-[10px] font-medium text-sky-300"
+                    className="ml-1 border-sky-500/40 bg-sky-500/15 px-1.5 py-0 font-medium text-[10px] text-sky-300"
                   >
                     walker
                   </Badge>
@@ -141,16 +141,24 @@ export function DnrDetailSheet({ investigation, open, onOpenChange }: DnrDetailS
                 {investigation.address.postalCode} {investigation.address.city}
               </p>
             </div>
-            {investigation.customerNotes && (
+          </section>
+
+          {/* Note client (si présente) — juste au-dessus de Géolocalisation */}
+          {investigation.customerNotes && (
+            <section className="space-y-3">
+              <h3 className="flex items-center gap-2 font-medium text-sm">
+                <MessageSquare className="h-4 w-4 text-muted-foreground" />
+                Note client
+              </h3>
               <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-3 text-sm">
                 <div className="mb-1 flex items-center gap-1 font-medium text-amber-400 text-xs">
                   <Info className="h-3 w-3" />
-                  Notes du client
+                  Instructions laissées par le client
                 </div>
                 <p className="text-muted-foreground">{investigation.customerNotes}</p>
               </div>
-            )}
-          </section>
+            </section>
+          )}
 
           {/* Géolocalisation */}
           {investigation.gpsPlanned && investigation.gpsActual && (
