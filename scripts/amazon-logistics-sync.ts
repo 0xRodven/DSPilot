@@ -254,7 +254,9 @@ async function main() {
   }
 
   if (associateDailyStats.errors.length > 0) {
-    throw new Error(`Associate Overview daily invalide: ${associateDailyStats.errors.join(" | ")}`);
+    console.warn(
+      `[amazon-logistics-sync] Associate Overview daily warnings: ${associateDailyStats.errors.join(" | ")}`,
+    );
   }
 
   if (dailyReportStats.errors.length > 0) {
@@ -902,7 +904,11 @@ async function parseAssociateOverviewDailyArtifacts(filePaths: string[]) {
     const week = computeAmazonWeek(dateObj);
 
     const parsed = parseAssociateOverviewHtml(await readFile(filePath, "utf-8"));
-    errors.push(...parsed.errors.map((error) => `${filename}: ${error}`));
+    if (parsed.errors.length > 0) {
+      // Incomplete daily pages (e.g. partial data for current day) are non-fatal
+      warnings.push(...parsed.errors.map((error) => `${filename}: ${error} (skipped)`));
+      continue;
+    }
     warnings.push(...parsed.warnings.map((warning) => `${filename}: ${warning}`));
 
     for (const row of parsed.rows) {

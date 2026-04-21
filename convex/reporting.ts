@@ -417,6 +417,43 @@ export const listDriverReports = query({
 });
 
 /**
+ * List all stored weekly reports for a single driver, newest first.
+ * Used by the driver detail page to let the manager browse past reports.
+ */
+export const listReportsForDriver = query({
+  args: {
+    driverId: v.id("drivers"),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const reports = await ctx.db
+      .query("driverReports")
+      .withIndex("by_driver", (q) => q.eq("driverId", args.driverId))
+      .collect();
+
+    reports.sort((a, b) => {
+      if (b.year !== a.year) return b.year - a.year;
+      return b.week - a.week;
+    });
+
+    const limited = args.limit ? reports.slice(0, args.limit) : reports;
+
+    return limited.map((r) => ({
+      id: r._id,
+      year: r.year,
+      week: r.week,
+      driverName: r.driverName,
+      htmlContent: r.htmlContent,
+      summary: r.summary,
+      aiSummary: r.aiSummary,
+      dwcPercent: r.dwcPercent,
+      rank: r.rank,
+      createdAt: r.createdAt,
+    }));
+  },
+});
+
+/**
  * Get individual driver report data for a station/week.
  * Returns all drivers with their stats, rank, and history for individual reports.
  */

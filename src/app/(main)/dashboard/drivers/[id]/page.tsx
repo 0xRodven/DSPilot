@@ -16,6 +16,7 @@ import { DailyPerformanceChartWithCoaching } from "@/components/drivers/daily-pe
 import { DriverHeader } from "@/components/drivers/driver-header";
 import { DriverKpis } from "@/components/drivers/driver-kpis";
 import { DriverPerformanceChart } from "@/components/drivers/driver-performance-chart";
+import { DriverReportsSection } from "@/components/drivers/driver-reports-section";
 import { DriverWarningsCard } from "@/components/drivers/driver-warnings-card";
 import { ErrorBreakdown } from "@/components/drivers/error-breakdown";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -323,6 +324,11 @@ export default function DriverDetailPage({ params }: DriverDetailPageProps) {
 
         {/* Daily Performance (includes DNR column) */}
         <DailyPerformance driver={driver} year={globalWeek.year} week={weekNum} />
+
+        {/* Individual weekly reports (generated Monday 13h30) */}
+        <div className="mt-6">
+          <DriverReportsSection driverId={id as Id<"drivers">} />
+        </div>
       </div>
 
       {/* Coaching Modal */}
