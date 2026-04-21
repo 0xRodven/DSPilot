@@ -1,0 +1,30 @@
+name: ✨ Feature request
+description: Proposer une nouvelle fonctionnalité
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problème / besoin
+      description: Quel use case n'est pas couvert aujourd'hui ?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposition
+      description: Comment tu imagines la solution ?
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives envisagées
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priorité
+      options:
+        - P3 — nice to have
+        - P2 — améliore l'efficacité
+        - P1 — bloquant pour certains users

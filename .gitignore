@@ -24,15 +24,12 @@
 scraper/__pycache__/
 scraper/data/
 
-# Shell scripts (except Claude hooks)
+# Shell scripts (except Claude hooks + versioned scripts)
 *.sh
 !.claude/hooks/**/*.sh
 !scripts/amazon-core-sync.sh
-!scripts/run-daily-report.sh
-!scripts/run-weekly-report.sh
-!scripts/run-concessions-pipeline.sh
-!scripts/run-driver-reports.sh
 !scripts/run-amazon-unified.sh
+!scripts/run-concessions-pipeline.sh
 
 # debug
 npm-debug.log*
