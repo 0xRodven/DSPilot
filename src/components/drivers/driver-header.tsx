@@ -2,22 +2,8 @@
 
 import { useState } from "react";
 
-import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
-import { useAction } from "convex/react";
-import {
-  Calendar,
-  FileDown,
-  GraduationCap,
-  Loader2,
-  MessageCircle,
-  Package,
-  Pencil,
-  Phone,
-  User,
-  Zap,
-} from "lucide-react";
-import { toast } from "sonner";
+import { Calendar, GraduationCap, MessageCircle, Package, Pencil, Phone, User, Zap } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -32,61 +18,13 @@ import { PhoneEditModal } from "./phone-edit-modal";
 interface DriverHeaderProps {
   driver: DriverDetail;
   driverId: Id<"drivers">;
-  stationId: Id<"stations">;
-  year: number;
-  week: number;
   onPlanCoaching?: () => void;
 }
 
-export function DriverHeader({ driver, driverId, stationId, year, week, onPlanCoaching }: DriverHeaderProps) {
+export function DriverHeader({ driver, driverId, onPlanCoaching }: DriverHeaderProps) {
   const [showPhoneModal, setShowPhoneModal] = useState(false);
-  const [isSending, setIsSending] = useState(false);
 
   const driverDisplay = describeDriver(driver.name, driver.amazonId);
-
-  const sendManualRecap = useAction(api.whatsapp.sendManualRecap);
-
-  const handleExportPDF = () => {
-    toast.info("Export PDF", {
-      description: "Fonctionnalité en cours de développement",
-    });
-  };
-
-  const handleSendReport = async () => {
-    if (!driver.phoneNumber) {
-      setShowPhoneModal(true);
-      toast.info("Numéro requis", {
-        description: "Ajoutez d'abord un numéro WhatsApp pour ce conducteur",
-      });
-      return;
-    }
-    if (!driver.whatsappOptIn) {
-      toast.warning("Opt-in requis", {
-        description: "Le conducteur doit accepter de recevoir les messages WhatsApp",
-      });
-      return;
-    }
-
-    setIsSending(true);
-    try {
-      await sendManualRecap({
-        driverId,
-        stationId,
-        year,
-        week,
-      });
-      toast.success("Récapitulatif envoyé", {
-        description: `Le récap S${week} a été envoyé à ${driverDisplay.label}`,
-      });
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Erreur lors de l'envoi";
-      toast.error("Échec de l'envoi", {
-        description: message,
-      });
-    } finally {
-      setIsSending(false);
-    }
-  };
 
   // Format phone number for display
   const formatPhone = (phone: string): string => {
@@ -185,34 +123,6 @@ export function DriverHeader({ driver, driverId, stationId, year, week, onPlanCo
           <Button variant="outline" className="bg-transparent" onClick={onPlanCoaching}>
             <GraduationCap className="mr-2 h-4 w-4" />
             Planifier Coaching
-          </Button>
-          <Button variant="outline" className="bg-transparent" onClick={handleExportPDF}>
-            <FileDown className="mr-2 h-4 w-4" />
-            Exporter PDF
-          </Button>
-          <Button
-            variant="outline"
-            className={cn(
-              "bg-transparent",
-              driver.phoneNumber &&
-                driver.whatsappOptIn &&
-                !isSending &&
-                "border-emerald-500/50 text-emerald-500 hover:bg-emerald-500/10",
-            )}
-            onClick={handleSendReport}
-            disabled={isSending}
-          >
-            {isSending ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Envoi en cours...
-              </>
-            ) : (
-              <>
-                <MessageCircle className="mr-2 h-4 w-4" />
-                Envoyer rapport WhatsApp
-              </>
-            )}
           </Button>
         </div>
       </CardContent>

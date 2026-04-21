@@ -330,13 +330,6 @@ export const storeReport = mutation({
   },
 });
 
-export const deleteReport = mutation({
-  args: { reportId: v.id("reportDeliveries") },
-  handler: async (ctx, args) => {
-    await ctx.db.delete(args.reportId);
-  },
-});
-
 /**
  * Upserts an individual driver weekly report into the driverReports
  * table. Used by the driver-reports routine — one row per

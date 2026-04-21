@@ -265,9 +265,6 @@ export default function DriverDetailPage({ params }: DriverDetailPageProps) {
           <DriverHeader
             driver={driver}
             driverId={id as Id<"drivers">}
-            stationId={station._id}
-            year={globalWeek.year}
-            week={globalWeek.week}
             onPlanCoaching={() => setCoachingModalOpen(true)}
           />
         </div>

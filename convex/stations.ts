@@ -90,17 +90,21 @@ export const createStation = mutation({
 });
 
 /**
- * Liste les stations d'un utilisateur (legacy - avec ownerId explicite)
- * @deprecated Utiliser listUserStations à la place
+ * Liste les stations de l'utilisateur courant uniquement.
+ * L'ownerId est dérivé de l'identity Clerk — jamais passé en input
+ * pour éviter l'énumération cross-tenant.
+ *
+ * @deprecated Utiliser listUserStations ou getStationForCurrentOrg.
  */
 export const listStations = query({
-  args: {
-    ownerId: v.string(),
-  },
-  handler: async (ctx, args) => {
+  args: {},
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) return [];
+
     return await ctx.db
       .query("stations")
-      .withIndex("by_owner", (q) => q.eq("ownerId", args.ownerId))
+      .withIndex("by_owner", (q) => q.eq("ownerId", identity.subject))
       .collect();
   },
 });
@@ -198,22 +202,18 @@ export const getOrCreateStationForCurrentOrg = mutation({
 });
 
 /**
- * Récupère une station par son ID (avec vérification d'accès)
+ * Récupère une station par son ID avec vérification d'accès stricte.
+ * Retourne null si l'utilisateur courant n'a pas accès à cette station.
  */
 export const getStation = query({
   args: {
     stationId: v.id("stations"),
   },
   handler: async (ctx, args) => {
-    const station = await ctx.db.get(args.stationId);
-    if (!station) return null;
+    const hasAccess = await canAccessStation(ctx, args.stationId);
+    if (!hasAccess) return null;
 
-    // Vérifier l'accès (optionnel - pour certaines queries publiques)
-    // Pour une vérification stricte, décommenter :
-    // const hasAccess = await canAccessStation(ctx, args.stationId);
-    // if (!hasAccess) return null;
-
-    return station;
+    return await ctx.db.get(args.stationId);
   },
 });
 
@@ -479,103 +479,6 @@ export const migrateStationsToOrganization = mutation({
       skipped,
       totalMigrated: migrated.length,
       totalSkipped: skipped.length,
-    };
-  },
-});
-
-/**
- * Migration: Met à jour les codes stations pour utiliser le format slugifié
- * Les stations avec un code cryptique (sans tiret) seront mises à jour
- * pour utiliser le nom slugifié
- */
-export const migrateStationCodes = mutation({
-  args: {},
-  handler: async (ctx) => {
-    // Pas de vérification d'auth - mutation de migration one-shot
-    // À supprimer après utilisation
-    const stations = await ctx.db.query("stations").collect();
-
-    const migrated: string[] = [];
-    const skipped: string[] = [];
-
-    for (const station of stations) {
-      // Si le code ne contient pas de tiret et qu'on a un name valide
-      // alors c'est probablement un ancien code cryptique
-      if (station.name && !station.code.includes("-")) {
-        const newCode = slugify(station.name);
-
-        // Vérifier que le nouveau code n'existe pas déjà
-        const existing = await ctx.db
-          .query("stations")
-          .withIndex("by_code", (q) => q.eq("code", newCode))
-          .first();
-
-        if (!existing || existing._id === station._id) {
-          await ctx.db.patch(station._id, { code: newCode });
-          migrated.push(`${station.name}: ${station.code} → ${newCode}`);
-        } else {
-          skipped.push(`${station.name}: code "${newCode}" déjà utilisé`);
-        }
-      } else {
-        skipped.push(`${station.name}: déjà au bon format (${station.code})`);
-      }
-    }
-
-    return {
-      migrated,
-      skipped,
-      totalMigrated: migrated.length,
-      totalSkipped: skipped.length,
-    };
-  },
-});
-
-// DEBUG: Vérifier l'état des données avec contexte auth
-export const debugDataWithAuth = query({
-  args: {},
-  handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    const orgId = identity ? ((identity as Record<string, unknown>).org_id as string | undefined) : null;
-
-    // Toutes les stations
-    const allStations = await ctx.db.query("stations").collect();
-
-    // Station trouvée par organizationId
-    const stationByOrg = orgId
-      ? await ctx.db
-          .query("stations")
-          .withIndex("by_organization", (q) => q.eq("organizationId", orgId))
-          .first()
-      : null;
-
-    // Tous les drivers
-    const allDrivers = await ctx.db.query("drivers").collect();
-
-    // Drivers par station
-    const driversByStation: Record<string, number> = {};
-    for (const d of allDrivers) {
-      const key = d.stationId as string;
-      driversByStation[key] = (driversByStation[key] || 0) + 1;
-    }
-
-    return {
-      clerkOrgId: orgId || "PAS CONNECTÉ À UNE ORG",
-      allStations: allStations.map((s) => ({
-        _id: s._id,
-        name: s.name,
-        code: s.code,
-        organizationId: s.organizationId || "MISSING!",
-        matchesClerkOrg: s.organizationId === orgId,
-      })),
-      stationFoundByOrgId: stationByOrg
-        ? {
-            _id: stationByOrg._id,
-            name: stationByOrg.name,
-          }
-        : "AUCUNE STATION TROUVÉE POUR CETTE ORG",
-      totalDrivers: allDrivers.length,
-      activeDrivers: allDrivers.filter((d) => d.isActive).length,
-      driversByStation,
     };
   },
 });
