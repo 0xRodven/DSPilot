@@ -4,6 +4,7 @@ import Link from "next/link";
 
 import { ArrowRight } from "lucide-react";
 
+import { CalEmbed } from "@/components/landing/cal-embed";
 import { BrowserFrame } from "@/components/linkify/browser-frame";
 import { DashboardMockup } from "@/components/linkify/mockups";
 
@@ -81,23 +82,22 @@ export function Hero() {
           </p>
 
           <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
-            <Link
-              href="/sign-up"
-              className="hover:-translate-y-0.5 inline-flex items-center gap-2 rounded-xl px-8 py-3.5 font-semibold text-base text-white transition-all duration-200"
-              style={{
-                background: "#2563EB",
-                boxShadow: "0 4px 14px rgba(37,99,235,0.25)",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = "#1d4ed8";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = "#2563EB";
-              }}
-            >
-              Démarrer avec DSPilot
-              <ArrowRight className="size-4" />
-            </Link>
+            <CalEmbed
+              namespace="hero"
+              trigger={
+                <button
+                  type="button"
+                  className="hover:-translate-y-0.5 inline-flex items-center gap-2 rounded-xl px-8 py-3.5 font-semibold text-base text-white transition-all duration-200"
+                  style={{
+                    background: "#2563EB",
+                    boxShadow: "0 4px 14px rgba(37,99,235,0.25)",
+                  }}
+                >
+                  Réserver une démo
+                  <ArrowRight className="size-4" />
+                </button>
+              }
+            />
             <Link
               href="/demo"
               className="inline-flex items-center rounded-xl border px-8 py-3.5 font-medium text-base transition-all duration-200"
