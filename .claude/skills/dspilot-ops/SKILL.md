@@ -1,4 +1,5 @@
 ---
+disable-model-invocation: true
 name: dspilot-ops
 description: Operational guide for working on DSPilot — deployments, build verification, dev vs prod Convex, Vercel env vars. Load this skill whenever starting work on DSPilot.
 allowed-tools: Read, Write, Edit, Bash

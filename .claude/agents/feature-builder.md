@@ -1,7 +1,7 @@
 ---
 name: feature-builder
 description: Build new DSPilot features following Boris Cherny's workflow (Plan Mode -> Auto-Accept -> Verify). Use for implementing new functionality, adding components, or extending existing features.
-model: claude-opus-4-5-20251101
+model: claude-sonnet-4-6
 tools:
   - Read
   - Write

@@ -140,7 +140,7 @@ export function DnrDailyChart({ data, selectedDay, onDayClick }: DnrDailyChartPr
             <LabelList
               dataKey="total"
               position="top"
-              className="fill-muted-foreground text-xs font-medium"
+              className="fill-muted-foreground font-medium text-xs"
               offset={8}
             />
           </Bar>

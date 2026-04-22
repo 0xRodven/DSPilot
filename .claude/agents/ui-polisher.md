@@ -1,7 +1,7 @@
 ---
 name: ui-polisher
 description: Refine shadcn/ui components and fix styling issues for DSPilot. Ensures Tailwind consistency, proper component usage, and accessibility. Use for UI improvements, responsive fixes, or design polish.
-model: claude-opus-4-5-20251101
+model: claude-sonnet-4-6
 tools:
   - Read
   - Write

@@ -1,4 +1,5 @@
 ---
+disable-model-invocation: true
 name: anti-slop-landing
 description: Build $10K+ quality landing pages that don't look like AI slop. Techniques from premium web agencies — Spline 3D, GSAP ScrollTrigger, Lenis smooth scroll, distinctive typography, custom backgrounds, micro-interactions.
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep

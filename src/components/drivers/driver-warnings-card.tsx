@@ -43,7 +43,7 @@ export function DriverWarningsCard({ driverId, stationId }: DriverWarningsCardPr
     <>
       <Card className="border-border bg-card">
         <CardHeader className="flex flex-row items-center justify-between pb-3">
-          <CardTitle className="flex items-center gap-2 font-semibold text-card-foreground text-base">
+          <CardTitle className="flex items-center gap-2 font-semibold text-base text-card-foreground">
             <ShieldAlert className="h-4 w-4 text-amber-400" />
             Avertissements actifs
             {warnings && (
@@ -78,7 +78,7 @@ export function DriverWarningsCard({ driverId, stationId }: DriverWarningsCardPr
                       </span>
                       {w.expiresAt && <span className="text-muted-foreground/70 text-xs">→ exp. {w.expiresAt}</span>}
                     </div>
-                    <p className="mt-1 truncate text-sm text-card-foreground" title={w.reason}>
+                    <p className="mt-1 truncate text-card-foreground text-sm" title={w.reason}>
                       {w.reason}
                     </p>
                   </div>

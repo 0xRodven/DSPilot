@@ -1,4 +1,5 @@
 ---
+disable-model-invocation: true
 name: automation-pipeline
 description: Full import-to-delivery automation pipeline for DSPilot. Covers alert generation, confidence scoring, decision scores, and report delivery. Use when working with post-import automation or alert system.
 allowed-tools: Read, Write, Edit

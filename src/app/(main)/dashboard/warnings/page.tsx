@@ -119,7 +119,7 @@ export default function WarningsPage() {
               <AlertTriangle className="h-3.5 w-3.5 text-amber-400" />
               1er avertissement
             </CardDescription>
-            <CardTitle className="text-3xl tabular-nums text-amber-400">{stats?.first ?? "—"}</CardTitle>
+            <CardTitle className="text-3xl text-amber-400 tabular-nums">{stats?.first ?? "—"}</CardTitle>
           </CardHeader>
         </Card>
         <Card>
@@ -128,7 +128,7 @@ export default function WarningsPage() {
               <ShieldAlert className="h-3.5 w-3.5 text-orange-400" />
               2ème avertissement
             </CardDescription>
-            <CardTitle className="text-3xl tabular-nums text-orange-400">{stats?.second ?? "—"}</CardTitle>
+            <CardTitle className="text-3xl text-orange-400 tabular-nums">{stats?.second ?? "—"}</CardTitle>
           </CardHeader>
         </Card>
         <Card>
@@ -137,7 +137,7 @@ export default function WarningsPage() {
               <ShieldX className="h-3.5 w-3.5 text-red-400" />
               Avertissement final
             </CardDescription>
-            <CardTitle className="text-3xl tabular-nums text-red-400">{stats?.final ?? "—"}</CardTitle>
+            <CardTitle className="text-3xl text-red-400 tabular-nums">{stats?.final ?? "—"}</CardTitle>
           </CardHeader>
         </Card>
       </div>
@@ -188,7 +188,7 @@ export default function WarningsPage() {
                           {display.isWalker && (
                             <Badge
                               variant="outline"
-                              className="border-sky-500/40 bg-sky-500/15 px-1.5 py-0 text-[10px] font-medium text-sky-300"
+                              className="border-sky-500/40 bg-sky-500/15 px-1.5 py-0 font-medium text-[10px] text-sky-300"
                             >
                               walker
                             </Badge>

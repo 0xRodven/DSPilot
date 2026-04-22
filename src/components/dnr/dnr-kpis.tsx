@@ -124,7 +124,7 @@ export function DnrKpis({ stationId, year, week }: DnrKpisProps) {
                         {group.isWalker && (
                           <Badge
                             variant="outline"
-                            className="border-sky-500/40 bg-sky-500/15 px-1.5 py-0 text-[10px] font-medium text-sky-300"
+                            className="border-sky-500/40 bg-sky-500/15 px-1.5 py-0 font-medium text-[10px] text-sky-300"
                           >
                             walker
                           </Badge>

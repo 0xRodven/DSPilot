@@ -1,4 +1,5 @@
 ---
+disable-model-invocation: true
 name: weekly-recap
 description: Generate weekly performance recaps for drivers and stations. Use for PDF exports, WhatsApp messages, dashboard summaries, and weekly review features.
 allowed-tools: Read, Write, Edit

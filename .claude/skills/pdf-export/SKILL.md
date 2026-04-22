@@ -1,4 +1,5 @@
 ---
+disable-model-invocation: true
 name: pdf-export
 description: PDF export using @react-pdf/renderer for DSPilot weekly recaps. Two versions - DSP (full names) and LIVREURS (blurred names). Use when working with PDF generation or export features.
 allowed-tools: Read, Write, Edit

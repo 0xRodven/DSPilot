@@ -1,7 +1,7 @@
 ---
 name: data-validator
 description: Validate Convex schema and data integrity for DSPilot. Checks foreign keys, required fields, and business rules. Use for data quality checks, import verification, or debugging data issues.
-model: claude-opus-4-5-20251101
+model: claude-sonnet-4-6
 tools:
   - Read
   - Grep

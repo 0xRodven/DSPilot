@@ -23,7 +23,7 @@ function DeltaBadge({ delta }: { delta: number }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-0.5 text-xs font-medium",
+        "inline-flex items-center gap-0.5 font-medium text-xs",
         isImprovement ? "text-emerald-400" : "text-red-400",
       )}
     >

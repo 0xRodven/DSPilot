@@ -1,7 +1,7 @@
 ---
 name: bug-fixer
 description: Systematic debugging agent for DSPilot issues. Uses root cause analysis to fix bugs efficiently. Use for resolving errors, fixing type issues, or debugging unexpected behavior.
-model: claude-opus-4-5-20251101
+model: claude-sonnet-4-6
 tools:
   - Read
   - Grep

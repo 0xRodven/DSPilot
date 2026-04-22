@@ -1,4 +1,5 @@
 ---
+disable-model-invocation: true
 name: whatsapp-integration
 description: Send WhatsApp messages via Twilio, manage opt-ins, and schedule weekly recaps. Use for any WhatsApp-related functionality, message templates, or scheduled notifications.
 allowed-tools: Read, Write, Edit, Bash

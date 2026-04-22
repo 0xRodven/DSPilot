@@ -1,7 +1,7 @@
 ---
 name: test-runner
 description: Execute visual tests for DSPilot using Claude Chrome extension. Runs smoke tests, page tests, flow tests, and full test suites. Use for QA, regression testing, or validating changes.
-model: claude-opus-4-5-20251101
+model: claude-sonnet-4-6
 tools:
   - Read
   - Write
