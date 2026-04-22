@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 import { format, getISOWeek, getYear, subDays } from "date-fns";
 
-import { mutation, query } from "./_generated/server";
+import { internalMutation, internalQuery, mutation, query } from "./_generated/server";
 import { getUserContext } from "./lib/permissions";
 import { getTier } from "./lib/tier";
 
@@ -505,5 +505,123 @@ export const clearDemoData = mutation({
     await ctx.db.delete(station._id);
 
     return { success: true, message: "Demo data cleared" };
+  },
+});
+
+/**
+ * Copy driverWeeklyStats rows from source → target, rewriting driverId via driverMap.
+ * The driverMap is built by the caller (create-demo-tenant.ts).
+ */
+export const seedDemoStation = internalMutation({
+  args: {
+    sourceStationId: v.id("stations"),
+    targetStationId: v.id("stations"),
+    driverMap: v.array(
+      v.object({
+        srcId: v.id("drivers"),
+        name: v.string(),
+        amazonId: v.string(),
+      }),
+    ),
+    weeksBack: v.number(),
+  },
+  handler: async (ctx, args) => {
+    // 1. Create new driver rows in target station, build src→tgt map
+    const idMap = new Map<string, unknown>();
+    for (const d of args.driverMap) {
+      const newId = await ctx.db.insert("drivers", {
+        stationId: args.targetStationId,
+        amazonId: d.amazonId,
+        name: d.name,
+        isActive: true,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      });
+      idMap.set(d.srcId, newId);
+    }
+
+    // 2. Copy weekly stats
+    const weeklyStats = await ctx.db
+      .query("driverWeeklyStats")
+      .withIndex("by_station", (q) => q.eq("stationId", args.sourceStationId))
+      .collect();
+
+    let copied = 0;
+    for (const row of weeklyStats) {
+      const tgtDriverId = idMap.get(row.driverId);
+      if (!tgtDriverId) continue;
+      const { _id, _creationTime, ...rest } = row;
+      await ctx.db.insert("driverWeeklyStats", {
+        ...rest,
+        stationId: args.targetStationId,
+        driverId: tgtDriverId as never,
+      });
+      copied++;
+    }
+
+    return { driversCreated: args.driverMap.length, weeklyStatsCopied: copied };
+  },
+});
+
+export const getDIF1DriversForClone = internalQuery({
+  args: { sourceStationId: v.id("stations") },
+  handler: async (ctx, args) => {
+    const drivers = await ctx.db
+      .query("drivers")
+      .withIndex("by_station", (q) => q.eq("stationId", args.sourceStationId))
+      .collect();
+    return drivers.map((d) => ({ _id: d._id, name: d.name, amazonId: d.amazonId }));
+  },
+});
+
+export const createDemoStationRow = internalMutation({
+  args: {
+    code: v.string(),
+    name: v.string(),
+    organizationId: v.string(),
+    ownerId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db.insert("stations", {
+      code: args.code,
+      name: args.name,
+      organizationId: args.organizationId,
+      ownerId: args.ownerId,
+      plan: "business",
+      subscriptionStatus: "active",
+      initialSetupStatus: "ready",
+      createdAt: Date.now(),
+    });
+  },
+});
+
+/**
+ * Public read-only dashboard data for /demo page.
+ */
+export const getDashboardPublic = query({
+  args: {},
+  handler: async (ctx) => {
+    const station = await ctx.db
+      .query("stations")
+      .withIndex("by_code", (q) => q.eq("code", "DEMO"))
+      .first();
+
+    if (!station) return null;
+
+    const drivers = await ctx.db
+      .query("drivers")
+      .withIndex("by_station", (q) => q.eq("stationId", station._id))
+      .collect();
+
+    const weekly = await ctx.db
+      .query("driverWeeklyStats")
+      .withIndex("by_station", (q) => q.eq("stationId", station._id))
+      .collect();
+
+    return {
+      station: { code: station.code, name: station.name },
+      driverCount: drivers.length,
+      weeklyStatsCount: weekly.length,
+    };
   },
 });
