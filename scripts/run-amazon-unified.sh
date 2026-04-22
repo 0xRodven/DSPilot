@@ -86,7 +86,7 @@ python3 /root/DSPilot/scripts/with-dspilot-env.py /root/.claude/stealth-browser-
 
 3. Lancer le scrape daily:
 export DSPILOT_AMAZON_JOB_KIND=daily_auto
-export DSPILOT_AMAZON_WEEKS=1
+export DSPILOT_AMAZON_WEEKS=2  # rolling 2-week reimport (current + previous, fixes J-1/J-2 Amazon lag)
 bash /root/.openclaw/workspace-dspilot/scripts/run-amazon-live-cycle.sh
 
 4. Verifier le resultat:
