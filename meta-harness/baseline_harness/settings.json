@@ -1,0 +1,53 @@
+{
+  "env": {
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1",
+    "ENABLE_TOOL_SEARCH": "auto:5"
+  },
+  "permissions": {
+    "allow": [
+      "Bash(*)",
+      "Read(*)",
+      "Write(*)",
+      "Edit(*)",
+      "Glob(*)",
+      "Grep(*)",
+      "WebFetch(*)",
+      "WebSearch(*)",
+      "Task(*)",
+      "TodoWrite(*)",
+      "SkillTool(*)"
+    ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd /root/wiki && git pull --rebase -q 2>/dev/null; bash /opt/dspilot-agent/.claude/hooks/session-start.sh",
+            "statusMessage": "Loading DSPilot context + wiki sync...",
+            "async": false
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /root/wiki/scripts/sync.sh 2>/dev/null || true",
+            "async": true
+          }
+        ]
+      }
+    ]
+  },
+  "skipDangerousModePermissionPrompt": true,
+  "enabledPlugins": {
+    "telegram@claude-plugins-official": true
+  },
+  "bypassPermissionsModeAccepted": true,
+  "hasTrustDialogAccepted": true,
+  "hasCompletedOnboarding": true
+}

@@ -52,3 +52,18 @@ next-env.d.ts
 .superpowers/
 .claude/scheduled_tasks.lock
 .vscode/
+
+# meta-harness runtime artifacts
+meta-harness/candidates/*/runs/
+meta-harness/candidates/*/score.json
+meta-harness/candidates/*/trace-index.json
+meta-harness/logs/*.jsonl
+meta-harness/logs/*.json
+meta-harness/offline-traces/*
+meta-harness/tmp/
+meta-harness/.venv/
+meta-harness/__pycache__/
+meta-harness/scripts/__pycache__/
+meta-harness/baseline_harness/runs/
+meta-harness/baseline_harness/score.json
+meta-harness/scripts/.empty_plugins/
