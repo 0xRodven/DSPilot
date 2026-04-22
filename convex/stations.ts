@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 
-import { mutation, query } from "./_generated/server";
+import { internalMutation, mutation, query } from "./_generated/server";
 import {
   canAccessStation,
   getAccessibleStations,
@@ -480,5 +480,44 @@ export const migrateStationsToOrganization = mutation({
       totalMigrated: migrated.length,
       totalSkipped: skipped.length,
     };
+  },
+});
+
+export const createStationForOnboarding = internalMutation({
+  args: {
+    code: v.string(),
+    name: v.string(),
+    region: v.optional(v.string()),
+    organizationId: v.string(),
+    ownerId: v.string(),
+    plan: v.union(v.literal("pro"), v.literal("business"), v.literal("enterprise")),
+    stripeCustomerId: v.optional(v.string()),
+    stripeSubscriptionId: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query("stations")
+      .withIndex("by_code", (q) => q.eq("code", args.code))
+      .first();
+
+    if (existing) {
+      throw new Error(`Station code already exists: ${args.code}`);
+    }
+
+    const id = await ctx.db.insert("stations", {
+      code: args.code,
+      name: args.name,
+      region: args.region,
+      organizationId: args.organizationId,
+      ownerId: args.ownerId,
+      plan: args.plan,
+      stripeCustomerId: args.stripeCustomerId,
+      stripeSubscriptionId: args.stripeSubscriptionId,
+      subscriptionStatus: "active",
+      initialSetupStatus: "pending",
+      createdAt: Date.now(),
+    });
+
+    return id;
   },
 });
