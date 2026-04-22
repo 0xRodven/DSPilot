@@ -126,12 +126,19 @@ export default defineSchema({
     region: v.optional(v.string()),
     organizationId: v.optional(v.string()), // Clerk org ID (optional for migration)
     ownerId: v.string(), // Clerk user ID (creator)
-    plan: v.union(v.literal("free"), v.literal("pro"), v.literal("enterprise")),
+    plan: v.union(v.literal("free"), v.literal("pro"), v.literal("business"), v.literal("enterprise")),
+    stripeCustomerId: v.optional(v.string()),
+    stripeSubscriptionId: v.optional(v.string()),
+    subscriptionStatus: v.optional(
+      v.union(v.literal("active"), v.literal("past_due"), v.literal("canceled"), v.literal("trialing")),
+    ),
+    initialSetupStatus: v.optional(v.union(v.literal("pending"), v.literal("in_progress"), v.literal("ready"))),
     createdAt: v.number(),
   })
     .index("by_organization", ["organizationId"])
     .index("by_owner", ["ownerId"])
-    .index("by_code", ["code"]),
+    .index("by_code", ["code"])
+    .index("by_stripe_customer", ["stripeCustomerId"]),
 
   // Station access for Managers/Viewers (granular access control)
   stationAccess: defineTable({
@@ -724,4 +731,12 @@ export default defineSchema({
     .index("by_tracking", ["trackingId"])
     .index("by_driver", ["driverId", "year", "week"])
     .index("by_station_driver", ["stationId", "driverId"]),
+
+  stripeEvents: defineTable({
+    stripeEventId: v.string(),
+    type: v.string(),
+    payload: v.any(),
+    processed: v.boolean(),
+    receivedAt: v.number(),
+  }).index("by_stripe_event_id", ["stripeEventId"]),
 });
