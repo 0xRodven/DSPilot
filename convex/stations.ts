@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 
-import { internalMutation, mutation, query } from "./_generated/server";
+import { internalMutation, internalQuery, mutation, query } from "./_generated/server";
 import {
   canAccessStation,
   getAccessibleStations,
@@ -520,4 +520,13 @@ export const createStationForOnboarding = internalMutation({
 
     return id;
   },
+});
+
+export const getStationByCodeInternal = internalQuery({
+  args: { code: v.string() },
+  handler: async (ctx, args) =>
+    await ctx.db
+      .query("stations")
+      .withIndex("by_code", (q) => q.eq("code", args.code))
+      .first(),
 });

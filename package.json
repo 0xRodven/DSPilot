@@ -17,7 +17,8 @@
     "amazon:ingest": "ts-node --compiler-options '{\"module\":\"CommonJS\",\"moduleResolution\":\"node\"}' scripts/amazon-logistics-sync.ts",
     "amazon:reports:sync": "python3 scraper/amazon_supplementary_sync.py",
     "amazon:core:sync": "bash scripts/amazon-core-sync.sh",
-    "onboard": "tsx scripts/onboard-customer.ts"
+    "onboard": "tsx scripts/onboard-customer.ts",
+    "create-demo": "tsx scripts/create-demo-tenant.ts"
   },
   "lint-staged": {
     "*.{js,ts,jsx,tsx}": [
