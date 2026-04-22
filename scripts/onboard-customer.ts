@@ -110,8 +110,13 @@ async function main() {
     console.log(`  ✓ invitation sent to ${args.email}`);
   }
 
+  // For newly-invited users, use inviter as temporary owner until they accept;
+  // later we'll reassign ownership via a Clerk webhook (post-invitation flow).
   const ownerId = existingUserId ?? inviterUserId;
 
+  // NOTE: ConvexHttpClient (used from Node scripts) doesn't support internal mutations via TypeScript.
+  // This is a known Convex limitation; internal mutations must be called via HTTP with a cast.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const stationId = await convex.mutation(internal.stations.createStationForOnboarding as any, {
     code: args.stationCode,
     name: args.stationName,
