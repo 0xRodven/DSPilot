@@ -347,16 +347,19 @@ export const getKpis = query({
       .withIndex("by_station_week", (q) => q.eq("stationId", args.stationId).eq("year", prevYear).eq("week", prevWeek))
       .collect();
 
-    const confirmedDnr = current.filter((i) => i.status === "confirmed_dnr").length;
+    const currentConcessions = current.filter((i) => i.entryType === "concession");
+    const prevConcessions = previous.filter((i) => i.entryType === "concession");
+    const confirmedDnr = currentConcessions.filter((i) => i.status === "confirmed_dnr").length;
     const underInvestigation = current.filter(
       (i) => i.status === "under_investigation" || i.entryType === "investigation",
     ).length;
-    const concessions = current.filter((i) => i.entryType !== "investigation").length;
-    const preventionRate = current.length > 0 ? ((current.length - confirmedDnr) / current.length) * 100 : 0;
+    const preventionRate =
+      currentConcessions.length > 0
+        ? ((currentConcessions.length - confirmedDnr) / currentConcessions.length) * 100
+        : 0;
 
-    // Top récidivistes — current week only
     const driverCounts: Record<string, { name: string; count: number }> = {};
-    for (const inv of current) {
+    for (const inv of currentConcessions) {
       if (!driverCounts[inv.driverName]) {
         driverCounts[inv.driverName] = { name: inv.driverName, count: 0 };
       }
@@ -367,10 +370,10 @@ export const getKpis = query({
       .slice(0, 5);
 
     return {
-      investigationsCount: current.length,
-      investigationsDelta: current.length - previous.length,
+      investigationsCount: currentConcessions.length,
+      investigationsDelta: currentConcessions.length - prevConcessions.length,
       formalInvestigationsCount: underInvestigation,
-      concessionsCount: concessions,
+      concessionsCount: currentConcessions.length,
       preventionRate: Math.round(preventionRate),
       topOffenders,
     };

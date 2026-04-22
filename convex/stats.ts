@@ -410,10 +410,6 @@ export const getStationDriversWeeklyStats = query({
   },
 });
 
-/**
- * Récupère les KPIs du dashboard pour une station/semaine
- * Nécessite: accès à la station
- */
 export const getDashboardKPIs = query({
   args: {
     stationId: v.id("stations"),
@@ -494,9 +490,29 @@ export const getDashboardKPIs = query({
         below80: Math.ceil(currentStats.tierDistribution.poor / 2),
       },
       prevWeek,
-      // New fields for KPI cards
-      totalDeliveries: dwcTotal,
-      // Real DNR count from concessions data
+      // Colis livrés — priorité Amazon Aperçu (DIF1-scoped) → Associate Overview → DWC fallback.
+      totalDeliveries: await (async () => {
+        const official = await ctx.db
+          .query("stationDeliveryStats")
+          .withIndex("by_station_metric_week", (q) =>
+            q
+              .eq("stationId", args.stationId)
+              .eq("metricName", "Colis livrés")
+              .eq("year", args.year)
+              .eq("week", args.week),
+          )
+          .first();
+        if (official?.numericValue !== undefined) return official.numericValue;
+        const associateRows = await ctx.db
+          .query("driverAssociateStats")
+          .withIndex("by_station_week", (q) =>
+            q.eq("stationId", args.stationId).eq("year", args.year).eq("week", args.week),
+          )
+          .collect();
+        const sum = associateRows.reduce((acc, r) => acc + (r.packagesDelivered ?? 0), 0);
+        return sum > 0 ? sum : dwcTotal;
+      })(),
+      // DNR — concessions scrapées (DIF1-scoped par transporterId→driver→station).
       deliveryMissesRisk: await (async () => {
         const dnr = await ctx.db
           .query("dnrInvestigations")
@@ -504,7 +520,7 @@ export const getDashboardKPIs = query({
             q.eq("stationId", args.stationId).eq("year", args.year).eq("week", args.week),
           )
           .collect();
-        return dnr.length;
+        return dnr.filter((d) => d.entryType === "concession").length;
       })(),
     };
   },

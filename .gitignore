@@ -50,3 +50,5 @@ next-env.d.ts
 # clerk configuration (can include secrets)
 /.clerk/
 .superpowers/
+.claude/scheduled_tasks.lock
+.vscode/

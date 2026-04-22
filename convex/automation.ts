@@ -648,16 +648,34 @@ export const applyAutomationParsedReport = internalMutation({
     });
 
     for (const metric of args.deliveryMetrics || []) {
-      await ctx.db.insert("stationDeliveryStats", {
-        stationId: args.stationId,
-        metricName: metric.metricName,
-        year: metric.year,
-        week: metric.week,
-        value: metric.value,
-        numericValue: metric.numericValue,
-        createdAt: now,
-        updatedAt: now,
-      });
+      const existing = await ctx.db
+        .query("stationDeliveryStats")
+        .withIndex("by_station_metric_week", (q) =>
+          q
+            .eq("stationId", args.stationId)
+            .eq("metricName", metric.metricName)
+            .eq("year", metric.year)
+            .eq("week", metric.week),
+        )
+        .first();
+      if (existing) {
+        await ctx.db.patch(existing._id, {
+          value: metric.value,
+          numericValue: metric.numericValue,
+          updatedAt: now,
+        });
+      } else {
+        await ctx.db.insert("stationDeliveryStats", {
+          stationId: args.stationId,
+          metricName: metric.metricName,
+          year: metric.year,
+          week: metric.week,
+          value: metric.value,
+          numericValue: metric.numericValue,
+          createdAt: now,
+          updatedAt: now,
+        });
+      }
     }
 
     for (const stat of args.associateWeeklyStats || []) {

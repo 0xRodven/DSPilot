@@ -5,6 +5,7 @@ import { parseHtmlContent } from "../src/lib/parser";
 import { parseAssociateOverviewHtml } from "../src/lib/parser/associate-overview-html";
 import { parseDailyReportHtml } from "../src/lib/parser/daily-report-html";
 import { parseDeliveryOverviewCsv } from "../src/lib/parser/delivery-overview-csv";
+import { parseDeliveryOverviewHtml } from "../src/lib/parser/delivery-overview-html";
 import { parseDriverNamesCsv } from "../src/lib/parser/driver-names-csv";
 import { parseDriverRosterHtml } from "../src/lib/parser/driver-roster-html";
 import { createHash } from "node:crypto";
@@ -224,9 +225,16 @@ async function main() {
     );
   }
 
+  // Delivery Overview : accepter CSV (manuel) OU HTML (scrape avec dropdown station appliqué).
+  // Le scraper ne sauvegarde le HTML que s'il a pu sélectionner la station cible,
+  // sinon il skip — donc si le HTML est présent on peut l'ingérer en confiance.
   const deliveryOverview = discoveredPaths.deliveryOverviewPath
     ? parseDeliveryOverviewCsv(await readFile(discoveredPaths.deliveryOverviewPath, "utf-8"))
-    : null;
+    : discoveredPaths.deliveryOverviewHtmlPath
+      ? parseDeliveryOverviewHtml(await readFile(discoveredPaths.deliveryOverviewHtmlPath, "utf-8"), {
+          filename: path.basename(discoveredPaths.deliveryOverviewHtmlPath),
+        })
+      : null;
 
   if (deliveryOverview && deliveryOverview.errors.length > 0) {
     throw new Error(`Delivery Overview invalide: ${deliveryOverview.errors.join(" | ")}`);
@@ -499,7 +507,12 @@ function parseArgs(argv: string[]): CliOptions {
   return options as CliOptions;
 }
 
-async function discoverArtifactPaths(options: CliOptions) {
+async function discoverArtifactPaths(options: CliOptions): Promise<{
+  dwcHtmlPath?: string;
+  deliveryOverviewPath?: string;
+  deliveryOverviewHtmlPath?: string;
+  driverNamesPath?: string;
+}> {
   if (!options.artifactsDir) {
     return {
       dwcHtmlPath: options.dwcHtmlPath,
@@ -535,6 +548,10 @@ async function discoverArtifactPaths(options: CliOptions) {
             normalized.includes("overview"))
         );
       })),
+    deliveryOverviewHtmlPath: await pickNewestMatchingFile(files, (filePath) => {
+      const normalized = path.basename(filePath).toLowerCase();
+      return normalized.endsWith(".html") && /^delivery_w\d+_\d{4}\.html$/.test(normalized);
+    }),
     driverNamesPath:
       options.driverNamesPath ||
       (await pickNewestMatchingFile(files, (filePath) => {

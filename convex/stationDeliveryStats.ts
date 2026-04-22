@@ -3,6 +3,64 @@ import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { checkStationAccess, requireWriteAccess } from "./lib/permissions";
 
+export const _purgeAll = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const rows = await ctx.db.query("stationDeliveryStats").collect();
+    for (const r of rows) await ctx.db.delete(r._id);
+    return { deleted: rows.length };
+  },
+});
+
+// Manual backfill from Amazon Aperçu (DIF1-scoped) screenshot — CLI tool, no auth.
+export const _manualUpsert = mutation({
+  args: {
+    stationCode: v.string(),
+    metrics: v.array(
+      v.object({
+        metricName: v.string(),
+        year: v.number(),
+        week: v.number(),
+        value: v.string(),
+        numericValue: v.optional(v.number()),
+      }),
+    ),
+  },
+  handler: async (ctx, args) => {
+    const station = await ctx.db
+      .query("stations")
+      .filter((q) => q.eq(q.field("code"), args.stationCode))
+      .first();
+    if (!station) return { error: `station ${args.stationCode} not found` };
+    const now = Date.now();
+    let upserted = 0;
+    for (const m of args.metrics) {
+      const existing = await ctx.db
+        .query("stationDeliveryStats")
+        .withIndex("by_station_metric_week", (q) =>
+          q.eq("stationId", station._id).eq("metricName", m.metricName).eq("year", m.year).eq("week", m.week),
+        )
+        .first();
+      if (existing) {
+        await ctx.db.patch(existing._id, { value: m.value, numericValue: m.numericValue, updatedAt: now });
+      } else {
+        await ctx.db.insert("stationDeliveryStats", {
+          stationId: station._id,
+          metricName: m.metricName,
+          year: m.year,
+          week: m.week,
+          value: m.value,
+          numericValue: m.numericValue,
+          createdAt: now,
+          updatedAt: now,
+        });
+      }
+      upserted++;
+    }
+    return { upserted };
+  },
+});
+
 /**
  * Bulk upsert delivery stats - idempotent
  * Key: (stationId, metricName, year, week)
