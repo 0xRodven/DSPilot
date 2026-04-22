@@ -16,7 +16,8 @@
     "generate:presets": "ts-node --compiler-options '{\"module\":\"CommonJS\"}' src/scripts/generate-theme-presets.ts",
     "amazon:ingest": "ts-node --compiler-options '{\"module\":\"CommonJS\",\"moduleResolution\":\"node\"}' scripts/amazon-logistics-sync.ts",
     "amazon:reports:sync": "python3 scraper/amazon_supplementary_sync.py",
-    "amazon:core:sync": "bash scripts/amazon-core-sync.sh"
+    "amazon:core:sync": "bash scripts/amazon-core-sync.sh",
+    "onboard": "tsx scripts/onboard-customer.ts"
   },
   "lint-staged": {
     "*.{js,ts,jsx,tsx}": [
