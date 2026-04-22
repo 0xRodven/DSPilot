@@ -34,52 +34,54 @@
 
         .slide {
             position: absolute;
-            width: 100%;
-            height: 100%;
+            inset: 0;
             display: flex;
             flex-direction: column;
             justify-content: center;
-            padding: 60px 80px;
+            padding: clamp(32px, 4vh, 56px) clamp(40px, 6vw, 96px);
             opacity: 0;
             transition: opacity 0.6s ease;
+            overflow-y: auto;
         }
+        .slide::-webkit-scrollbar { display: none; }
+        .slide { scrollbar-width: none; }
 
         .slide.active {
             opacity: 1;
             z-index: 10;
         }
 
-        /* Typo */
+        /* Typo — clamp-based fluid sizing pour s'adapter 1440x900 → 1920x1080 */
         h1 {
             font-family: 'Playfair Display', serif;
-            font-size: 72px;
+            font-size: clamp(40px, 5vw, 64px);
+            font-weight: 700;
+            line-height: 1.15;
+            margin-bottom: 20px;
+            color: #0F172A;
+        }
+
+        h2 {
+            font-family: 'Playfair Display', serif;
+            font-size: clamp(32px, 3.6vw, 48px);
             font-weight: 700;
             line-height: 1.2;
             margin-bottom: 24px;
             color: #0F172A;
         }
 
-        h2 {
-            font-family: 'Playfair Display', serif;
-            font-size: 56px;
-            font-weight: 700;
-            line-height: 1.3;
-            margin-bottom: 32px;
-            color: #0F172A;
-        }
-
         p, li {
-            font-size: 20px;
-            line-height: 1.6;
+            font-size: clamp(15px, 1.2vw, 18px);
+            line-height: 1.55;
             color: #1A1A1A;
-            margin-bottom: 16px;
+            margin-bottom: 12px;
         }
 
         .tagline {
-            font-size: 28px;
+            font-size: clamp(20px, 1.8vw, 26px);
             color: #2563EB;
             font-weight: 500;
-            margin-bottom: 48px;
+            margin-bottom: 40px;
         }
 
         .stat {
@@ -105,7 +107,7 @@
 
         .logo-text {
             font-family: 'Playfair Display', serif;
-            font-size: 96px;
+            font-size: clamp(56px, 7vw, 96px);
             font-weight: 700;
             color: #2563EB;
             margin-bottom: 16px;
@@ -427,17 +429,24 @@
             background: #F5F3EE;
             border-radius: 8px;
             padding: 16px;
-            min-height: 400px;
+            min-height: 320px;
         }
 
         .kanban-title {
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 700;
             color: #0F172A;
             margin-bottom: 16px;
             padding-bottom: 12px;
             border-bottom: 2px solid #2563EB;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
         }
+
+        .kanban-title-alert { border-bottom-color: #DC2626; color: #DC2626; }
+        .kanban-title-progress { border-bottom-color: #2563EB; color: #2563EB; }
+        .kanban-title-escalate { border-bottom-color: #F59E0B; color: #B45309; }
+        .kanban-title-done { border-bottom-color: #10B981; color: #047857; }
 
         .kanban-card {
             background: white;
@@ -1082,7 +1091,7 @@
                     <div class="telegram-time">7h36</div>
                 </div>
                 <div class="telegram-message bot">
-                    <div class="telegram-bubble">✓ Action créée : "Coaching Contact Miss — Kitenge" (deadline jeudi)</div>
+                    <div class="telegram-bubble">Action créée : « Coaching Contact Miss — Kitenge » (deadline jeudi)</div>
                     <div class="telegram-time">7h36</div>
                 </div>
             </div>
@@ -1111,7 +1120,7 @@
             <h2>Workflow coaching intégré</h2>
             <div class="kanban">
                 <div class="kanban-col">
-                    <div class="kanban-title">🚨 Alertes</div>
+                    <div class="kanban-title kanban-title-alert">Alertes</div>
                     <div class="kanban-card">
                         <div class="kanban-card-title">Kitenge</div>
                         <div class="kanban-card-info">S16 : Contact Miss 18x</div>
@@ -1124,7 +1133,7 @@
                     </div>
                 </div>
                 <div class="kanban-col">
-                    <div class="kanban-title">⚙️ Actions en cours</div>
+                    <div class="kanban-title kanban-title-progress">Actions en cours</div>
                     <div class="kanban-card">
                         <div class="kanban-card-title">Coaching Contact Miss</div>
                         <div class="kanban-card-info">Kitenge</div>
@@ -1132,7 +1141,7 @@
                     </div>
                 </div>
                 <div class="kanban-col">
-                    <div class="kanban-title">🆘 En escalade</div>
+                    <div class="kanban-title kanban-title-escalate">En escalade</div>
                     <div class="kanban-card">
                         <div class="kanban-card-title">Suspicious Activity</div>
                         <div class="kanban-card-info">Rayan</div>
@@ -1140,7 +1149,7 @@
                     </div>
                 </div>
                 <div class="kanban-col">
-                    <div class="kanban-title">✓ Résolu</div>
+                    <div class="kanban-title kanban-title-done">Résolu</div>
                     <div class="kanban-card">
                         <div class="kanban-card-title">DNR Investigation</div>
                         <div class="kanban-card-info">S15 — Mohamed</div>
@@ -1160,19 +1169,19 @@
                     <div class="report-meta">Station DIF1 | 114 livreurs | Généré automatiquement lundi 7h</div>
                 </div>
                 <div class="report-section">
-                    <div class="report-section-title">📊 Synthèse</div>
+                    <div class="report-section-title">Synthèse</div>
                     <div class="report-item">DWC Global : 83.96% (+0.3% vs S15)</div>
                     <div class="report-item">IADC Global : 94.2%</div>
                     <div class="report-item">DNR Total : 102 concessions</div>
                 </div>
                 <div class="report-section">
-                    <div class="report-section-title">🏆 Top performers</div>
+                    <div class="report-section-title">Top performers</div>
                     <div class="report-item">1. Mohamed : 97.3% (Fantastic) — 0 DNR</div>
                     <div class="report-item">2. Sarah : 95.2% (Fantastic) — 2 DNR</div>
                     <div class="report-item">3. Hassan : 93.8% (Great) — 5 DNR</div>
                 </div>
                 <div class="report-section">
-                    <div class="report-section-title">⚠️ À suivre</div>
+                    <div class="report-section-title">À suivre</div>
                     <div class="report-item">Kitenge (82.1%) — Contact Miss 18x — Action coaching lancée</div>
                     <div class="report-item">Jamal (84.6%) — Unsuccessful Delivery 12x — Call prévu mercredi</div>
                 </div>
