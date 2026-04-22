@@ -6,14 +6,25 @@ import Stripe from "stripe";
 import { api } from "../../../../../convex/_generated/api";
 
 export const runtime = "nodejs";
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2026-03-25.dahlia",
-});
-
-const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
+export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
+  const stripeKey = process.env.STRIPE_SECRET_KEY;
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+  const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
+
+  if (!stripeKey || !webhookSecret || !convexUrl) {
+    console.error("[stripe-webhook] missing env", {
+      hasStripe: !!stripeKey,
+      hasWebhook: !!webhookSecret,
+      hasConvex: !!convexUrl,
+    });
+    return NextResponse.json({ error: "Server not configured" }, { status: 503 });
+  }
+
+  const stripe = new Stripe(stripeKey, { apiVersion: "2026-03-25.dahlia" });
+  const convex = new ConvexHttpClient(convexUrl);
+
   const signature = req.headers.get("stripe-signature");
   if (!signature) {
     return NextResponse.json({ error: "Missing signature" }, { status: 400 });
@@ -23,7 +34,7 @@ export async function POST(req: NextRequest) {
 
   let event: Stripe.Event;
   try {
-    event = stripe.webhooks.constructEvent(body, signature, process.env.STRIPE_WEBHOOK_SECRET!);
+    event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
   } catch (err) {
     const msg = err instanceof Error ? err.message : "unknown";
     return NextResponse.json({ error: `Signature: ${msg}` }, { status: 400 });
