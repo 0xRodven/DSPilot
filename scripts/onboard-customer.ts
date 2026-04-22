@@ -88,10 +88,9 @@ async function main() {
 
   const org = await clerk.organizations.createOrganization({
     name: args.stationName,
-    slug: args.stationCode.toLowerCase(),
     createdBy: inviterUserId,
   });
-  console.log(`  ✓ Clerk org created: ${org.id} (${org.slug})`);
+  console.log(`  ✓ Clerk org created: ${org.id}`);
 
   if (existingUserId) {
     await clerk.organizations.createOrganizationMembership({

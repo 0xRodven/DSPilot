@@ -61,10 +61,9 @@ async function main() {
     return;
   }
 
-  // Create Clerk org
+  // Create Clerk org (slug disabled at instance level)
   const org = await clerk.organizations.createOrganization({
     name: "DSPilot Demo",
-    slug: "dspilot-demo",
     createdBy: inviterUserId,
   });
   console.log(`  ✓ Clerk org: ${org.id}`);
