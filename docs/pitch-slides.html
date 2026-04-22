@@ -35,20 +35,24 @@
         .slide {
             position: absolute;
             inset: 0;
-            display: flex;
+            display: none;
             flex-direction: column;
-            justify-content: center;
+            justify-content: safe center;
             padding: clamp(32px, 4vh, 56px) clamp(40px, 6vw, 96px);
-            opacity: 0;
-            transition: opacity 0.6s ease;
             overflow-y: auto;
+            scrollbar-width: none;
         }
         .slide::-webkit-scrollbar { display: none; }
-        .slide { scrollbar-width: none; }
 
         .slide.active {
-            opacity: 1;
+            display: flex;
             z-index: 10;
+            animation: fade-in 0.4s ease;
+        }
+
+        @keyframes fade-in {
+            from { opacity: 0; }
+            to { opacity: 1; }
         }
 
         /* Typo — clamp-based fluid sizing pour s'adapter 1440x900 → 1920x1080 */
@@ -98,11 +102,15 @@
         }
 
         /* Slide 1 - Cover */
-        .slide-1 {
-            position: relative;
-            text-align: center;
-            justify-content: space-between;
-            flex-direction: column;
+        .slide-1.active {
+            display: grid;
+            grid-template-columns: 1.2fr 1fr;
+            gap: 48px;
+            align-items: center;
+        }
+
+        .slide-1 .cover-left {
+            text-align: left;
         }
 
         .logo-text {
@@ -111,21 +119,18 @@
             font-weight: 700;
             color: #2563EB;
             margin-bottom: 16px;
+            line-height: 1;
         }
 
         .mock-dashboard {
-            position: absolute;
-            top: 50%;
-            right: 40px;
-            width: 420px;
-            height: 280px;
+            width: 100%;
+            max-width: 440px;
             background: white;
             border-radius: 8px;
-            padding: 20px;
+            padding: 24px;
             box-shadow: 0 20px 60px rgba(0,0,0,0.08);
-            opacity: 0.95;
-            transform: translateY(-50%);
             border-left: 6px solid #2563EB;
+            justify-self: center;
         }
 
         .mock-dashboard-header {
@@ -891,11 +896,11 @@
     <div class="slide-container">
         <!-- Slide 1: Cover -->
         <div class="slide slide-1 active">
-            <div style="text-align: left; margin-bottom: 60px;">
+            <div class="cover-left">
                 <div class="logo-text">DSPilot</div>
                 <p class="tagline">Pilote ta station Amazon DSP en temps réel.</p>
+                <p style="color: #8A8A8A; font-size: 16px; margin-top: 32px;">Performance management pour Delivery Service Partners Amazon.</p>
             </div>
-            <div style="flex: 1;"></div>
             <div class="mock-dashboard">
                 <div class="mock-dashboard-header">Station DIF1</div>
                 <div class="mock-metric">
@@ -1375,6 +1380,11 @@
 
         // Initialize
         initProgressDots();
+        // Support ?slide=N URL param for deep linking / testing
+        const urlSlide = parseInt(new URLSearchParams(location.search).get('slide'), 10);
+        if (Number.isFinite(urlSlide) && urlSlide >= 1 && urlSlide <= totalSlides) {
+            currentSlide = urlSlide;
+        }
         showSlide(currentSlide);
 
         // Respect prefers-reduced-motion
