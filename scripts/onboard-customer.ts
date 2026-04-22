@@ -16,7 +16,7 @@
 import { createClerkClient } from "@clerk/backend";
 import { ConvexHttpClient } from "convex/browser";
 
-import { internal } from "../convex/_generated/api";
+import { api } from "../convex/_generated/api";
 
 type Args = {
   email: string;
@@ -114,10 +114,7 @@ async function main() {
   // later we'll reassign ownership via a Clerk webhook (post-invitation flow).
   const ownerId = existingUserId ?? inviterUserId;
 
-  // NOTE: ConvexHttpClient (used from Node scripts) doesn't support internal mutations via TypeScript.
-  // This is a known Convex limitation; internal mutations must be called via HTTP with a cast.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const stationId = await convex.mutation(internal.stations.createStationForOnboarding as any, {
+  const stationId = await convex.mutation(api.stations.createStationForOnboarding, {
     code: args.stationCode,
     name: args.stationName,
     region: args.region,

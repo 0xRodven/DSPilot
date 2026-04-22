@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 
-import { internalMutation } from "./_generated/server";
+import { mutation } from "./_generated/server";
 
 const subscriptionStatusValidator = v.union(
   v.literal("active"),
@@ -9,7 +9,7 @@ const subscriptionStatusValidator = v.union(
   v.literal("trialing"),
 );
 
-export const recordSubscriptionOnStation = internalMutation({
+export const recordSubscriptionOnStation = mutation({
   args: {
     stationId: v.id("stations"),
     stripeCustomerId: v.string(),
@@ -25,7 +25,7 @@ export const recordSubscriptionOnStation = internalMutation({
   },
 });
 
-export const updateSubscriptionStatus = internalMutation({
+export const updateSubscriptionStatus = mutation({
   args: {
     stripeSubscriptionId: v.string(),
     subscriptionStatus: subscriptionStatusValidator,

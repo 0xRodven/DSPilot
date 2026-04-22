@@ -9,7 +9,7 @@
 import { createClerkClient } from "@clerk/backend";
 import { ConvexHttpClient } from "convex/browser";
 
-import { internal } from "../convex/_generated/api";
+import { api } from "../convex/_generated/api";
 import { anonymizeAmazonId, anonymizeDriverName } from "./anonymize-demo-data";
 
 type Args = {
@@ -49,9 +49,9 @@ async function main() {
 
   // Resolve source station
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const src = (await convex.query(internal.stations.getStationByCodeInternal as any, {
+  const src = (await convex.query(api.stations.getStationByCodeInternal, {
     code: args.sourceStationCode,
-  })) as { _id: string; code: string } | null;
+  })) as unknown as { _id: string; code: string } | null;
 
   if (!src) throw new Error(`Source station ${args.sourceStationCode} not found`);
   console.log(`  ✓ source station resolved: ${src.code}`);
@@ -71,22 +71,22 @@ async function main() {
 
   // Create demo station row
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const demoStationId = (await convex.mutation(internal.demo.createDemoStationRow as any, {
+  const demoStationId = (await convex.mutation(api.demo.createDemoStationRow, {
     code: "DEMO",
     name: "DSPilot Demo",
     organizationId: org.id,
     ownerId: inviterUserId,
-  })) as string;
+  })) as unknown as string;
   console.log(`  ✓ Station DEMO: ${demoStationId}`);
 
   // Fetch source drivers + build anonymized mapping
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const srcDrivers = (await convex.query(internal.demo.getDIF1DriversForClone as any, {
-    sourceStationId: src._id,
-  })) as Array<{ _id: string; name: string; amazonId: string }>;
+  const srcDrivers = (await convex.query(api.demo.getDIF1DriversForClone, {
+    sourceStationId: src._id as any,
+  })) as unknown as Array<{ _id: string; name: string; amazonId: string }>;
 
   const driverMap = srcDrivers.map((d) => ({
-    srcId: d._id,
+    srcId: d._id as any,
     name: anonymizeDriverName(d.name),
     amazonId: anonymizeAmazonId(d.amazonId),
   }));
@@ -94,12 +94,12 @@ async function main() {
 
   // Seed
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const result = (await convex.mutation(internal.demo.seedDemoStation as any, {
-    sourceStationId: src._id,
-    targetStationId: demoStationId,
+  const result = (await convex.mutation(api.demo.seedDemoStation, {
+    sourceStationId: src._id as any,
+    targetStationId: demoStationId as any,
     driverMap,
     weeksBack: 4,
-  })) as { driversCreated: number; weeklyStatsCopied: number };
+  })) as unknown as { driversCreated: number; weeklyStatsCopied: number };
   console.log(`  ✓ seed: ${JSON.stringify(result)}`);
 
   console.log(`\n✓ Demo tenant ready. Switch to "DSPilot Demo" in the org switcher.\n`);

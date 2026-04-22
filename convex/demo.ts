@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 import { format, getISOWeek, getYear, subDays } from "date-fns";
 
-import { internalMutation, internalQuery, mutation, query } from "./_generated/server";
+import { mutation, query } from "./_generated/server";
 import { getUserContext } from "./lib/permissions";
 import { getTier } from "./lib/tier";
 
@@ -512,7 +512,7 @@ export const clearDemoData = mutation({
  * Copy driverWeeklyStats rows from source → target, rewriting driverId via driverMap.
  * The driverMap is built by the caller (create-demo-tenant.ts).
  */
-export const seedDemoStation = internalMutation({
+export const seedDemoStation = mutation({
   args: {
     sourceStationId: v.id("stations"),
     targetStationId: v.id("stations"),
@@ -563,7 +563,7 @@ export const seedDemoStation = internalMutation({
   },
 });
 
-export const getDIF1DriversForClone = internalQuery({
+export const getDIF1DriversForClone = query({
   args: { sourceStationId: v.id("stations") },
   handler: async (ctx, args) => {
     const drivers = await ctx.db
@@ -574,7 +574,7 @@ export const getDIF1DriversForClone = internalQuery({
   },
 });
 
-export const createDemoStationRow = internalMutation({
+export const createDemoStationRow = mutation({
   args: {
     code: v.string(),
     name: v.string(),

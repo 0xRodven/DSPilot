@@ -3,7 +3,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { ConvexHttpClient } from "convex/browser";
 import Stripe from "stripe";
 
-import { internal } from "../../../../../convex/_generated/api";
+import { api } from "../../../../../convex/_generated/api";
 
 export const runtime = "nodejs";
 
@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    await convex.mutation(internal.stripeEvents.recordEvent, {
+    await convex.mutation(api.stripeEvents.recordEvent, {
       stripeEventId: event.id,
       type: event.type,
       payload: event as unknown as Record<string, unknown>,
@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
               : null;
 
     if (mappedStatus) {
-      await convex.mutation(internal.subscriptions.updateSubscriptionStatus, {
+      await convex.mutation(api.subscriptions.updateSubscriptionStatus, {
         stripeSubscriptionId: sub.id,
         subscriptionStatus: mappedStatus,
       });

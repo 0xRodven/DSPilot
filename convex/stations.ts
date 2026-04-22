@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 
-import { internalMutation, internalQuery, mutation, query } from "./_generated/server";
+import { mutation, query } from "./_generated/server";
 import {
   canAccessStation,
   getAccessibleStations,
@@ -483,7 +483,7 @@ export const migrateStationsToOrganization = mutation({
   },
 });
 
-export const createStationForOnboarding = internalMutation({
+export const createStationForOnboarding = mutation({
   args: {
     code: v.string(),
     name: v.string(),
@@ -522,7 +522,7 @@ export const createStationForOnboarding = internalMutation({
   },
 });
 
-export const getStationByCodeInternal = internalQuery({
+export const getStationByCodeInternal = query({
   args: { code: v.string() },
   handler: async (ctx, args) =>
     await ctx.db

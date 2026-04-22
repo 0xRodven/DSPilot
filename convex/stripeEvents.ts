@@ -1,8 +1,8 @@
 import { v } from "convex/values";
 
-import { internalMutation } from "./_generated/server";
+import { mutation } from "./_generated/server";
 
-export const recordEvent = internalMutation({
+export const recordEvent = mutation({
   args: {
     stripeEventId: v.string(),
     type: v.string(),
@@ -30,7 +30,7 @@ export const recordEvent = internalMutation({
   },
 });
 
-export const markProcessed = internalMutation({
+export const markProcessed = mutation({
   args: { id: v.id("stripeEvents") },
   handler: async (ctx, args) => {
     await ctx.db.patch(args.id, { processed: true });
