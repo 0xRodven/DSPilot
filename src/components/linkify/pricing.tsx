@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import Link from "next/link";
 
+import { CalEmbed } from "@/components/landing/cal-embed";
 import { cn } from "@/lib/utils";
 
 const plans = [
@@ -20,7 +21,7 @@ const plans = [
       "Analyse erreurs par livreur",
       "Support email prioritaire",
     ],
-    cta: "Passer au Pro",
+    cta: "Réserver une démo",
     href: "/sign-up?plan=pro",
   },
   {
@@ -37,7 +38,7 @@ const plans = [
       "Accès API",
       "Support prioritaire",
     ],
-    cta: "Choisir Business",
+    cta: "Réserver une démo",
     href: "/sign-up?plan=business",
   },
   {
@@ -192,34 +193,70 @@ export function Pricing() {
                 ))}
               </ul>
 
-              <Link
-                href={plan.href}
-                className={cn(
-                  "block w-full rounded-xl py-3.5 text-center font-semibold text-[15px] transition-all duration-200",
-                  plan.popular ? "text-white" : "border",
-                )}
-                style={{
-                  background: plan.popular ? "#2563EB" : "transparent",
-                  borderColor: plan.popular ? undefined : "#E8E5DF",
-                  color: plan.popular ? "#FFFFFF" : "#1A1A1A",
-                }}
-                onMouseEnter={(e) => {
-                  if (plan.popular) {
-                    e.currentTarget.style.background = "#1d4ed8";
-                  } else {
-                    e.currentTarget.style.borderColor = "#8A8A8A";
+              {plan.name === "Enterprise" ? (
+                <Link
+                  href={plan.href ?? "mailto:sales@dspilot.fr"}
+                  className={cn(
+                    "block w-full rounded-xl py-3.5 text-center font-semibold text-[15px] transition-all duration-200",
+                    plan.popular ? "text-white" : "border",
+                  )}
+                  style={{
+                    background: plan.popular ? "#2563EB" : "transparent",
+                    borderColor: plan.popular ? undefined : "#E8E5DF",
+                    color: plan.popular ? "#FFFFFF" : "#1A1A1A",
+                  }}
+                  onMouseEnter={(e) => {
+                    if (plan.popular) {
+                      e.currentTarget.style.background = "#1d4ed8";
+                    } else {
+                      e.currentTarget.style.borderColor = "#8A8A8A";
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (plan.popular) {
+                      e.currentTarget.style.background = "#2563EB";
+                    } else {
+                      e.currentTarget.style.borderColor = "#E8E5DF";
+                    }
+                  }}
+                >
+                  {plan.cta}
+                </Link>
+              ) : (
+                <CalEmbed
+                  namespace={`pricing-${plan.name.toLowerCase()}`}
+                  trigger={
+                    <button
+                      type="button"
+                      className={cn(
+                        "block w-full rounded-xl py-3.5 text-center font-semibold text-[15px] transition-all duration-200",
+                        plan.popular ? "text-white" : "border",
+                      )}
+                      style={{
+                        background: plan.popular ? "#2563EB" : "transparent",
+                        borderColor: plan.popular ? undefined : "#E8E5DF",
+                        color: plan.popular ? "#FFFFFF" : "#1A1A1A",
+                      }}
+                      onMouseEnter={(e) => {
+                        if (plan.popular) {
+                          e.currentTarget.style.background = "#1d4ed8";
+                        } else {
+                          e.currentTarget.style.borderColor = "#8A8A8A";
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (plan.popular) {
+                          e.currentTarget.style.background = "#2563EB";
+                        } else {
+                          e.currentTarget.style.borderColor = "#E8E5DF";
+                        }
+                      }}
+                    >
+                      {plan.cta}
+                    </button>
                   }
-                }}
-                onMouseLeave={(e) => {
-                  if (plan.popular) {
-                    e.currentTarget.style.background = "#2563EB";
-                  } else {
-                    e.currentTarget.style.borderColor = "#E8E5DF";
-                  }
-                }}
-              >
-                {plan.cta}
-              </Link>
+                />
+              )}
             </div>
           ))}
         </div>
