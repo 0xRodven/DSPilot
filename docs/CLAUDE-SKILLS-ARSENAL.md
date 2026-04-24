@@ -1,339 +1,299 @@
-# Claude Skills Arsenal — DSPilot
+# Claude Agent Skills Arsenal — DSPilot Brain
 
-> Catalogue curé des meilleurs skills, MCPs et librairies à activer sur Claude pour DSPilot (présentations, maps, charts, BI, PR).
-> Recherche du 2026-04-25 — 4 agents Opus en parallèle, ~50 sources croisées.
-> **Objectif** : élever Claude du "bon assistant code" au "analyste-designer-distributeur full-stack".
-
----
-
-## TL;DR — Ce qu'il faut installer cette semaine
-
-| Priorité | Skill | Coût | Install |
-|---|---|---|---|
-| 🔥 Now | **Anthropic PPTX skill** (built-in) | Inclus Max | Activé auto |
-| 🔥 Now | **Gamma Connector** (Claude native) | Free/Pro | Claude settings → Gamma OAuth |
-| 🔥 Now | **Marp CLI** | Free | `npm i -g @marp-team/marp-cli` |
-| 🔥 Now | **Recharts + Tremor** (dashboard) | Free | `npm i recharts @tremor/react` |
-| 🔥 Now | **Mapbox MCP + react-map-gl** (maps) | Free tier 100k calls/mo | Key + `npm i react-map-gl mapbox-gl` |
-| 🔥 Now | **Adresse.data.gouv.fr** (FR geocoding) | 100% Free | HTTP, no auth |
-| ⭐ Week 2 | **Vega-Lite + Puppeteer** (PDF reports) | Free | `npm i vega vega-lite puppeteer` |
-| ⭐ Week 2 | **Metabase MCP** (self-serve BI) | Free OSS / $80/mo | Docker + MCP config |
-| ⭐ Week 2 | **Lemlist MCP** (cold outreach) | $35/mo | Claude MCP → Lemlist key |
-| 💡 Later | Beehiiv newsletter / Prezly PR / Muck Rack | $100-833/mo | Plus tard |
+> Skills activables **gratuitement** sur l'agent DSPilot Brain (Telegram 24/7, VPS) pour qu'il fasse slides, maps, charts, analytics et drafts de comms à la demande.
+>
+> **Règle d'or** : que du free tier / OSS, installable côté VPS (npm/pip/binary), pas de OAuth SaaS payant.
+>
+> Dernière MAJ : 2026-04-25
 
 ---
 
-# 1. Présentations & Slides
+## TL;DR — ce que l'agent doit savoir faire en +
 
-## S-tier (must-have)
+Quand Ousmane DM son bot :
 
-### Anthropic PPTX skill (built-in)
-- **Quoi** : génère des `.pptx` natifs directement depuis Claude.ai / Code / API
-- **Install** : déjà actif sur Max plan, rien à faire
-- **Usage DSPilot** : pitch decks + driver reports exportés depuis query Convex — la voie la plus rapide vers du `.pptx` Microsoft natif
+| Demande | Skill mobilisé | Output |
+|---|---|---|
+| "fais-moi un deck DIF1 S17" | `pptx-generator` | `.pptx` attaché au message TG |
+| "carte des DNR cette semaine" | `map-generator` | PNG map envoyé |
+| "chart DWC top 10 drivers" | `chart-generator` | PNG chart envoyé |
+| "écris un post LinkedIn sur nos chiffres" | `content-drafter` | texte collable |
+| "envoie le rapport hebdo à thierry@dsp.fr" | `gmail` (déjà en place) | email envoyé |
+| "sort le top 5 livreurs qui ont dérapé S16→S17" | `metabase-analyst` | markdown table |
 
-### Gamma Connector (Claude native)
-- **Quoi** : AI presentation builder, connecteur natif Claude. Tu donnes un brief + data, Gamma design le deck en 10s.
-- **Install** : Claude settings → add Gamma account (OAuth)
-- **Coût** : Gamma Basic free / Pro payant
-- **Usage DSPilot** : pour les pitch decks à envoyer aux prospects. Qualité McKinsey sans effort design
-- **Pourquoi S** : design distinctif, pas d'effort CSS, native Claude
+---
+
+## 1. Slides / PPTX (100% gratuit)
+
+### Anthropic PPTX skill ⭐ déjà dispo
+- **Accès** : built-in Max plan, rien à installer
+- **Usage agent** : dans un skill `.md`, dire au Claude : "génère un pptx"
+- **DSPilot** : driver reports hebdo, pitch deck pour un prospect
 
 ### Marp CLI
-- **Quoi** : Markdown → HTML/PPTX/PDF pipeline. Tu écris en MD, Claude améliore, tu export.
-- **Install** : `npm install -g @marp-team/marp-cli`
-- **Usage DSPilot** : rapports internes + decks de prospection versionnés dans git. Export `.pptx` via `--pptx-editable` (LibreOffice backend).
-- **Pourquoi S** : source controllable, portable, full control
+- **Install sur VPS** :
+  ```bash
+  npm install -g @marp-team/marp-cli
+  apt install -y chromium-browser  # pour export PPTX/PDF
+  ```
+- **Usage agent** : l'agent écrit markdown, puis `marp slides.md -o deck.pptx --pptx-editable`
+- **Pourquoi** : format versionnable, agent itère à chaque demande sans repartir de zéro
 
-## A-tier
+### PptxGenJS
+- **Install** : `npm install pptxgenjs` dans `/opt/dspilot-agent/lib/`
+- **Usage agent** : skill TS qui transforme une query Convex en slides (chart + table + KPI hero)
+- **Pourquoi** : control total quand Marp limite (graphs natifs PPTX, animations)
 
-- **PptxGenJS** (`npm i pptxgenjs`) — génération PPTX programmatique JS, data-heavy slides depuis Convex
-- **Office PowerPoint MCP Server** (`python-pptx` wrapper, 32 outils) — si tu veux automatiser des rapports multi-slides avec brand kit
-- **Reveal.js** — présentations HTML interactives pour démos screen-share
+### Office-PowerPoint-MCP-Server (python-pptx)
+- **Install** : `git clone GongRzhe/Office-PowerPoint-MCP-Server && pip install -r requirements.txt`
+- **MCP config** : ajouter le server dans `/opt/dspilot-agent/.mcp.json`
+- **Usage agent** : 32 outils python-pptx disponibles via MCP (add_slide, add_chart, add_image, set_background, etc.)
+- **Pourquoi** : le plus granulaire, pour brand kits persistants
 
-## B-tier (skip pour l'instant)
-
-- Beautiful.ai API — alternative Gamma payante
-- Slidev — overkill pour sales pitch
-- Pandoc — conversion format basique, pas de design
-
-## Stack recommandée DSPilot
-
-1. **Gamma** pour les pitch decks prospects (design instantané)
-2. **Marp** pour les rapports internes versionnés
-3. **Anthropic PPTX skill** pour génération one-shot depuis data
+**Stack agent recommandée** : **Marp** pour 80% des cas + **PptxGenJS** quand on veut des charts natifs dans le PPTX.
 
 ---
 
-# 2. Maps & Géospatial
+## 2. Maps / Géospatial (100% gratuit)
 
-## S-tier (must-have)
+### Adresse.data.gouv.fr (BAN) ⭐ must-have
+- **Gratuit 100%** — geocoding officiel gouvernement FR
+- **Install** : `curl` direct, pas de SDK
+- **Usage agent** :
+  ```bash
+  curl "https://api-adresse.data.gouv.fr/search/?q=10+rue+de+Paris+Ivry&limit=1"
+  ```
+- **DSPilot** : geocode toutes les concessions DNR batch au moment du scrape
 
-### Mapbox MCP Server
-- **Quoi** : MCP officiel Mapbox — geocoding, POI, routing, matrix, optimization
-- **Install** : `npm install -g @mapbox/mcp-server` + clé Mapbox
-- **Coût** : free 100k geocoding calls/mois, puis $0.50/1k
-- **Usage DSPilot** : geocode adresses FR, optimise routes DNR, distance matrix multi-stations
+### folium + leafmap (Python)
+- **Install sur VPS** : `pip install folium leafmap contextily`
+- **Usage agent** : skill `generate_delivery_map.py` qui read Convex → folium Map → save PNG
+- **Pourquoi** : rendu static PNG (bon pour envoyer via Telegram), tuiles OSM gratuites, clusters/heatmaps built-in
 
-### Mapbox GL + react-map-gl
-- **Install** : `npm install react-map-gl mapbox-gl`
-- **Usage DSPilot** : composant Map interactif dans le dashboard — clusters DNR, polylines routes
+### OpenStreetMap MCP (jagan-shanmugam/open-streetmap-mcp)
+- **Install** :
+  ```bash
+  git clone https://github.com/jagan-shanmugam/open-streetmap-mcp
+  # Config dans .mcp.json
+  ```
+- **Usage agent** : routing, distance matrix, POI search — tout gratuit via Overpass/OSRM publics
+- **Pourquoi** : remplace Mapbox complètement pour les besoins "où sont mes drivers, quelle distance entre 2 stations"
 
-### deck.gl
-- **Install** : `npm install deck.gl @deck.gl/react`
-- **Usage DSPilot** : heatmaps GPU-accelerated (DNR density par zone), 3D routes
+### MapLibre GL JS (pour le dashboard Next.js, pas l'agent)
+- `npm install maplibre-gl react-map-gl` — OSS fork de Mapbox pré-v3, marche avec tuiles OSM gratuites
+- Pour plus tard quand tu ajoutes la vue map dans le dashboard DSPilot
 
-### Adresse.data.gouv.fr (BAN API)
-- **Quoi** : geocoding officiel gouvernement FR, 100% free
-- **Install** : HTTP direct, pas d'auth
-- **Usage DSPilot** : batch-geocode TOUTES les concessions DNR (préférer à Mapbox pour les adresses FR — meilleure précision + zéro coût)
+**Stack agent recommandée** : **BAN** pour geocoding + **folium** pour rendre des PNG maps envoyables sur Telegram.
 
-## A-tier
+---
 
-- **folium** (Python) — cartes interactives pour PDF reports
-- **OpenStreetMap MCP Server** — fallback gratuit si Mapbox cost trop élevé
-- **MapLibre GL JS** — fork OSS de Mapbox (pre-v3), compatible react-map-gl
-- **Kepler.gl** — 3D heatmap Uber pour multi-stations
-- **leafmap** (Python) — wrapper unifié folium/pydeck/kepler
+## 3. Charts / Data Viz (100% gratuit)
 
-## B-tier
+### matplotlib + seaborn (Python) ⭐ le plus simple pour l'agent
+- **Install** : `pip install matplotlib seaborn pandas`
+- **Usage agent** : skill `chart.py` qui query Convex → DataFrame → matplotlib → PNG
+- **Pourquoi** : l'agent peut scripter ça en 20 lignes, headless, pas de navigateur
 
-- Amazon Location Service (AWS SDK) — intégration native AWS mais verrouillage
-- HERE Maps — alternative premium
-- GeoAI Skills — satellite imagery (niche)
+### Vega-Lite + vl-convert (Python headless render)
+- **Install** : `pip install vl-convert-python altair`
+- **Usage agent** : Claude écrit spec Vega-Lite JSON (grammar of graphics), `vl-convert` rend en PNG en local (pas besoin de browser/Puppeteer)
+- **Pourquoi** : specs déclaratives stables, McKinsey-grade par design (waterfall, bullet, small multiples)
 
-## Exemples GitHub à étudier
+### Observable Plot (si tu veux rester en JS)
+- **Install** : `npm install @observablehq/plot @observablehq/domino`
+- **Usage agent** : node script → SVG string → `sharp` convert PNG
+- **Pourquoi** : syntaxe compacte, même lib côté dashboard Next.js plus tard
 
-1. **Fleet-Analytics-Dashboard/Application** — fleet tracking Mapbox + Next.js
-2. **yashitiwary/delivery-tracking** — Next.js 15 + MapLibre + role-based dashboards
-3. **mapbox/mapbox-agent-skills** — exemples officiels Mapbox pour agents Claude
+### Mermaid MCP (flowcharts, Gantt, séquences)
+- **Install** : `npm install -g @mermaid-js/mermaid-cli` (`mmdc` binary) + Mermaid MCP server
+- **Usage agent** : pour diagrammes (timeline campagne coaching, flow classification DNR)
+- **Pourquoi** : 0 effort design, version-control friendly
 
-## Stack recommandée DSPilot
+### Apache ECharts (via `pyecharts` Python)
+- **Install** : `pip install pyecharts snapshot-selenium`
+- **Usage agent** : charts enterprise-grade, export PNG
+- **Pourquoi** : quand matplotlib c'est trop moche pour ce qu'on veut montrer au prospect
 
+**Stack agent recommandée** : **matplotlib+seaborn** pour 80% (rapports DSPilot classiques) + **vl-convert + Vega-Lite** pour les charts McKinsey-grade du pitch.
+
+---
+
+## 4. Business Intelligence (100% gratuit self-hosted)
+
+### Metabase OSS (self-hosted)
+- **Install sur VPS** :
+  ```bash
+  docker run -d -p 3000:3000 \
+    -e MB_DB_TYPE=h2 \
+    --name metabase metabase/metabase:v0.50
+  ```
+- **MCP config** : Metabase MCP server (OSS, https://github.com/metabase/metabase-mcp)
+- **Usage agent** : "top 5 drivers DWC drop S16→S17" → agent call Metabase query → renvoie markdown table
+- **Pourquoi** : pas besoin de Looker/GoodData payants, Metabase OSS couvre 100% des besoins DSP analytics
+
+### Apache Superset (alternative Metabase)
+- **Install** : Docker aussi
+- **Usage agent** : plus puissant que Metabase pour dashboards partagés mais setup plus lourd
+- **Verdict** : Metabase suffit pour DSPilot aujourd'hui
+
+### Cube.dev (semantic layer OSS)
+- **Install** : `npm install -g @cubejs-backend/cli`
+- **Usage agent** : expose un schema Convex-compatible sur HTTP, l'agent query en SQL naturel
+- **Pourquoi** : si tu veux que les clients Pro aient un "query playground" embedded dans DSPilot plus tard
+
+### Convex + Claude direct (already working)
+- **Usage agent** : l'agent sait déjà `npx convex data` et `npx convex run`
+- **Skill à créer** : `analytics-queries.md` avec 10-20 queries-types documentées (top/bottom, deltas WoW, cohortes) que l'agent appelle au lieu d'improviser
+
+**Stack agent recommandée** : Pour **maintenant** = skill `analytics-queries.md` avec queries Convex pre-écrites. Pour **plus tard** (power users) = Metabase OSS self-hosted.
+
+---
+
+## 5. Press / PR / Comms (free-tier only)
+
+### Gmail MCP ⭐ déjà activé
+- **Usage agent** : envoie emails (rapports hebdo clients, follow-ups prospects)
+- **Skill utile** : `draft-and-send.md` avec templates de mail (onboarding, relance J+3, release note)
+
+### Resend (free tier 3k emails/mois)
+- **Install** : `pip install resend` ou SDK Node
+- **Usage agent** : email transactionnel (reports drivers, alertes DWC drop) — complément Gmail pour envois programmatiques
+- **Pourquoi** : free tier généreux, meilleure deliverability que SMTP perso
+
+### Press release skill (native Claude, 100% gratuit)
+- **Install** : créer `/opt/dspilot-agent/.claude/skills/press-release.md`
+- **Usage agent** : templates FR "DSPilot annonce X" + liste journalistes FR à cibler (Les Échos, Journal du Net, Maddyness)
+- **Pourquoi** : pas besoin de Prezly $600/mo — la valeur c'est le prompt engineering, pas la plateforme
+
+### Apollo MCP (free tier limité mais utilisable)
+- **Déjà activé** sur ton Claude Code
+- **Usage agent** : search prospects DSP FR par ville, enrichissement — free tier = 150 crédits/mois, suffit pour bootstrap
+
+### LinkedIn post drafter (skill custom)
+- **Install** : créer `/opt/dspilot-agent/.claude/skills/linkedin-drafter.md`
+- **Usage agent** : templates posts "DSPilot weekly insights" avec hook + story + CTA
+- **Pourquoi** : Typefully/Buffer payant = overkill pour 1 post/semaine. Tu postes toi-même, l'agent draft.
+
+**Stack agent recommandée** : **Gmail MCP** (actif) + **press-release skill** + **linkedin-drafter skill** + **Resend** pour le transactionnel. Apollo free tier pour bootstrap. Zéro euro.
+
+---
+
+## 6. Méta-skill : coordination & mémoire (gratuit)
+
+### Convex-as-memory
+- **Usage agent** : utiliser une table `agentMemory` (déjà dispo) pour stocker contextes longs (preferences user, décisions passées, liste prospects travaillés)
+- **Pourquoi** : pas besoin de vector store payant — Convex fait full-text search + on a déjà le schéma
+
+### Wiki sync (déjà en place)
+- `~/wiki → /root/wiki` sync hourly via systemd
+- L'agent peut read `/root/wiki/wiki/hot-DSPilot.md` à chaque démarrage
+
+### meta-harness (déjà scaffolded)
+- Ton framework pour améliorer l'agent week-over-week via eval automatique
+- Gratuit, tourne sur ton compte Max
+
+---
+
+## 7. Action plan (0€, activable ce week-end)
+
+### Phase 1 — packages VPS (30 min)
+Sur Hetzner (ou futur Oracle) :
+```bash
+# Python stack
+pip install matplotlib seaborn pandas folium leafmap altair vl-convert-python pyecharts python-pptx resend
+
+# Node stack
+npm install -g @marp-team/marp-cli @mermaid-js/mermaid-cli
+cd /opt/dspilot-agent && npm install pptxgenjs @observablehq/plot sharp
+
+# System
+apt install -y chromium-browser  # pour exports headless
 ```
-Frontend : Next.js 16 + react-map-gl + deck.gl (heatmap layer)
-Backend  : Convex mutation geocodeAddress() → BAN API (free)
-Reports  : Claude Python agent → folium → PNG/PDF
-Fallback : MapLibre GL si Mapbox cost devient trop élevé
-```
+
+### Phase 2 — skills files à créer (1h)
+
+Créer dans `/opt/dspilot-agent/.claude/skills/` :
+
+1. **`generate-pptx.md`** — l'agent sait produire un deck .pptx depuis une demande naturelle (Marp-first, PptxGenJS fallback)
+2. **`generate-map.md`** — l'agent sait geocoder (BAN) + folium + save PNG
+3. **`generate-chart.md`** — 5 patterns docs (DWC trend, waterfall, leaderboard, donut DNR, small multiples)
+4. **`analytics-queries.md`** — 20 queries Convex pré-écrites (top/bottom, deltas WoW, cohortes coaching)
+5. **`draft-linkedin.md`** — templates posts FR
+6. **`draft-email-outreach.md`** — templates cold + relance + upsell
+7. **`press-release.md`** — templates FR + liste médias DSP
+
+### Phase 3 — MCP config (30 min)
+Ajouter dans `/opt/dspilot-agent/.mcp.json` :
+- Office-PowerPoint-MCP-Server
+- OpenStreetMap MCP
+- Metabase MCP (quand Metabase installé)
+- Mermaid MCP
+
+### Phase 4 — test (15 min)
+Envoyer 5 demandes au bot Telegram :
+- "fais un pptx driver report DIF1 S17"
+- "chart top 10 DWC S17"
+- "map des DNR concessions S17"
+- "draft un post LinkedIn sur nos 102 concessions S16"
+- "top 5 drivers qui ont dérapé S16→S17 en markdown"
+
+Si chaque demande produit un artefact correct → phase 5.
+
+### Phase 5 — documenter dans meta-harness
+Ajouter ces 5 demandes à `eval_set.jsonl` comme benchmark permanent. Futures itérations du meta-harness évalueront la qualité.
 
 ---
 
-# 3. Charts & Data Viz
+## 8. Ce qu'on écarte explicitement (payant)
 
-## S-tier (must-have)
-
-### Recharts
-- **Install** : `npm install recharts`
-- **Usage DSPilot** : dashboard principal — trends 4-semaines, tier bars, leaderboards. SVG crisp pour export, TS natif, courbe d'apprentissage plate.
-
-### Vega-Lite (declarative JSON)
-- **Install** : `npm install vega vega-lite` ou `pip install altair` (Python)
-- **Usage DSPilot** : pitch decks McKinsey-grade (waterfall, bullet, small multiples). Claude génère JSON spec depuis Convex → rendu PNG server-side via Puppeteer/Kaleido.
-- **MCP** : Vega-Lite MCP dispo
-
-### Mermaid Diagrams
-- **Install** : MCP Mermaid (Claude Desktop) ou `npm install mermaid`
-- **Usage DSPilot** : Gantt de timeline, flowcharts classification DNR, diagrammes onboarding
-
-### Claude Artifacts (Recharts live)
-- **Install** : natif Claude Pro/Team
-- **Usage DSPilot** : **killer move en pitch call** → "laisse-moi te montrer" → Claude génère un dashboard interactif en 20s, tu filtres en live. GA April 2026.
-
-## A-tier
-
-- **Apache ECharts** — leaderboards 100+ drivers, 3D, WebGL (overkill mais power-user)
-- **Nivo** — animations premium (tier distrib heatmap par semaine)
-- **Observable Plot** — exploratoire rapide, grammar-of-graphics 50KB
-- **Tremor** (Vercel) — metric cards Tailwind drop-in basé sur Recharts
-
-## B-tier
-
-- **Visx** (Airbnb) — control total pixel par pixel, quand Recharts limite
-- **Datawrapper API** — pitch charts pro embeddables, freemium
-- **Vega-Lite + Kaleido/Puppeteer** — pipeline server-side pour PDF reports hebdo
-
-## Skip
-
-- Highcharts ($2000/dev/an commercial)
-- AG Charts (overkill enterprise)
-- Plotly.js (3MB, trop lourd)
-
-## 6 patterns à maîtriser pour pitch decks DSP
-
-1. **DWC Trend + Target Band** — line chart 4 semaines avec zone 88-95% shaded, target line 93%. Animation d'entrée.
-2. **Waterfall Completion Funnel** — 113 drivers total → −12 DNR → −8 Poor → −15 Fair → 78 Great/Fantastic. Couleurs par tier.
-3. **Tier Distribution Small Multiples** — 4 panneaux (S14-S17), barres horizontales Poor/Fair/Great/Fantastic. Montre le mouvement week-over-week d'un coup d'œil.
-4. **Sparkline + Trend Arrow** — carte métrique compact avec mini-line 60px + flèche ↑/↓. Pour top-3 leaderboards.
-5. **DNR Donut Drill-down** — donut concentrique DNR count ↔ reason type. Click → breakdown animé.
-6. **Leaderboard Tier-Colored Bars** — horizontal, couleur = tier, top 3 avec icône star.
-
-## Stack recommandée DSPilot
-
-```
-Dashboard  : Recharts + Tremor (core) + Observable Plot (exploratoire)
-Pitch deck : Vega-Lite JSON → PNG server-side (canonique)
-Live demo  : Claude Artifacts (Recharts interactif en call)
-Reports    : Vega-Lite + Puppeteer (nightly → PDF hebdo)
-```
+| Tool | Pourquoi on passe |
+|---|---|
+| Gamma Pro | Free tier suffit si tu l'utilises côté toi, l'agent n'en a pas besoin |
+| Lemlist, Instantly, Smartlead | Gmail + Resend gratuits font le taf pour 1-10 prospects/jour |
+| Beehiiv | Pas de newsletter avant 50+ clients |
+| Muck Rack, Prezly | Mail journalistes manuel suffit à ton échelle |
+| HubSpot | Notion gratuit OU Google Sheets fait pareil |
+| Buffer, Typefully | Tu postes toi-même, l'agent draft |
+| Mapbox paid | BAN + OSM tiles = 100% gratuit et largement suffisant |
+| Looker, Domo, Qlik, GoodData | Metabase OSS couvre tout |
+| Highcharts, AG Charts | ECharts OSS couvre tout |
 
 ---
 
-# 4. Business Intelligence
+## 9. Budget réel
 
-## S-tier
+**Marginal cost** : **0€/mois**
 
-### Metabase MCP
-- **Quoi** : MCP natif Metabase 60+, Claude query les dashboards, génère SQL, respecte les perms users
-- **Install** : Docker Metabase + config MCP
-- **Coût** : OSS gratuit / $80-500/mo managed
-- **Usage DSPilot** : self-service analytics pour power users DSP ("filter drivers where DWC < 88% and tier dropped week-over-week")
+Tout tourne sur :
+- VPS existant (Hetzner aujourd'hui, Oracle Cloud free plus tard)
+- Claude Max plan (déjà payé, partagé BreakIn)
+- Convex prod (déjà payé, couvert par tier actuel)
+- Gmail perso (gratuit)
+- Apollo free tier (150 crédits/mois, bootstrap)
 
-### Looker MCP (Google Cloud)
-- **Quoi** : Claude query Looker semantic layer, pas de SQL nécessaire
-- **Coût** : GCP pricing, free tier dispo
-- **Usage DSPilot** : alternative si tu passes sur GCP stack
-
-### GoodData MCP
-- **Quoi** : governed analytics, 24 tools AI-ready
-- **Coût** : Enterprise custom
-- **Usage DSPilot** : compliance-ready reports pour partenaires Amazon (plus tard)
-
-## A-tier
-
-- **Domo MCP** — dashboards interactifs dans Claude chat (~$2k/yr)
-- **Qlik MCP** — 47 tools GA Feb 2026
-- **CorpusIQ MCP** — 50+ sources unifiées (finance + sales + comms)
-- **Convex + Resend + Claude batch** — solution native DSPilot : query Convex → Claude génère PDF/email → Resend delivery (DÉJÀ EN PLACE partiellement)
-
-## Stack recommandée DSPilot
-
-```
-Court terme : Convex dashboard actuel + Claude Telegram agent = BI "suffisant"
-Moyen terme : Metabase MCP self-hosted pour power users prospects
-Long terme  : Looker ou GoodData pour Enterprise tier
-```
+Les seuls coûts qui augmentent avec le volume :
+- Convex prod quand tu dépasses 1M function calls/mois (probable vers 20+ clients)
+- Resend au-delà de 3k emails/mois (probable vers 50+ clients)
 
 ---
 
-# 5. Press / PR / Comms
+## 10. Sources recherche
 
-## S-tier
+Liste brute des sources scannées par les 4 agents Opus (filtrée free-only) :
 
-### Apollo MCP ✅ déjà activé
-- **Coût** : $49-499/mo
-- **Usage DSPilot** : leads B2B — recherche DSP managers France par ville, enrichment, séquences
-
-### Lemlist MCP
-- **Quoi** : Claude rédige les séquences + déploie direct dans Lemlist
-- **Install** : Claude MCP config + clé Lemlist
-- **Coût** : $35-100/mo
-- **Usage DSPilot** : cold email playbook (cf `DISTRIBUTION-PLAYBOOK.md` déjà rédigé)
-
-### Beehiiv MCP
-- **Quoi** : newsletter creation + analytics + scheduling (read-only v1)
-- **Coût** : ~$99/mo
-- **Usage DSPilot** : "DSPilot Weekly" à lancer semaine 8+ de distribution
-
-## A-tier
-
-- **HubSpot MCP** — sync Apollo → HubSpot deals (CRM natif), free tier OK
-- **Typefully MCP** — LinkedIn/Twitter thread drafting + scheduling ($12.50/mo)
-- **Buffer API** — cross-post 7+ réseaux ($6-48/mo)
-- **Muck Rack API** — 250k journalists database, media monitoring ($10k/an — seulement si PR push sérieux)
-- **Prezly** — press release publishing + newsroom FR ($100-600/mo — alternative Muck Rack)
-- **Clay** — prospect research + AI email copywriting signal-based ($50-500/mo)
-
-## B-tier
-
-- **Resend MCP** — transactional email batch (pay-per-email, très cheap)
-- Press release skill native Claude — draft templates
-
----
-
-# 6. 90-day distribution playbook (consolidé)
-
-**Objectif** : 10 stations DSP payantes d'ici fin Q2 2026.
-
-### Semaines 1-2 — Ops setup
-- Deploy **Metabase MCP** → Convex schema mapping → test queries ad-hoc
-- Google Sheet "Target DSP France" (DIF1 + 50 stations IdF/Lyon/Marseille)
-- Setup **Apollo + HubSpot** sync (Apollo → HubSpot deals)
-
-### Semaines 3-4 — Cold outreach v1
-- **Apollo** : search "Amazon DSP manager" par zone → liste 50
-- **Clay** : drafting 3 templates FR via Claude (product-led, ROI, trial)
-- **Lemlist** : séquence 2-touch (J0 intro, J5 follow-up), enroll 50
-
-### Semaines 5-6 — Content cadence
-- **Typefully** : LinkedIn post hebdo (Lundi 9h) sur DWC trends + wins
-- **Buffer** : cross-post Twitter + newsletter teaser
-- **Beehiiv** launch "DSPilot Weekly" (Dimanches) auto-populated depuis Metabase anomalies
-
-### Semaines 7-9 — PR push + inbound
-- **Muck Rack** ou **Prezly** → cherche journalistes Amazon Logistics / e-commerce
-- Press release "DSPilot announces first customer" → seed 50 journalistes FR
-- **HubSpot** : track conversion Apollo → replies → trials
-
-### Semaines 10-13 — Scaling
-- **Metabase** : dashboard "Lead Cohort" (source/stage/DWC vs benchmark)
-- **Resend + Convex** : hebdo auto-email "Your DWC vs Benchmark" aux trials
-- **Typefully** : 2-3 posts/semaine
-
-### Semaines 14-15 — Second PR wave
-- Press release "DSPilot atteint 10 stations — révèle les benchmarks DWC"
-- **LinkedIn** long-form Ousmane "Comment les DSP managers Amazon peuvent 10x leur perf"
-
-## Coût mensuel stack distribution
-
-| Outil | Tier | Coût/mois | Rôle |
-|---|---|---|---|
-| Metabase MCP | S | $0-80 | Self-serve analytics |
-| Apollo MCP | S | $49+ | Lead gen |
-| Lemlist MCP | S | $35-100 | Email sequences |
-| Beehiiv MCP | S | $99 | Newsletter |
-| HubSpot MCP | A | $0-300 | CRM |
-| Typefully | A | $12.50 | Social |
-| Clay | A | $50-500 | AI copywriting |
-| Muck Rack | A | ~$833 | Media DB (annuel) |
-| Prezly | A | $100-600 | PR releases |
-| Buffer | A | $6-48 | Distribution |
-| **Total** | | **~$1.2k-2.5k/mo** | |
-
-**ROI break-even** : ~2-3 stations payantes/mois (Pro 499€) couvrent le stack complet.
-
----
-
-# 7. Action plan d'activation
-
-## Cette semaine (gratuit / inclus)
-1. Active **Gamma Connector** dans Claude settings (10 min)
-2. `npm install -g @marp-team/marp-cli` (2 min)
-3. `npm install recharts @tremor/react react-map-gl mapbox-gl @deck.gl/react vega vega-lite` dans DSPilot (5 min)
-4. Test **Anthropic PPTX skill** avec un driver report demo (15 min)
-5. Inscription gratuite Mapbox + clé API (10 min)
-
-## Week 2 (low-cost)
-6. Metabase OSS self-hosted sur Oracle Cloud (quand migration faite) — 30 min
-7. Lemlist abonnement $35/mo + MCP config — 20 min
-8. Première séquence cold email via Apollo + Lemlist — 1h
-
-## Week 3+ (si premiers revenus)
-9. Beehiiv launch newsletter
-10. HubSpot si lead volume > 50/mois
-
----
-
-# 8. Sources (tous agents de recherche)
-
-**Présentations** : [Anthropic Skills Quickstart](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/quickstart), [Gamma Claude Integration](https://gamma.app/integrations/claude), [Marp GitHub](https://github.com/eruto-skills/marp), [Office PPTX MCP](https://github.com/GongRzhe/Office-PowerPoint-MCP-Server), [PptxGenJS](https://www.npmjs.com/package/pptxgenjs)
-
-**Maps** : [Mapbox MCP blog](https://www.mapbox.com/blog/introducing-the-mapbox-model-context-protocol-mcp-server), [react-map-gl](https://visgl.github.io/react-map-gl/), [deck.gl](https://deck.gl/), [BAN API](https://api.gouv.fr/les-api/base-adresse-nationale), [OSM MCP](https://github.com/jagan-shanmugam/open-streetmap-mcp), [leafmap](https://leafmap.org/)
-
-**Charts** : [Data Viz MCP Servers](https://chatforest.com/reviews/data-visualization-mcp-servers/), [Claude Artifacts visuals blog](https://claude.com/blog/claude-builds-visuals), [Top React Chart Libs 2026](https://querio.ai/articles/top-react-chart-libraries-data-visualization), [Observable Plot](https://observablehq.com/plot/getting-started), [McKinsey chart principles](https://umbrex.com/resources/the-busy-consultants-guide-to-quantitative-charts/design-principles-for-mckinsey-quantitative-charts/)
-
-**BI + PR** : [Metabase MCP](https://www.metabase.com/docs/latest/ai/mcp), [Looker MCP](https://cloud.google.com/blog/products/business-intelligence/introducing-looker-mcp-server), [Apollo MCP launch](https://www.prnewswire.com/news-releases/apolloio-delivers-gtm-outbound-execution-to-claude-302695860.html), [Lemlist Claude](https://www.lemlist.com/blog/lemlist-claude-integration), [Beehiiv MCP](https://product.beehiiv.com/p/beehiiv-mcp), [Typefully](https://typefully.com/social-media-scheduling), [Muck Rack API](https://muckrack.com/pr-software/api), [Clay](https://www.clay.com/)
-
----
-
-*Dernière mise à jour : 2026-04-25 — ré-exécute cette recherche tous les 2-3 mois, le marché MCP bouge vite.*
+- [Anthropic Agent Skills Quickstart](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/quickstart)
+- [Marp GitHub](https://github.com/marp-team/marp-cli)
+- [PptxGenJS](https://www.npmjs.com/package/pptxgenjs)
+- [Office-PowerPoint-MCP-Server](https://github.com/GongRzhe/Office-PowerPoint-MCP-Server)
+- [BAN API gouv.fr](https://api.gouv.fr/les-api/base-adresse-nationale)
+- [folium GitHub](https://github.com/python-visualization/folium)
+- [leafmap](https://leafmap.org/)
+- [OpenStreetMap MCP](https://github.com/jagan-shanmugam/open-streetmap-mcp)
+- [Vega-Lite + vl-convert](https://github.com/vega/vl-convert)
+- [Observable Plot](https://observablehq.com/plot)
+- [Apache ECharts + pyecharts](https://pyecharts.org/)
+- [Metabase OSS](https://www.metabase.com/start/oss/)
+- [Metabase MCP](https://www.metabase.com/docs/latest/ai/mcp)
+- [Cube.dev OSS](https://cube.dev/)
+- [Resend free tier](https://resend.com/pricing)
+- [Claude Artifacts visuals](https://claude.com/blog/claude-builds-visuals)
