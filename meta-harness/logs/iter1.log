@@ -1,0 +1,43 @@
+Running 15 question(s) on v1 (concurrency=2)
+  [OK] q02_dif1_colis_s16  59.03s  tools=16  $0.7552  | S16 DIF1 : **23 030 colis livrés** (60 chauffeurs actifs).  Source : Convex prod
+  [OK] q03_dif1_colis_exp_s16  14.28s  tools=3  $0.1681  | DIF1 S16 : **23 030 colis livrés** (60 chauffeurs actifs).
+  [OK] q04_dif1_dwc_s16  24.64s  tools=7  $0.2602  | DWC DIF1 S16 : **84** (−1.2 pts vs S15).  60 drivers actifs, 23 030 colis livrés
+  [OK] q05_dif1_drivers_s16  21.78s  tools=7  $0.2605  | 60 livreurs actifs à DIF1 en S16 — 23 030 colis livrés. DWC 84% (−1,2 pts), IADC
+  [OK] q01_dif1_dnr_s16  152.73s  tools=34  $1.5115  | Semaine 16 DIF1 (2026) — d'après `dnrInvestigations` prod :  - **110 entrées tot
+  [OK] q06_kitenge_jours_s16  54.59s  tools=14  $0.5169  | Kitenge a travaillé **5 jours** en S16 (DIF1, Convex prod).
+  [OK] q07_kitenge_dwc_s16  46.41s  tools=12  $0.4540  | Kitenge en S16 : - DWC : **86,5 %** (↓ 4,8 pts vs S15) - 569 livraisons - 57 Con
+  [OK] q09_top_contact_miss_s16  40.8s  tools=9  $0.3182  | 🥇 **Salim Berrahail** — 143 Contact Miss en S16 (DIF1).  Top 5 : 1. Salim Berrah
+  [OK] q08_rayan_dnr_s16  66.07s  tools=13  $0.5389  | **Rayan Mbimaketa — S16 : 7 concessions/DNR**  Source : Convex prod (`dnrInvesti
+  [OK] q11_tier_poor_s16  54.43s  tools=13  $0.5042  | **46 livreurs** en tier *poor* (DWC < 88%) à DIF1 S16.  Sur 60 livreurs actifs c
+  [OK] q10_dif1_dnr_s15  63.39s  tools=13  $0.5209  | **DNR (Contact miss) DIF1 — S15**  - Total : **1 501** sur 13 555 livraisons (≈ 
+  [OK] q13_dwc_convention  9.63s  tools=1  $0.1160  | La convention Amazon DSP :  **Format :** semaines **dimanche → samedi** (pas ISO
+  [OK] q12_dif1_colis_s15  28.52s  tools=6  $0.2595  | DIF1 — Semaine 15 (2026) : **13 555 colis livrés** (55 drivers actifs).
+  [OK] q14_hassane_jours_s16  39.01s  tools=11  $0.4237  | Hassane Coulibaly CAMARA — S16 : **5 jours travaillés** (631 livraisons, DWC 77.
+  [OK] q15_silence_unknown  51.69s  tools=10  $0.4179  | Aucun driver nommé "Jean Dupont" en S16 DIF1 (60 drivers en base, 0 match sur "j
+
+Summary: /Users/ousmane/Desktop/DSPilot/meta-harness/candidates/v1/runs/_summary.json
+  [OK] q01_dif1_dnr_s16 via regex
+  [FAIL] q02_dif1_colis_s16 via regex
+  [FAIL] q03_dif1_colis_exp_s16 via regex
+  [OK] q04_dif1_dwc_s16 via regex
+  [OK] q05_dif1_drivers_s16 via regex
+  [OK] q06_kitenge_jours_s16 via regex
+  [OK] q07_kitenge_dwc_s16 via regex
+  [OK] q08_rayan_dnr_s16 via judge
+  [FAIL] q09_top_contact_miss_s16 via judge
+  [FAIL] q10_dif1_dnr_s15 via regex
+  [FAIL] q11_tier_poor_s16 via regex
+  [FAIL] q12_dif1_colis_s15 via regex
+  [OK] q13_dwc_convention via judge
+  [OK] q14_hassane_jours_s16 via regex
+  [OK] q15_silence_unknown via judge
+
+Accuracy: 60.0% (9/15)  mean 48.47s  $7.0258  leaks=0
+
+======= Iteration 1/1 =======
+  proposer finished exit=0 wall=294s
+
+=== Eval: v1 ===
+  no improvement: v1 acc=60.0% (Δ=-6.7%)
+
+Done.

@@ -1,0 +1,18 @@
+Running 15 question(s) on baseline_harness (concurrency=2)
+  [OK] q02_dif1_colis_s16  32.1s  tools=6  $0.2389  | **S16/2026 — DIF1** : 23 030 colis livrés (60 livreurs actifs).
+  [OK] q01_dif1_dnr_s16  33.25s  tools=6  $0.2430  | S16/2026 — DIF1 76 entrées (70 concessions + 6 investigations)
+  [OK] q04_dif1_dwc_s16  23.05s  tools=4  $0.2655  | DWC DIF1 S16/2026 : **84%** (−1.2 vs S15) 60 livreurs actifs · IADC 68%
+  [OK] q03_dif1_colis_exp_s16  37.37s  tools=8  $0.3421  | S16/2026 — DIF1 Colis expédiés : **22 941** Colis livrés : 22 337 (165 itinérair
+  [OK] q05_dif1_drivers_s16  39.1s  tools=5  $0.3389  | S16/2026 DIF1 : **60 livreurs actifs** (DWC moyen 84%).
+  [OK] q06_kitenge_jours_s16  30.2s  tools=4  $0.2925  | Kitenge (Neheimie Emmanuel) — **S16/2026 : 5 jours** travaillés.  492 colis livr
+  [OK] q07_kitenge_dwc_s16  45.97s  tools=7  $0.4030  | Kitenge — S16/2026 DWC: **86.5 %** (492/569, 77 Contact miss + 0 Photo defect cô
+  [OK] q08_rayan_dnr_s16  50.86s  tools=5  $0.3599  | **Rayan Mbimaketa — S16/2026**  7 DNR (concessions) en base.  Types : 5 `DELIVER
+  [OK] q10_dif1_dnr_s15  44.01s  tools=6  $0.3507  | DIF1 — S15/2026 DNR: **82** (sur 19 246 colis livrés, ~0.43%)  Détail par livreu
+  [OK] q09_top_contact_miss_s16  71.85s  tools=14  $0.6281  | **S16 DIF1 — Top Contact Miss :**  1. **Salim Berrahail** — 143 CM (4 jours) 2. 
+  [OK] q11_tier_poor_s16  36.6s  tools=4  $0.2951  | 46 livreurs sur 60 en S16 DIF1 avec DWC < 88%.  Note : "poor/fantastic/great/fai
+  [OK] q13_dwc_convention  6.65s  tools=0  $0.1218  | Semaine Amazon DSP = **dimanche → samedi** (pas lundi→dimanche).  - S17/2026 = d
+  [OK] q12_dif1_colis_s15  44.24s  tools=7  $0.3916  | **DIF1 — S15/2026**  📦 **13 555 colis livrés** 👥 55 livreurs actifs DWC: 85.2 % 
+  [OK] q14_hassane_jours_s16  43.84s  tools=8  $0.4210  | Hassane Coulibaly CAMARA — S16/2026 : **5 jours travaillés** (631 colis livrés).
+  [OK] q15_silence_unknown  33.37s  tools=4  $0.2590  | Pas de Jean Dupont en base à DIF1. Tu confonds avec qui ?
+
+Summary: /Users/ousmane/Desktop/DSPilot/meta-harness/baseline_harness/runs/_summary.json
