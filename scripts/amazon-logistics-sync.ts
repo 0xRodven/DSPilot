@@ -206,12 +206,24 @@ async function main() {
   const options = parseArgs(process.argv.slice(2));
 
   const discoveredPaths = await discoverArtifactPaths(options);
-  const dwcHtmlPath = discoveredPaths.dwcHtmlPath;
 
-  if (!dwcHtmlPath) {
+  if (discoveredPaths.dwcHtmlPaths.length === 0) {
     throw new Error("Aucun fichier HTML DWC trouve. Passez --dwc-html ou --artifacts-dir.");
   }
 
+  // When multiple weekly reports are present (rolling 2-week scrape),
+  // ingest each one sequentially. The discovered set is sorted by week so the
+  // older week is processed first.
+  for (const dwcHtmlPath of discoveredPaths.dwcHtmlPaths) {
+    await runIngestForDwcReport(dwcHtmlPath, options, discoveredPaths);
+  }
+}
+
+async function runIngestForDwcReport(
+  dwcHtmlPath: string,
+  options: CliOptions,
+  discoveredPaths: Awaited<ReturnType<typeof discoverArtifactPaths>>,
+) {
   const dwcHtmlContent = await readFile(dwcHtmlPath, "utf-8");
   const parsedReport = parseHtmlContent(dwcHtmlContent, {
     filename: path.basename(dwcHtmlPath),
@@ -507,15 +519,35 @@ function parseArgs(argv: string[]): CliOptions {
   return options as CliOptions;
 }
 
+function isDwcReportFile(filePath: string) {
+  const normalized = path.basename(filePath).toLowerCase();
+  return (
+    normalized.endsWith(".html") &&
+    (normalized.includes("dwc-iadc-report") ||
+      normalized.includes("dwc_iadc") ||
+      (normalized.includes("dwc") && normalized.includes("iadc")) ||
+      normalized.startsWith("scorecard_"))
+  );
+}
+
+function extractWeekNumberFromPath(filePath: string): number {
+  // Matches patterns like "..._2026-16.html" or "/week-16-2026/..." → 16
+  const filenameMatch = path.basename(filePath).match(/_(\d{4})-(\d{1,2})\.html$/i);
+  if (filenameMatch) return Number.parseInt(filenameMatch[2], 10);
+  const dirMatch = filePath.match(/week-(\d{1,2})-(\d{4})/i);
+  if (dirMatch) return Number.parseInt(dirMatch[1], 10);
+  return 0;
+}
+
 async function discoverArtifactPaths(options: CliOptions): Promise<{
-  dwcHtmlPath?: string;
+  dwcHtmlPaths: string[];
   deliveryOverviewPath?: string;
   deliveryOverviewHtmlPath?: string;
   driverNamesPath?: string;
 }> {
   if (!options.artifactsDir) {
     return {
-      dwcHtmlPath: options.dwcHtmlPath,
+      dwcHtmlPaths: options.dwcHtmlPath ? [options.dwcHtmlPath] : [],
       deliveryOverviewPath: options.deliveryOverviewPath,
       driverNamesPath: options.driverNamesPath,
     };
@@ -523,20 +555,23 @@ async function discoverArtifactPaths(options: CliOptions): Promise<{
 
   const files = await listFilesRecursively(options.artifactsDir);
 
+  let dwcHtmlPaths: string[];
+  if (options.dwcHtmlPath) {
+    dwcHtmlPaths = [options.dwcHtmlPath];
+  } else {
+    const matched = files.filter(isDwcReportFile);
+    if (matched.length > 0) {
+      // Sort by week number (older week first) so backfill of S-1 is ingested
+      // before S0 — matches how Amazon publishes consolidated weekly data.
+      dwcHtmlPaths = matched.sort((a, b) => extractWeekNumberFromPath(a) - extractWeekNumberFromPath(b));
+    } else {
+      const fallback = await pickNewestMatchingFile(files, (filePath) => filePath.toLowerCase().endsWith(".html"));
+      dwcHtmlPaths = fallback ? [fallback] : [];
+    }
+  }
+
   return {
-    dwcHtmlPath:
-      options.dwcHtmlPath ||
-      (await pickNewestMatchingFile(files, (filePath) => {
-        const normalized = path.basename(filePath).toLowerCase();
-        return (
-          normalized.endsWith(".html") &&
-          (normalized.includes("dwc-iadc-report") ||
-            normalized.includes("dwc_iadc") ||
-            (normalized.includes("dwc") && normalized.includes("iadc")) ||
-            normalized.startsWith("scorecard_"))
-        );
-      })) ||
-      (await pickNewestMatchingFile(files, (filePath) => filePath.toLowerCase().endsWith(".html"))),
+    dwcHtmlPaths,
     deliveryOverviewPath:
       options.deliveryOverviewPath ||
       (await pickNewestMatchingFile(files, (filePath) => {
