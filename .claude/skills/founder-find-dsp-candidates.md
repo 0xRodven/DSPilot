@@ -1,6 +1,6 @@
 ---
 name: find-dsp-candidates
-description: Find Amazon DSP candidate companies in France via legal data (data.gouv MCP + Pappers MCP). Filter by APE 4941B + proximity to Amazon stations. Use when Ousmane asks "trouve-moi des DSP", "génère la liste IDF", "qui prospecter cette semaine".
+description: Find Amazon DSP candidate companies in France via legal data (data.gouv MCP — Annuaire des Entreprises officiel). Filter by APE 4941B + proximity to Amazon stations. Use when Ousmane asks "trouve-moi des DSP", "génère la liste IDF", "qui prospecter cette semaine".
 ---
 
 # find-dsp-candidates — pipeline data DSP France
@@ -12,13 +12,15 @@ description: Find Amazon DSP candidate companies in France via legal data (data.
 - "Qui prospecter en Hauts-de-France cette semaine"
 - "Génère le CSV des prospects mois 1"
 
-## Stack data publique (RGPD-clean)
+## Stack data publique (RGPD-clean, 100% gratuit)
 
-1. **data.gouv MCP** (gratuit, illimité) — annuaire entreprises FR officiel
-2. **Pappers MCP** (free 2 semaines puis Pro) — dirigeants nominatifs, BODACC
-3. **INSEE SIRENE MCP** (backup gratuit) — fallback si Pappers payant
-4. **Adresse.data.gouv.fr (BAN)** — geocoding adresses siège
-5. **Pages Jaunes / Hunter.io / Apollo free tier** — enrichissement téléphone/email
+1. **data.gouv MCP** ⭐ source primaire — Annuaire des Entreprises (État FR), wraps INSEE SIRENE + dirigeants principaux
+2. **Adresse.data.gouv.fr (BAN)** — geocoding adresses siège, gratuit
+3. **Pages Jaunes** (scraping doux, 1 req/s) — téléphone société
+4. **Hunter.io free tier** — 25 searches + 50 verifications/mois pour emails pro
+5. **Apollo MCP free tier** — 10k credits/mois pour enrichissement email + LinkedIn
+
+> **Pappers skippé** : free trial épuisé, Pro 49€/mois pas justifié au stade actuel. data.gouv couvre ~80% des besoins. Si on a besoin de BODACC mention Amazon Logistics plus tard, on prend Pay-as-you-go Pappers (~10€) ad hoc.
 
 ## Pipeline 4 étapes
 
@@ -81,17 +83,19 @@ def haversine(lat1, lng1, lat2, lng2):
 
 → Réduction ~1000 → ~150 candidats géo-pertinents.
 
-### Étape 3 — Enrichissement dirigeants via Pappers MCP
+### Étape 3 — Enrichissement dirigeants via data.gouv MCP
 
-Pour chaque candidat shortlisté, query Pappers :
+Pour chaque candidat shortlisté, query data.gouv :
 
 ```
-Pappers : entreprise par SIREN
-Return : raison_sociale, dirigeants[{prenom, nom, fonction, date_naissance}],
-         capital_social, ca_dernier_exercice, effectif, BODACC[recent_announcements]
+data.gouv MCP : annuaire_entreprises.detail(siren=$SIREN)
+Return : raison_sociale, dirigeants[{prenom, nom, fonction, annee_naissance}],
+         capital_social, tranche_effectif, etat_administratif, etablissements
 ```
 
 **Filtre dirigeant cible** : `fonction in ["Président", "Gérant", "Directeur Général", "Co-gérant"]`. Exclure les commissaires aux comptes.
+
+**Note** : data.gouv ne fournit pas BODACC ni comptes annuels détaillés (≠ Pappers). Pour signaux "Amazon Logistics" mention BODACC, fallback manuel via `bodacc.gouv.fr` (search public, gratuit) si Étape 4 score borderline.
 
 ### Étape 4 — Validation "vraiment DSP Amazon ?"
 
@@ -141,7 +145,7 @@ USER: Trouve-moi 50 DSP candidats IDF cette semaine
 AGENT: J'utilise le pipeline find-dsp-candidates.
   ✓ data.gouv: 743 sociétés APE 4941B en IDF
   ✓ Filtrage géo (30km stations Amazon): 156 candidats
-  ✓ Pappers: dirigeants enrichis (49 free trial credits restants)
+  ✓ data.gouv: dirigeants enrichis (illimité, gratuit)
   ✓ Score >=5 sur 50 candidats validés
   → CSV ajouté à wiki/leads-DSPilot.md
   

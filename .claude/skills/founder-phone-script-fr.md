@@ -15,7 +15,7 @@ description: Phone outreach scripts FR for cold-calling DSP managers in France. 
 
 1. **Ne jamais commencer par "Je vous dérange ?"** — réponse automatique = "oui"
 2. **Toujours dire qui tu es ET d'où tu viens** dans les 5 premiers secondes
-3. **Tutoyer si < 45 ans, vouvoyer si 50+** (data Pappers `date_naissance`)
+3. **Tutoyer si < 45 ans, vouvoyer si 50+** (data.gouv `annee_naissance`)
 4. **Mentionner DIF1** dès la 2ème phrase — instaure crédibilité métier
 5. **Demander 5 minutes**, pas plus — le manager est entre 2 tournées
 6. **Si secrétaire** : demander le manager par son prénom + nom complet (preuve qu'on a fait nos devoirs)
@@ -28,7 +28,7 @@ description: Phone outreach scripts FR for cold-calling DSP managers in France. 
 [Tu] Bonjour, c'est bien [Prénom] ?
 
 [Toi] Salut [Prénom], c'est Ousmane à l'appareil. Je dirige aussi un DSP, station DIF1
-à Ivry. J'ai chopé ton tel via Pappers — je t'appelle parce que j'ai construit un outil
+à Ivry. J'ai trouvé ton tel sur Pages Jaunes — je t'appelle parce que j'ai construit un outil
 qui me fait gagner 8h par semaine sur le coaching livreurs. J'aimerais savoir si t'as
 les mêmes galères que moi.
 
@@ -134,12 +134,12 @@ Bonne journée [Prénom].
 
 Pour récupérer le téléphone d'un dirigeant identifié :
 
-1. **Pappers** : champ `telephone_siege` (parfois disponible)
-2. **Pages Jaunes API** : `https://www.pagesjaunes.fr/recherche/{ville}/{raison_sociale}` — scrape doux du standard téléphonique
-3. **Site web société** : page contact / mentions légales (souvent listé)
-4. **Score** Apollo / Hunter — peuvent avoir des numéros pro
+1. **Pages Jaunes** : `https://www.pagesjaunes.fr/recherche/{ville}/{raison_sociale}` — scrape doux du standard téléphonique
+2. **Site web société** : page contact / mentions légales (souvent listé, le plus fiable)
+3. **Google search** : `"{denomination}" "{ville}" telephone` → annuaires tiers
+4. **Apollo / Hunter** — peuvent avoir des numéros pro pour les sociétés > 10 salariés
 
-**Ne JAMAIS** appeler un numéro perso de dirigeant (data Pappers `telephone_dirigeant` n'existe pas RGPD).
+**Ne JAMAIS** appeler un numéro perso de dirigeant (RGPD — uniquement le standard société).
 
 ## Cadence agent — assistance Ousmane
 

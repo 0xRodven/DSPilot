@@ -1,6 +1,6 @@
 ---
 name: enrich-prospect
-description: Enrich a single DSP prospect — combine Pappers (dirigeant) + data.gouv (legal) + Hunter.io (email domain) + Apollo (verified email) + Pages Jaunes (phone). Use when user asks "enrichis [Société]" or before launching outreach on a fresh lead.
+description: Enrich a single DSP prospect — combine data.gouv (legal + dirigeants) + Hunter.io (email domain) + Apollo (verified email) + Pages Jaunes (phone). Use when user asks "enrichis [Société]" or before launching outreach on a fresh lead.
 ---
 
 # enrich-prospect — enrichissement données 1 prospect
@@ -29,22 +29,23 @@ Return : {
 }
 ```
 
-### Étape 2 — Dirigeants nominatifs (Pappers MCP)
+### Étape 2 — Dirigeants principaux (data.gouv MCP)
 
 ```
-Pappers MCP : entreprise.dirigeants(siren=$SIREN)
+data.gouv MCP : annuaire_entreprises.dirigeants(siren=$SIREN)
 Return : {
   dirigeants: [
     {
       prenom, nom, fonction,
-      date_naissance, age,
-      nationalite, qualite,
-      date_prise_fonction
+      annee_naissance,           // pas la date complète (RGPD INSEE)
+      nationalite,
+      qualite                    // PP (personne physique) ou PM (personne morale)
     }
-  ],
-  beneficiaires_effectifs: [...] // si SAS/SARL
+  ]
 }
 ```
+
+**Note RGPD** : data.gouv ne retourne que l'année de naissance (pas la date), c'est suffisant pour estimer l'âge à ±1 an.
 
 **Filtrer** : ne garder que les dirigeants avec `fonction in ["Président", "Gérant", "Co-gérant", "Directeur Général", "Président-Directeur Général"]`.
 
@@ -53,14 +54,14 @@ Return : {
 - 35-50 ans → tutoyer + Variant 1 ou 3
 - 50+ ans → vouvoyer + Variant 2
 
-### Étape 3 — Téléphone société (Pages Jaunes ou Pappers)
+### Étape 3 — Téléphone société (Pages Jaunes + site web)
 
 Ordre de priorité :
 
-1. **Pappers** : `telephone_siege` (souvent disponible, fiable)
-2. **Pages Jaunes** : recherche `{denomination} + {ville}` → numéro standard
-3. **Site web société** : scrape page `/contact` ou `/mentions-legales`
-4. **Apollo** : `phone` field si dirigeant trouvé dans la base Apollo
+1. **Pages Jaunes** : recherche `{denomination} + {ville}` → numéro standard (gratuit, scrape doux 1 req/s)
+2. **Site web société** : scrape page `/contact` ou `/mentions-legales` (souvent le plus fiable car déclaratif)
+3. **Google search** : `"{denomination}" "{ville}" telephone` → trouve souvent le numéro dans les annuaires tiers
+4. **Apollo** : `phone` field si dirigeant trouvé dans la base Apollo (rarement présent pour SARL transport FR)
 
 **Format normalisé** : `+33 1 XX XX XX XX` (uniformiser avec +33).
 
@@ -104,7 +105,7 @@ Ordre :
 - Coordonnées : 48.8127, 2.3870
 - Distance station Amazon DIF1 : **1.8 km** ⭐ contigu
 
-**Dirigeant cible** (source: Pappers)
+**Dirigeant cible** (source: data.gouv)
 - M. Jean-Marc DUPONT
 - Fonction : Président
 - Né le 1972-08-14 (52 ans → vouvoyer, Variant 2)
@@ -136,8 +137,7 @@ Ordre :
 
 | Service | Quota free | Reset | Stratégie |
 |---|---|---|---|
-| data.gouv MCP | Illimité | — | Toujours utiliser en premier |
-| Pappers free trial | ~150 lookups | 2 semaines | Bootstrap, puis Pro 49€/mois |
+| data.gouv MCP | Illimité | — | Source primaire (identité + dirigeants) |
 | Hunter.io | 25 searches + 50 verifications | Mensuel | Garder pour les top 25 prospects |
 | Apollo MCP | 10 000 credits | Mensuel | Large marge, OK pour batch |
 | Pages Jaunes | Public | — | Scrape doux (rate limit 1 req/s) |
@@ -149,7 +149,7 @@ Après chaque enrichissement réussi, l'agent doit appeler `wiki-append.md` pour
 ## Erreurs courantes à éviter
 
 - ❌ **Confondre `siege` et `etablissements`** : un même SIREN peut avoir 5+ établissements. Toujours filtrer `principal: true`.
-- ❌ **Stocker l'adresse perso du dirigeant** : Pappers retourne parfois `domicile_dirigeant` — RGPD-non. Utiliser uniquement `adresse_siege`.
+- ❌ **Stocker l'adresse perso du dirigeant** : certaines bases retournent `domicile_dirigeant` — RGPD-non. Utiliser uniquement `adresse_siege`.
 - ❌ **Considérer "absence d'email" = pas joignable** : 80% des SARL transport FR n'ont pas d'email pro propre — le téléphone est le canal principal.
 - ❌ **Spam Hunter avec 50 lookups same domain** : un seul `domain_search` retourne tous les emails publics du domaine, pas besoin d'itérer.
 - ❌ **Trust blind email enrichi** : toujours vérifier via Hunter.io `email_verifier` avant d'envoyer (évite bounces qui pourrissent ton domaine sender).
