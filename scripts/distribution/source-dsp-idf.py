@@ -102,6 +102,7 @@ class Company:
     nearest_station_km: float = 999.0
     score: int = 0
     score_details: list[str] = field(default_factory=list)
+    date_maj_insee: str = ""
 
 
 def haversine_km(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
@@ -179,6 +180,10 @@ def parse_company(raw: dict[str, Any]) -> Company | None:
     lat = float(lat_str) if lat_str else None
     lng = float(lng_str) if lng_str else None
 
+    maj_insee = raw.get("date_mise_a_jour_insee") or siege.get("date_mise_a_jour_insee") or ""
+    if maj_insee and "T" in maj_insee:
+        maj_insee = maj_insee.split("T")[0]
+
     company = Company(
         siren=siren,
         nom=raw.get("nom_complet") or raw.get("nom_raison_sociale") or "",
@@ -196,6 +201,7 @@ def parse_company(raw: dict[str, Any]) -> Company | None:
         tranche_effectif=tranche,
         tranche_effectif_libelle=tranche_lib,
         nb_etablissements=raw.get("nombre_etablissements") or 0,
+        date_maj_insee=maj_insee,
     )
 
     # Dirigeants — keep PP (personne physique) only, exclure commissaires aux comptes
@@ -359,10 +365,15 @@ HEADERS = [
     "Lng",
     "Station Amazon",
     "Distance (km)",
-    "Tel (à enrichir)",
-    "Email pro (à enrichir)",
+    "Tel (à remplir)",
+    "Email pro (à remplir)",
     "Détail score",
     "URL Annuaire",
+    "Recherche Tel (Google)",
+    "LinkedIn société",
+    "LinkedIn dirigeant",
+    "Google Maps siège",
+    "MAJ INSEE",
     "Notes Ousmane",
 ]
 
@@ -372,7 +383,8 @@ COL_WIDTHS = {
     "A": 6, "B": 13, "C": 12, "D": 36, "E": 8, "F": 12, "G": 6, "H": 10,
     "I": 6, "J": 6, "K": 14, "L": 16, "M": 24, "N": 9, "O": 7, "P": 14,
     "Q": 30, "R": 45, "S": 8, "T": 18, "U": 6, "V": 11, "W": 11, "X": 9,
-    "Y": 9, "Z": 18, "AA": 28, "AB": 70, "AC": 55, "AD": 30,
+    "Y": 9, "Z": 18, "AA": 28, "AB": 70, "AC": 55,
+    "AD": 28, "AE": 28, "AE": 28, "AF": 28, "AG": 22, "AH": 12, "AI": 30,
 }
 
 
@@ -386,11 +398,36 @@ def style_header(ws) -> None:
         ws.column_dimensions[col].width = w
 
 
+def _quote_url(s: str) -> str:
+    """URL-quote pour Google search."""
+    from urllib.parse import quote_plus
+    return quote_plus(s)
+
+
 def company_row(c: Company) -> list[Any]:
     approche = ""
     if c.dirigeant_age is not None:
         approche = "Tutoyer (V1)" if c.dirigeant_age < 45 else "Vouvoyer (V2)"
-    url = f"https://annuaire-entreprises.data.gouv.fr/entreprise/{c.siren}"
+
+    annuaire_url = f"https://annuaire-entreprises.data.gouv.fr/entreprise/{c.siren}"
+
+    nom_query = f'"{c.nom}" "{c.commune}" telephone' if c.commune else f'"{c.nom}" telephone'
+    google_tel_url = f"https://www.google.com/search?q={_quote_url(nom_query)}"
+
+    li_company_q = f'site:linkedin.com/company "{c.nom}"'
+    linkedin_company_url = f"https://www.google.com/search?q={_quote_url(li_company_q)}"
+
+    if c.dirigeant_prenom and c.dirigeant_nom:
+        li_dirigeant_q = f'site:linkedin.com/in "{c.dirigeant_prenom} {c.dirigeant_nom}" "{c.commune}"'
+        linkedin_dirigeant_url = f"https://www.google.com/search?q={_quote_url(li_dirigeant_q)}"
+    else:
+        linkedin_dirigeant_url = ""
+
+    if c.latitude and c.longitude:
+        gmaps_url = f"https://www.google.com/maps/search/?api=1&query={c.latitude},{c.longitude}"
+    else:
+        gmaps_url = f"https://www.google.com/maps/search/?api=1&query={_quote_url(c.adresse)}"
+
     return [
         c.score,
         "Lead",
@@ -417,12 +454,21 @@ def company_row(c: Company) -> list[Any]:
         c.longitude,
         c.nearest_station_code,
         c.nearest_station_km if c.nearest_station_km < 999 else None,
-        "",  # tel à enrichir
-        "",  # email à enrichir
+        "",  # tel à remplir manuellement
+        "",  # email à remplir
         " ; ".join(c.score_details),
-        url,
-        "",  # notes manuelles
+        annuaire_url,
+        google_tel_url,
+        linkedin_company_url,
+        linkedin_dirigeant_url,
+        gmaps_url,
+        c.date_maj_insee,
+        "",  # notes
     ]
+
+
+URL_COL_INDICES = [29, 30, 31, 32, 33]  # 1-indexed: URL Annuaire, Google Tel, LinkedIn société, LinkedIn dirigeant, Maps
+LINK_FONT = Font(color="2563EB", underline="single", size=11)
 
 
 def fill_sheet(ws, companies: list[Company], color_mode: str = "gradient") -> None:
@@ -430,6 +476,23 @@ def fill_sheet(ws, companies: list[Company], color_mode: str = "gradient") -> No
     for c in companies:
         ws.append(company_row(c))
     style_header(ws)
+
+    # Convert URL columns to clickable hyperlinks with friendly label
+    label_map = {
+        29: "Annuaire",
+        30: "Search tel",
+        31: "LinkedIn société",
+        32: "LinkedIn dirigeant",
+        33: "Maps",
+    }
+    for row_idx in range(2, ws.max_row + 1):
+        for col_idx in URL_COL_INDICES:
+            cell = ws.cell(row=row_idx, column=col_idx)
+            url = cell.value
+            if url and isinstance(url, str) and url.startswith("http"):
+                cell.hyperlink = url
+                cell.value = label_map.get(col_idx, "Lien")
+                cell.font = LINK_FONT
 
     # Row coloring par score
     fill_t1 = PatternFill(start_color="A7F3D0", end_color="A7F3D0", fill_type="solid")  # vert vif
@@ -454,7 +517,11 @@ def fill_sheet(ws, companies: list[Company], color_mode: str = "gradient") -> No
                 fill = fill_t4
             if fill:
                 for col_idx in range(1, len(HEADERS) + 1):
-                    ws.cell(row=row_idx, column=col_idx).fill = fill
+                    cell = ws.cell(row=row_idx, column=col_idx)
+                    cell.fill = fill
+                    # Re-apply link font on top of fill for URL cols
+                    if col_idx in URL_COL_INDICES and cell.hyperlink:
+                        cell.font = LINK_FONT
 
 
 def write_excel(companies: list[Company], out_path: Path) -> None:
@@ -574,6 +641,323 @@ def write_excel(companies: list[Company], out_path: Path) -> None:
             ws_meth.cell(row=r_idx, column=1).font = Font(bold=True, size=12, color="1F2937")
 
     wb.save(out_path)
+
+
+def write_html_map(companies: list[Company], out_path: Path) -> None:
+    """Map interactive Leaflet.js + filtres + popups détaillés."""
+    leads_data = []
+    for c in companies:
+        if c.latitude is None or c.longitude is None:
+            continue
+        nom_query = f'"{c.nom}" "{c.commune}" telephone' if c.commune else f'"{c.nom}" telephone'
+        gtel = f"https://www.google.com/search?q={_quote_url(nom_query)}"
+        li_co = f"https://www.google.com/search?q={_quote_url('site:linkedin.com/company ' + chr(34) + c.nom + chr(34))}"
+        li_dir = ""
+        if c.dirigeant_prenom and c.dirigeant_nom:
+            li_dir = f"https://www.google.com/search?q={_quote_url(f'site:linkedin.com/in {chr(34)}{c.dirigeant_prenom} {c.dirigeant_nom}{chr(34)} {chr(34)}{c.commune}{chr(34)}')}"
+        gmaps = f"https://www.google.com/maps/search/?api=1&query={c.latitude},{c.longitude}"
+        annuaire = f"https://annuaire-entreprises.data.gouv.fr/entreprise/{c.siren}"
+
+        approche = ""
+        if c.dirigeant_age is not None:
+            approche = "Tutoyer V1" if c.dirigeant_age < 45 else "Vouvoyer V2"
+
+        # Tier
+        if c.score >= 14:
+            tier = 1
+        elif c.score >= 11:
+            tier = 2
+        elif c.score >= 8:
+            tier = 3
+        elif c.score >= 5:
+            tier = 4
+        else:
+            tier = 5
+
+        leads_data.append({
+            "siren": c.siren,
+            "nom": c.nom,
+            "lat": c.latitude,
+            "lng": c.longitude,
+            "score": c.score,
+            "tier": tier,
+            "forme": c.forme_juridique_libelle,
+            "creation": c.date_creation,
+            "age": c.age_annees,
+            "effectif": c.tranche_effectif_libelle,
+            "etabts": c.nb_etablissements,
+            "dirigeant": f"{c.dirigeant_prenom} {c.dirigeant_nom}".strip(),
+            "fonction": c.dirigeant_fonction,
+            "age_dir": c.dirigeant_age,
+            "approche": approche,
+            "adresse": c.adresse,
+            "cp": c.code_postal,
+            "commune": c.commune,
+            "dept": c.departement,
+            "station": c.nearest_station_code,
+            "station_label": c.nearest_station_label,
+            "km": round(c.nearest_station_km, 2) if c.nearest_station_km < 999 else None,
+            "score_details": " ; ".join(c.score_details),
+            "gtel": gtel,
+            "li_co": li_co,
+            "li_dir": li_dir,
+            "gmaps": gmaps,
+            "annuaire": annuaire,
+        })
+
+    stations_data = [
+        {"code": code, "label": label, "lat": lat, "lng": lng}
+        for code, (label, lat, lng) in AMAZON_STATIONS.items()
+    ]
+
+    leads_json = json.dumps(leads_data, ensure_ascii=False)
+    stations_json = json.dumps(stations_data, ensure_ascii=False)
+
+    html = """<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DSPilot — Carte leads DSP IDF</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css">
+<style>
+  * { box-sizing: border-box; }
+  body { margin:0; font:14px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; color:#111827; }
+  #app { display:grid; grid-template-columns:340px 1fr; height:100vh; }
+  #sidebar { background:#0f172a; color:#e2e8f0; padding:16px; overflow-y:auto; }
+  #sidebar h1 { margin:0 0 4px; font-size:18px; color:#f8fafc; }
+  #sidebar .meta { color:#94a3b8; font-size:12px; margin-bottom:16px; }
+  #sidebar h2 { margin:18px 0 8px; font-size:13px; text-transform:uppercase; letter-spacing:.05em; color:#94a3b8; font-weight:600; }
+  #sidebar .stat { display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid #1e293b; font-size:13px; }
+  #sidebar .stat .v { font-weight:600; color:#f8fafc; }
+  #sidebar input[type=text], #sidebar select { width:100%; padding:7px 10px; border-radius:6px; border:1px solid #334155; background:#1e293b; color:#f1f5f9; font-size:13px; margin-bottom:8px; }
+  #sidebar label { display:flex; align-items:center; gap:6px; padding:4px 0; font-size:13px; cursor:pointer; }
+  #sidebar label input { margin:0; }
+  #sidebar .tier-pill { display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:6px; vertical-align:middle; }
+  #sidebar .reset { display:block; width:100%; padding:8px; margin-top:12px; background:#1e293b; color:#e2e8f0; border:1px solid #334155; border-radius:6px; cursor:pointer; font-size:13px; }
+  #sidebar .reset:hover { background:#334155; }
+  #map { height:100vh; }
+  .popup { font-size:13px; min-width:280px; }
+  .popup h3 { margin:0 0 4px; font-size:15px; color:#0f172a; }
+  .popup .siren { color:#64748b; font-size:11px; font-family:ui-monospace,monospace; }
+  .popup .score { display:inline-block; padding:2px 8px; border-radius:4px; font-weight:700; margin-left:8px; }
+  .popup .score.t1 { background:#10b981; color:white; }
+  .popup .score.t2 { background:#34d399; color:white; }
+  .popup .score.t3 { background:#fbbf24; color:#78350f; }
+  .popup .score.t4 { background:#f87171; color:white; }
+  .popup .score.t5 { background:#cbd5e1; color:#1e293b; }
+  .popup .grid { display:grid; grid-template-columns:auto 1fr; gap:4px 12px; margin:8px 0; }
+  .popup .grid b { color:#475569; font-weight:500; }
+  .popup .links { display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; padding-top:10px; border-top:1px solid #e2e8f0; }
+  .popup .links a { display:inline-block; padding:5px 10px; background:#2563eb; color:white; text-decoration:none; border-radius:5px; font-size:12px; font-weight:500; }
+  .popup .links a:hover { background:#1d4ed8; }
+  .popup .links a.secondary { background:#64748b; }
+  .popup .links a.secondary:hover { background:#475569; }
+  .leaflet-popup-content { margin:14px; }
+  .station-icon { background:#a855f7; border:3px solid white; border-radius:50%; width:18px; height:18px; box-shadow:0 0 0 2px #a855f7; }
+  .station-icon::after { content:""; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="sidebar">
+    <h1>DSPilot — Leads DSP IDF</h1>
+    <div class="meta">__GENERATED__ • __TOTAL__ leads • Source : Annuaire Entreprises</div>
+
+    <h2>Recherche</h2>
+    <input type="text" id="search" placeholder="Société, dirigeant, ville, SIREN…">
+
+    <h2>Tiers (score DSP-fit)</h2>
+    <label><input type="checkbox" class="tier" value="1" checked><span class="tier-pill" style="background:#10b981"></span>Tier 1 — Action immédiate (≥14)</label>
+    <label><input type="checkbox" class="tier" value="2" checked><span class="tier-pill" style="background:#34d399"></span>Tier 2 — High priority (11-13)</label>
+    <label><input type="checkbox" class="tier" value="3"><span class="tier-pill" style="background:#fbbf24"></span>Tier 3 — Secondary (8-10)</label>
+    <label><input type="checkbox" class="tier" value="4"><span class="tier-pill" style="background:#f87171"></span>Tier 4 — Exploration (5-7)</label>
+    <label><input type="checkbox" class="tier" value="5"><span class="tier-pill" style="background:#cbd5e1"></span>Bruit (&lt;5)</label>
+
+    <h2>Station Amazon</h2>
+    <select id="station-filter"><option value="">Toutes les stations</option></select>
+
+    <h2>Effectif</h2>
+    <select id="effectif-filter">
+      <option value="">Tous</option>
+      <option value="10-19">10-19</option>
+      <option value="20-49">20-49</option>
+      <option value="50-99">50-99</option>
+      <option value="100-199">100-199</option>
+    </select>
+
+    <h2>Département</h2>
+    <select id="dept-filter">
+      <option value="">Tous</option>
+      <option value="75">75 Paris</option>
+      <option value="77">77 Seine-et-Marne</option>
+      <option value="78">78 Yvelines</option>
+      <option value="91">91 Essonne</option>
+      <option value="92">92 Hauts-de-Seine</option>
+      <option value="93">93 Seine-Saint-Denis</option>
+      <option value="94">94 Val-de-Marne</option>
+      <option value="95">95 Val-d'Oise</option>
+    </select>
+
+    <h2 style="margin-top:18px">Visibles</h2>
+    <div class="stat"><span>Leads affichés</span><span class="v" id="count-visible">0</span></div>
+    <div class="stat"><span>Tier 1 visibles</span><span class="v" id="count-t1">0</span></div>
+    <div class="stat"><span>Tier 2 visibles</span><span class="v" id="count-t2">0</span></div>
+
+    <button class="reset" onclick="resetFilters()">Reset filtres</button>
+  </div>
+
+  <div id="map"></div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+<script>
+const LEADS = __LEADS_JSON__;
+const STATIONS = __STATIONS_JSON__;
+
+const tierColor = {1:"#10b981",2:"#34d399",3:"#fbbf24",4:"#f87171",5:"#cbd5e1"};
+const tierBorder = {1:"#065f46",2:"#047857",3:"#b45309",4:"#991b1b",5:"#475569"};
+
+const map = L.map("map", { preferCanvas:true }).setView([48.8566, 2.3522], 10);
+L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
+  attribution:"&copy; OpenStreetMap & CARTO",
+  maxZoom:19
+}).addTo(map);
+
+// Stations Amazon = pins violets fixes
+STATIONS.forEach(s => {
+  L.marker([s.lat, s.lng], {
+    icon: L.divIcon({
+      className:"",
+      html:`<div style="background:#a855f7;border:3px solid white;border-radius:50%;width:22px;height:22px;box-shadow:0 0 0 2px #a855f7,0 1px 4px rgba(0,0,0,.3)"></div>`,
+      iconSize:[22,22], iconAnchor:[11,11]
+    }),
+    zIndexOffset: 1000
+  }).addTo(map).bindPopup(`<b>Station Amazon ${s.code}</b><br>${s.label}`);
+});
+
+// Build station-filter select
+const stationFilter = document.getElementById("station-filter");
+[...new Set(LEADS.map(l => l.station).filter(Boolean))].sort().forEach(code => {
+  const opt = document.createElement("option");
+  opt.value = code;
+  opt.textContent = code;
+  stationFilter.appendChild(opt);
+});
+
+const cluster = L.markerClusterGroup({
+  maxClusterRadius: 50,
+  spiderfyOnMaxZoom: true,
+  showCoverageOnHover: false,
+});
+const markers = [];
+
+LEADS.forEach(l => {
+  const color = tierColor[l.tier] || "#cbd5e1";
+  const border = tierBorder[l.tier] || "#475569";
+  const size = l.tier === 1 ? 14 : l.tier === 2 ? 12 : 10;
+  const m = L.circleMarker([l.lat, l.lng], {
+    radius: size/2,
+    fillColor: color,
+    color: border,
+    weight: 2,
+    fillOpacity: 0.85,
+  });
+  m.leadData = l;
+  m.bindPopup(() => buildPopup(l), { maxWidth: 360 });
+  markers.push(m);
+  cluster.addLayer(m);
+});
+map.addLayer(cluster);
+
+function buildPopup(l) {
+  const dirig = l.dirigeant
+    ? `<div class="grid"><b>Dirigeant</b><span>${escapeHtml(l.dirigeant)}</span><b>Fonction</b><span>${escapeHtml(l.fonction || "")}</span><b>Âge</b><span>${l.age_dir ?? "?"} ans → <b>${l.approche || ""}</b></span></div>`
+    : `<div class="grid"><b>Dirigeant</b><span style="color:#94a3b8">Non identifié</span></div>`;
+  const km = l.km != null ? `${l.km} km` : "?";
+  const links = [
+    `<a href="${l.gtel}" target="_blank">📞 Trouver tel</a>`,
+    `<a href="${l.li_co}" target="_blank">LinkedIn société</a>`,
+    l.li_dir ? `<a href="${l.li_dir}" target="_blank">LinkedIn dirigeant</a>` : "",
+    `<a href="${l.gmaps}" target="_blank" class="secondary">Google Maps</a>`,
+    `<a href="${l.annuaire}" target="_blank" class="secondary">Annuaire</a>`,
+  ].filter(Boolean).join("");
+  return `<div class="popup">
+    <h3>${escapeHtml(l.nom)} <span class="score t${l.tier}">${l.score}</span></h3>
+    <div class="siren">SIREN ${l.siren} • ${l.forme || "?"} • Créée ${l.creation || "?"} (${l.age || "?"} ans) • ${l.etabts || 1} étabt(s)</div>
+    <div class="grid" style="margin-top:8px"><b>Effectif</b><span>${l.effectif || "?"} salariés</span><b>Adresse</b><span>${escapeHtml(l.adresse)}</span><b>Station</b><span>${l.station || "?"} (${km})</span></div>
+    ${dirig}
+    <div class="grid"><b>Score detail</b><span style="font-size:11px;color:#64748b">${escapeHtml(l.score_details || "")}</span></div>
+    <div class="links">${links}</div>
+  </div>`;
+}
+
+function escapeHtml(s) { return String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","\\"":"&quot;","'":"&#39;"})[c]); }
+
+const filters = { tiers: new Set([1,2]), search: "", station: "", effectif: "", dept: "" };
+
+function applyFilters() {
+  const q = filters.search.toLowerCase();
+  cluster.clearLayers();
+  let visible = 0, t1 = 0, t2 = 0;
+  markers.forEach(m => {
+    const l = m.leadData;
+    if (!filters.tiers.has(l.tier)) return;
+    if (filters.station && l.station !== filters.station) return;
+    if (filters.effectif && l.effectif !== filters.effectif) return;
+    if (filters.dept && l.dept !== filters.dept) return;
+    if (q) {
+      const hay = `${l.nom} ${l.dirigeant} ${l.commune} ${l.siren} ${l.adresse}`.toLowerCase();
+      if (!hay.includes(q)) return;
+    }
+    cluster.addLayer(m);
+    visible++;
+    if (l.tier === 1) t1++;
+    if (l.tier === 2) t2++;
+  });
+  document.getElementById("count-visible").textContent = visible;
+  document.getElementById("count-t1").textContent = t1;
+  document.getElementById("count-t2").textContent = t2;
+}
+
+document.querySelectorAll(".tier").forEach(cb => cb.addEventListener("change", e => {
+  const v = parseInt(cb.value, 10);
+  if (cb.checked) filters.tiers.add(v); else filters.tiers.delete(v);
+  applyFilters();
+}));
+document.getElementById("search").addEventListener("input", e => { filters.search = e.target.value; applyFilters(); });
+document.getElementById("station-filter").addEventListener("change", e => { filters.station = e.target.value; applyFilters(); });
+document.getElementById("effectif-filter").addEventListener("change", e => { filters.effectif = e.target.value; applyFilters(); });
+document.getElementById("dept-filter").addEventListener("change", e => { filters.dept = e.target.value; applyFilters(); });
+
+function resetFilters() {
+  filters.tiers = new Set([1,2]);
+  filters.search = ""; filters.station = ""; filters.effectif = ""; filters.dept = "";
+  document.querySelectorAll(".tier").forEach(cb => { cb.checked = [1,2].includes(parseInt(cb.value,10)); });
+  document.getElementById("search").value = "";
+  document.getElementById("station-filter").value = "";
+  document.getElementById("effectif-filter").value = "";
+  document.getElementById("dept-filter").value = "";
+  applyFilters();
+}
+
+applyFilters();
+</script>
+</body>
+</html>"""
+
+    html = (
+        html
+        .replace("__GENERATED__", time.strftime("%Y-%m-%d %H:%M"))
+        .replace("__TOTAL__", str(len(leads_data)))
+        .replace("__LEADS_JSON__", leads_json)
+        .replace("__STATIONS_JSON__", stations_json)
+    )
+
+    out_path.write_text(html, encoding="utf-8")
 
 
 def main() -> int:
