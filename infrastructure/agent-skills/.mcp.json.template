@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "data-gouv": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "https://mcp.data.gouv.fr/mcp"]
+    },
+    "pappers": {
+      "url": "https://mcp.pappers.fr/${PAPPERS_API_KEY}"
+    }
+  }
+}
