@@ -71,7 +71,7 @@ def main() -> int:
     else:
         print(f"[3/5] No enrichment file at {enriched_path} — skipping enrichment merge", file=sys.stderr)
 
-    # 4. Stitch enriched into Company objects (mutate)
+    # 4. Stitch enriched into Company objects + re-score si site Amazon-confirmed
     for c in companies:
         e = enriched_map.get(c.siren, {})
         c.website = e.get("website") or ""
@@ -80,6 +80,15 @@ def main() -> int:
         c.emails = e.get("emails") or []
         c.linkedin = e.get("linkedin") or ""
         c.procedure = e.get("procedure") or ""
+        c.site_verify_reason = e.get("site_verify_reason") or ""
+
+        # Boost score si site validé "DSP-confirmed" via mention Amazon/DSP/dernier km
+        if c.site_verify_reason and c.site_verify_reason.startswith("confirmed"):
+            c.score += 5
+            c.score_details.append(f"+5 site DSP-confirmed ({c.site_verify_reason})")
+
+    # Re-tri après boost
+    companies.sort(key=lambda c: (-c.score, c.nearest_station_km))
 
     # 5. Write outputs
     print("[4/5] Writing Excel…", file=sys.stderr)
@@ -419,8 +428,22 @@ def write_html_map_v2(companies: list, out_path: Path) -> None:
             approche = "Tutoyer V1" if c.dirigeant_age < 45 else "Vouvoyer V2"
 
         proc = getattr(c, "procedure", "") or ""
+
+        # Détection métier status à partir de score_details
+        details_str = " ".join(c.score_details).lower()
+        if "(non-dsp)" in details_str:
+            metier_status = "blacklist"
+        elif "site dsp-confirmed" in details_str:
+            metier_status = "dsp-confirmed"
+        elif "(dsp-likely)" in details_str:
+            metier_status = "dsp-likely"
+        else:
+            metier_status = "neutral"
+
         if proc:
             tier = 0  # mort
+        elif metier_status == "blacklist":
+            tier = 6  # hors-cible métier
         elif c.score >= 14:
             tier = 1
         elif c.score >= 11:
@@ -439,6 +462,7 @@ def write_html_map_v2(companies: list, out_path: Path) -> None:
             "lng": c.longitude,
             "score": c.score,
             "tier": tier,
+            "metier_status": metier_status,
             "procedure": proc,
             "forme": c.forme_juridique_libelle,
             "creation": c.date_creation,
@@ -555,7 +579,9 @@ body { margin:0; font:14px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Robot
   <label><input type="checkbox" class="tier" value="5"><span class="tier-pill" style="background:#cbd5e1"></span>Bruit (&lt;5)</label>
 
   <h2>Filtres</h2>
-  <label><input type="checkbox" id="hide-proc" checked>Cacher en procédure (mort)</label>
+  <label><input type="checkbox" id="hide-proc" checked>Cacher en procédure (morts)</label>
+  <label><input type="checkbox" id="hide-blacklist" checked>Cacher hors-cible métier (déménag./taxi/frigo…)</label>
+  <label><input type="checkbox" id="only-dsp-confirmed">Uniquement DSP-confirmed (site mentionne Amazon)</label>
   <label><input type="checkbox" id="only-phone">Uniquement avec téléphone</label>
   <label><input type="checkbox" id="only-website">Uniquement avec site web</label>
 
@@ -605,8 +631,8 @@ body { margin:0; font:14px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Robot
 const LEADS = __LEADS_JSON__;
 const STATIONS = __STATIONS_JSON__;
 
-const tierColor = {0:"#7f1d1d",1:"#10b981",2:"#34d399",3:"#fbbf24",4:"#f87171",5:"#cbd5e1"};
-const tierBorder = {0:"#450a0a",1:"#065f46",2:"#047857",3:"#b45309",4:"#991b1b",5:"#475569"};
+const tierColor = {0:"#7f1d1d",1:"#10b981",2:"#34d399",3:"#fbbf24",4:"#f87171",5:"#cbd5e1",6:"#6b7280"};
+const tierBorder = {0:"#450a0a",1:"#065f46",2:"#047857",3:"#b45309",4:"#991b1b",5:"#475569",6:"#374151"};
 
 const map = L.map("map", { preferCanvas:true }).setView([48.8566, 2.3522], 10);
 L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
@@ -648,6 +674,14 @@ LEADS.forEach(l => {
 
 function buildPopup(l) {
   const procWarn = l.procedure ? `<div class="proc-warn">⚠️ ${escapeHtml(l.procedure)} — ne pas contacter</div>` : "";
+  let metierBadge = "";
+  if (l.metier_status === "blacklist") {
+    metierBadge = `<div class="proc-warn" style="background:#f3f4f6;color:#374151;border-color:#9ca3af">⚠️ Hors-cible métier (déménag./taxi/frigo/ambul.) — pas un DSP Amazon</div>`;
+  } else if (l.metier_status === "dsp-confirmed") {
+    metierBadge = `<div class="ph-found" style="background:#dcfce7;border-color:#86efac"><b>✅ Site mentionne explicitement Amazon / DSP / dernier km</b></div>`;
+  } else if (l.metier_status === "dsp-likely") {
+    metierBadge = `<div class="ph-found" style="background:#eff6ff"><b>🎯 Mots-clés DSP dans le nom</b></div>`;
+  }
 
   const phoneRow = l.phones && l.phones.length
     ? `<div class="ph-found"><b>📞 Téléphone trouvé :</b><br>${l.phones.map(p => `<a href="tel:${p}">${escapeHtml(p)}</a>`).join(" • ")}</div>`
@@ -682,6 +716,7 @@ function buildPopup(l) {
     <h3>${escapeHtml(l.nom)} <span class="score t${l.tier}">${l.score}</span></h3>
     <div class="siren">SIREN ${l.siren} • ${l.forme || "?"} • Créée ${l.creation || "?"} (${l.age || "?"} ans) • ${l.etabts || 1} étabt(s)</div>
     ${procWarn}
+    ${metierBadge}
     ${phoneRow}
     ${emailRow}
     <div class="grid" style="margin-top:8px">
@@ -702,7 +737,8 @@ const filters = {
   tiers: new Set([1,2]),
   search: "",
   station: "", effectif: "", dept: "",
-  hideProc: true, onlyPhone: false, onlyWebsite: false,
+  hideProc: true, hideBlacklist: true, onlyDspConfirmed: false,
+  onlyPhone: false, onlyWebsite: false,
 };
 
 function applyFilters() {
@@ -712,11 +748,10 @@ function applyFilters() {
   markers.forEach(m => {
     const l = m.leadData;
     if (filters.hideProc && l.procedure) return;
-    if (!filters.hideProc && l.tier === 0 && !filters.tiers.has(0)) {
-      // si on affiche pas hideProc et tier 0 pas dans tiers, skip
-    }
-    if (l.tier !== 0 && !filters.tiers.has(l.tier)) return;
-    if (l.tier === 0 && filters.hideProc) return;  // procédure cachée
+    if (filters.hideBlacklist && l.metier_status === "blacklist") return;
+    if (filters.onlyDspConfirmed && l.metier_status !== "dsp-confirmed") return;
+    // Tier 0 (procédure) et 6 (blacklist) ne suivent pas les filtres tiers
+    if (l.tier !== 0 && l.tier !== 6 && !filters.tiers.has(l.tier)) return;
     if (filters.station && l.station !== filters.station) return;
     if (filters.effectif && l.effectif !== filters.effectif) return;
     if (filters.dept && l.dept !== filters.dept) return;
@@ -747,19 +782,24 @@ document.getElementById("station-filter").addEventListener("change", e => { filt
 document.getElementById("effectif-filter").addEventListener("change", e => { filters.effectif = e.target.value; applyFilters(); });
 document.getElementById("dept-filter").addEventListener("change", e => { filters.dept = e.target.value; applyFilters(); });
 document.getElementById("hide-proc").addEventListener("change", e => { filters.hideProc = e.target.checked; applyFilters(); });
+document.getElementById("hide-blacklist").addEventListener("change", e => { filters.hideBlacklist = e.target.checked; applyFilters(); });
+document.getElementById("only-dsp-confirmed").addEventListener("change", e => { filters.onlyDspConfirmed = e.target.checked; applyFilters(); });
 document.getElementById("only-phone").addEventListener("change", e => { filters.onlyPhone = e.target.checked; applyFilters(); });
 document.getElementById("only-website").addEventListener("change", e => { filters.onlyWebsite = e.target.checked; applyFilters(); });
 
 function resetFilters() {
   filters.tiers = new Set([1,2]);
   filters.search = ""; filters.station = ""; filters.effectif = ""; filters.dept = "";
-  filters.hideProc = true; filters.onlyPhone = false; filters.onlyWebsite = false;
+  filters.hideProc = true; filters.hideBlacklist = true; filters.onlyDspConfirmed = false;
+  filters.onlyPhone = false; filters.onlyWebsite = false;
   document.querySelectorAll(".tier").forEach(cb => { cb.checked = [1,2].includes(parseInt(cb.value,10)); });
   document.getElementById("search").value = "";
   document.getElementById("station-filter").value = "";
   document.getElementById("effectif-filter").value = "";
   document.getElementById("dept-filter").value = "";
   document.getElementById("hide-proc").checked = true;
+  document.getElementById("hide-blacklist").checked = true;
+  document.getElementById("only-dsp-confirmed").checked = false;
   document.getElementById("only-phone").checked = false;
   document.getElementById("only-website").checked = false;
   applyFilters();

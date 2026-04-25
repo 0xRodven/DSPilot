@@ -59,6 +59,78 @@ TRANCHE_LABELS = {
     "32": "250-499",
 }
 
+# --- Filtres métier sur le nom de société ---
+# Blacklist : si un de ces tokens est dans le nom, ce n'est PAS un DSP Amazon
+NAME_BLACKLIST = (
+    # transports spécifiques non-DSP
+    "ambulance", "ambulanc",
+    "taxi", "taxis",
+    "vtc", "voiture avec chauffeur",
+    "frigorifique", "frigo ", " frigo", "froid",
+    "citerne", "vrac",
+    "betaillere", "betail", "bétail", "bétaillère",
+    "demenag", "déménag", "moving",
+    "funeraire", "funéraire", "pompes funèbres", "pompe fun",
+    "benne", "benne tp",
+    "matériaux", "materiaux", "construction",
+    "bois ", " bois",
+    "poids lourd", "porte-engin", "porte-char",
+    "transport scolaire", "transport-scolaire",
+    "voyageurs", "voyageur",
+    "autocar", "autobus", "bus ",
+    "tourisme", " touriste",
+    "nautique", "marin",
+    "voiture occasion", "concession auto",
+    # services non-livraison
+    "nettoyage", "ménage", "menage",
+    "sécurité", "securite", "gardiennage",
+    "btp", "tp ", " tp",
+    "agricole", "agriculture",
+    "cuisine", "restaurant", "boulang",
+    # plateformes / agences
+    "intérim", "interim", "agence d'emploi", "recrutement",
+    "holding ", "investissement", "patrimoine", "immobil",
+)
+
+# Whitelist : ces tokens dans le nom = très probable DSP / livraison dernier km
+NAME_WHITELIST = (
+    "logistic", "logistique",
+    "delivery", "livr", "livraison",
+    "express", "express ",
+    "colis", "package", "courier",
+    "dernier km", "last mile", "lastmile",
+    "messag", "messagerie",
+    "rapid", "speed",
+    "drive ",
+    "dsp",
+    "amazon",
+    "ecommerce", "e-commerce",
+    "b2c",
+    "fret leger", "fret léger",
+    "course", "coursier",
+    "biker", "vélo cargo", "velo cargo", "cyclolog",
+    "transport urbain",
+)
+
+
+def name_metier_signals(nom: str) -> tuple[int, list[str]]:
+    """Return (score_delta, details) basé sur whitelist/blacklist mots-clés métier."""
+    low = nom.lower()
+    delta = 0
+    details = []
+    for kw in NAME_BLACKLIST:
+        if kw in low:
+            delta -= 8  # disqualifying
+            details.append(f"-8 nom='{kw}' (non-DSP)")
+            return delta, details  # short-circuit on disqualifying match
+    for kw in NAME_WHITELIST:
+        if kw in low:
+            delta += 3
+            details.append(f"+3 nom='{kw}' (DSP-likely)")
+            return delta, details  # 1 match suffit
+    return delta, details
+
+
 # Mapping forme juridique INSEE (top valeurs courantes)
 FORMES_JURIDIQUES = {
     "5710": "SAS",
@@ -126,13 +198,22 @@ def fetch_dept(dept: str) -> Iterator[dict[str, Any]]:
             "page": page,
             "per_page": per_page,
         }
-        r = requests.get(
-            API_BASE,
-            params=params,
-            headers={"User-Agent": USER_AGENT},
-            timeout=15,
-        )
-        r.raise_for_status()
+        # Retry on 429 with exponential backoff
+        for attempt in range(5):
+            r = requests.get(
+                API_BASE,
+                params=params,
+                headers={"User-Agent": USER_AGENT},
+                timeout=15,
+            )
+            if r.status_code == 429:
+                wait = 2 * (attempt + 1)
+                time.sleep(wait)
+                continue
+            r.raise_for_status()
+            break
+        else:
+            r.raise_for_status()
         data = r.json()
         results = data.get("results", [])
         if not results:
@@ -143,7 +224,7 @@ def fetch_dept(dept: str) -> Iterator[dict[str, Any]]:
         if page >= total_pages:
             break
         page += 1
-        time.sleep(0.1)  # poli
+        time.sleep(0.3)  # poli + reduce 429 rate
 
 
 def parse_company(raw: dict[str, Any]) -> Company | None:
@@ -159,6 +240,11 @@ def parse_company(raw: dict[str, Any]) -> Company | None:
     # Filtre négatif : grandes entreprises (GE) — pas la cible
     if raw.get("categorie_entreprise") == "GE":
         return None
+
+    # Construire un "nom de recherche" qui inclut sigle pour mieux blacklister
+    nom_complet = raw.get("nom_complet") or raw.get("nom_raison_sociale") or ""
+    sigle = raw.get("sigle") or ""
+    nom_full = f"{nom_complet} {sigle}".strip() if sigle and sigle not in nom_complet else nom_complet
 
     date_creation = raw.get("date_creation") or siege.get("date_creation") or ""
     age = 0
@@ -186,7 +272,7 @@ def parse_company(raw: dict[str, Any]) -> Company | None:
 
     company = Company(
         siren=siren,
-        nom=raw.get("nom_complet") or raw.get("nom_raison_sociale") or "",
+        nom=nom_full,
         departement=siege.get("departement") or "",
         code_postal=siege.get("code_postal") or "",
         commune=siege.get("libelle_commune") or "",
@@ -333,6 +419,11 @@ def score_company(c: Company) -> Company:
     elif c.nb_etablissements <= 3:
         score += 1
         details.append("+1 2-3 etablissements")
+
+    # Métier whitelist/blacklist sur le nom (peut disqualifier ou booster)
+    delta, metier_details = name_metier_signals(c.nom)
+    score += delta
+    details.extend(metier_details)
 
     c.score = score
     c.score_details = details

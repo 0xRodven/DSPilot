@@ -159,8 +159,15 @@ async def fetch(session: aiohttp.ClientSession, url: str, timeout: int = TIMEOUT
         return 0, url, ""
 
 
+PHONE_PLACEHOLDERS = {
+    "0000000000", "0123456789", "0102030405", "0606060606",
+    "0101010101", "0123450000", "0000000000",
+    "0987654321", "0102030400", "0123456700", "0123450067",
+    "0700000000",
+}
+
 def normalize_phone(tel: str) -> str:
-    """Normalize en +33 X XX XX XX XX."""
+    """Normalize en +33 X XX XX XX XX. Reject placeholders and bogus patterns."""
     digits = re.sub(r"\D", "", tel)
     if digits.startswith("33") and len(digits) == 11:
         digits = "0" + digits[2:]
@@ -170,11 +177,18 @@ def normalize_phone(tel: str) -> str:
         return ""
     if digits[1] == "0":
         return ""
+    # Skip placeholders évidents
+    if digits in PHONE_PLACEHOLDERS:
+        return ""
+    # Skip si trop de chiffres identiques consécutifs (0606060606, 0111111111)
+    if re.search(r"(\d)\1{4,}", digits):
+        return ""
+    # Skip séquences évidentes (1234, 4321)
+    if "0123456789" in digits or "9876543210" in digits:
+        return ""
     # Skip 0800/numéros surtaxés
-    if digits[1] in ("8", "9") and len(digits) == 10:
-        # 08 = numéros spéciaux, 09 = box internet (acceptable mais downpriorité)
-        if digits[1] == "8":
-            return ""
+    if digits[1] == "8":
+        return ""
     return f"+33 {digits[1]} {digits[2:4]} {digits[4:6]} {digits[6:8]} {digits[8:10]}"
 
 
@@ -232,21 +246,33 @@ PARKING_MARKERS = (
 
 
 async def probe_domain(session: aiohttp.ClientSession, domain: str) -> str | None:
-    """Probe https://domain et http://domain. Return final URL si site valide."""
+    """Probe https://domain et http://domain. Return final URL si site valide ET hostname matche le domaine."""
+    from urllib.parse import urlparse
+
+    domain_norm = domain.lower().lstrip("www.")
     for url in (f"https://{domain}", f"https://www.{domain}", f"http://{domain}"):
         status, final, body = await fetch(session, url, timeout=5)
         if status != 200 or len(body) < 500:
             continue
+        # Vérifier que la final URL pointe encore vers le domaine demandé
+        # (pas un redirect cross-domain vers amazon.com / foxsports.com / etc.)
+        try:
+            final_host = urlparse(final).hostname or ""
+        except Exception:
+            continue
+        final_host = final_host.lower().lstrip("www.")
+        if final_host and final_host != domain_norm and not final_host.endswith("." + domain_norm):
+            # Redirect vers un autre domaine = squat ou parking
+            continue
         low = body.lower()
         if any(x in low for x in PARKING_MARKERS):
             continue
-        # Heuristique anti-squat : le titre/h1 doit contenir des mots transport/livraison/colis/logistic
+        # Heuristique anti-squat : le contenu doit avoir des mots métier
         if not any(kw in low for kw in (
             "transport", "logistic", "livraison", "livreur", "colis",
-            "fret", "messagerie", "express", "amazon", "delivery", "dsp",
-            "expédition", "expedition", "bagage", "courrier",
+            "fret", "messagerie", "express", "delivery", "dsp",
+            "expédition", "expedition", "courrier", "coursier",
         )):
-            # Pas de mot-clé métier → probable squat/homonyme, on rejette
             continue
         return final
     return None
@@ -284,6 +310,77 @@ async def fetch_societe_com_procedure(
         return ""
 
 
+# Keywords forts (1 suffit pour confirmer DSP)
+DSP_STRONG_KEYWORDS = (
+    "delivery service partner", "amazon dsp", "amazon logistics",
+    "livreurs amazon", "amazon flex",
+    "dernier kilom", "last mile", "last-mile",
+    "livraison de colis amazon",
+)
+# Keywords faibles (besoin de 2+ pour confirmer)
+DSP_WEAK_KEYWORDS = (
+    "livraison express", "livraison b2c",
+    "livraison rapide", "livraison à domicile",
+    "messagerie", "messagerie urbaine",
+    "transport de colis", "livraison de colis",
+    "logistique e-commerce", "logistique ecommerce",
+    "coursier", "coursiers",
+)
+DSP_DISQUALIFY_KEYWORDS = (
+    "déménagement", "demenagement", "déménageur", "deménageur",
+    "ambulance", "transport sanitaire",
+    "frigorifique", "transport frigo",
+    "taxi parisien", " vtc ", "voiture de transport",
+    "transport scolaire",
+    "autocar", "transport de voyageurs",
+    "matières dangereuses", "matieres dangereuses",
+    "convoi exceptionnel",
+    "porte-engins", "porte-engin", "porte-char",
+    "transport de déchets", "transport de dechets",
+    "transport btp", "matériaux de construction",
+    "transport de bois", "transport bois",
+    "funéraire", "funeraire", "pompes funèbres",
+)
+
+
+def verify_site_is_dsp(html: str, nom_societe: str) -> tuple[bool, str]:
+    """Strict heuristic: name must match + 1 strong OR 2 weak DSP keywords + no disqualifier."""
+    low = html.lower()
+
+    # 1. Disqualification immédiate
+    for kw in DSP_DISQUALIFY_KEYWORDS:
+        if kw in low:
+            return False, f"disqualified: '{kw}'"
+
+    # 2. Name match
+    nom_low = nom_societe.lower()
+    nom_tokens = [t for t in re.split(r"[\s\-()&]+", nom_low) if len(t) >= 4]
+    nom_tokens = [
+        t for t in nom_tokens
+        if t not in ("sas", "sarl", "sasu", "eurl", "transport", "transports", "logistic", "logistics", "ile", "france", "paris")
+    ]
+    if not nom_tokens:
+        return False, "name has no distinctive token"
+    nom_match = sum(1 for t in nom_tokens if t in low)
+    if nom_match < 1:
+        return False, "name absent du site (squat probable)"
+
+    # 3. Strong DSP keyword (1 suffit)
+    for kw in DSP_STRONG_KEYWORDS:
+        if kw in low:
+            return True, f"confirmed: '{kw}'"
+
+    # 4. Weak DSP keywords (2 minimum)
+    weak_hits = [kw for kw in DSP_WEAK_KEYWORDS if kw in low]
+    if len(weak_hits) >= 2:
+        return True, f"confirmed: 2+ weak ({', '.join(weak_hits[:3])})"
+
+    return False, f"only {len(weak_hits)} weak keyword(s), pas confirmé"
+
+
+# (verify_site_is_dsp défini ci-dessus avec logique strong+weak keywords)
+
+
 async def enrich_one(session: aiohttp.ClientSession, lead: dict[str, Any]) -> dict[str, Any]:
     """Pipeline pour 1 lead. Return dict avec champs enrichis."""
     nom = lead.get("nom") or ""
@@ -297,26 +394,36 @@ async def enrich_one(session: aiohttp.ClientSession, lead: dict[str, Any]) -> di
         "emails": [],
         "linkedin": "",
         "procedure": "",
+        "site_verify_reason": "",
         "sources": [],
     }
 
-    # Stage 1: try guessed domains
+    # Stage 1: try guessed domains MAIS avec vérification stricte ensuite
     candidates = guess_domains(nom)
     found_url = None
+    homepage_html = ""
     for d in candidates:
         result = await probe_domain(session, d)
         if result:
-            found_url = result
-            enriched["domain"] = d
-            enriched["website"] = result
-            enriched["sources"].append(f"domain:{d}")
-            break
+            # Probe a fait un fetch déjà mais on re-fetch pour avoir le HTML complet
+            status, _, body = await fetch(session, result, timeout=6)
+            if status == 200 and body:
+                # Vérification stricte : nom dans le HTML + keyword DSP
+                is_dsp, reason = verify_site_is_dsp(body, nom)
+                if is_dsp:
+                    found_url = result
+                    homepage_html = body
+                    enriched["domain"] = d
+                    enriched["website"] = result
+                    enriched["site_verify_reason"] = reason
+                    enriched["sources"].append(f"domain:{d}({reason[:30]})")
+                    break
+                # Sinon on continue à essayer d'autres domaines
 
-    # Stage 2: scrape site if found
+    # Stage 2: scrape site si validé DSP
     if found_url:
         base = found_url.rstrip("/")
         scrape_urls = [
-            base,
             f"{base}/contact",
             f"{base}/contact-us",
             f"{base}/contact.html",
@@ -324,12 +431,9 @@ async def enrich_one(session: aiohttp.ClientSession, lead: dict[str, Any]) -> di
             f"{base}/nous-contacter",
             f"{base}/mentions-legales",
             f"{base}/mentions-legales/",
-            f"{base}/legal",
-            f"{base}/a-propos",
-            f"{base}/qui-sommes-nous",
         ]
 
-        all_html: list[str] = []
+        all_html: list[str] = [homepage_html]  # already have homepage
         for url in scrape_urls:
             status, _, body = await fetch(session, url, timeout=6)
             if status == 200 and body:
@@ -337,14 +441,13 @@ async def enrich_one(session: aiohttp.ClientSession, lead: dict[str, Any]) -> di
                 if len(all_html) >= 4:
                     break
 
-        if all_html:
-            combined = "\n".join(all_html)
-            enriched["phones"] = extract_tels(combined)[:3]
-            enriched["emails"] = extract_emails(combined, enriched["domain"])[:3]
-            li = extract_linkedin(combined)
-            if li:
-                enriched["linkedin"] = li
-            enriched["sources"].append(f"scrape:{len(all_html)}p")
+        combined = "\n".join(all_html)
+        enriched["phones"] = extract_tels(combined)[:3]
+        enriched["emails"] = extract_emails(combined, enriched["domain"])[:3]
+        li = extract_linkedin(combined)
+        if li:
+            enriched["linkedin"] = li
+        enriched["sources"].append(f"scrape:{len(all_html)}p")
 
     # Stage 3: société.com pour flag procédure collective
     if siren:
