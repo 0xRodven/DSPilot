@@ -270,7 +270,9 @@ async function runIngestForDwcReport(
   const dailyReportStats = await parseDailyReportArtifacts(supplementalPaths.dailyReportHtmlPaths);
 
   if (associateStats.errors.length > 0) {
-    throw new Error(`Associate Overview invalide: ${associateStats.errors.join(" | ")}`);
+    console.warn(
+      `[amazon-logistics-sync] Associate Overview warnings (non-blocking): ${associateStats.errors.join(" | ")}`,
+    );
   }
 
   if (associateDailyStats.errors.length > 0) {
